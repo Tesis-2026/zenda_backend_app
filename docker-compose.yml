@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: zenda-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-zenda}
+      POSTGRES_USER: ${POSTGRES_USER:-zenda}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zenda}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - zenda_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  zenda_postgres_data:
