@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { CategoryType, TransactionType } from '@prisma/client';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 
 @Injectable()
@@ -14,76 +15,52 @@ export class SummaryService {
         where: {
           userId,
           deletedAt: null,
-          type: 'income',
-          occurredAt: {
-            gte: startDate,
-            lt: endDate,
-          },
+          type: TransactionType.INCOME,
+          occurredAt: { gte: startDate, lt: endDate },
         },
-        _sum: {
-          amount: true,
-        },
+        _sum: { amount: true },
       }),
       this.prisma.transaction.aggregate({
         where: {
           userId,
           deletedAt: null,
-          type: 'expense',
-          occurredAt: {
-            gte: startDate,
-            lt: endDate,
-          },
+          type: TransactionType.EXPENSE,
+          occurredAt: { gte: startDate, lt: endDate },
         },
-        _sum: {
-          amount: true,
-        },
+        _sum: { amount: true },
       }),
       this.prisma.transaction.groupBy({
         by: ['categoryId'],
         where: {
           userId,
           deletedAt: null,
-          type: 'expense',
-          occurredAt: {
-            gte: startDate,
-            lt: endDate,
-          },
+          type: TransactionType.EXPENSE,
+          occurredAt: { gte: startDate, lt: endDate },
         },
-        _sum: {
-          amount: true,
-        },
-        orderBy: {
-          _sum: {
-            amount: 'desc',
-          },
-        },
+        _sum: { amount: true },
+        orderBy: { _sum: { amount: 'desc' } },
         take: 5,
       }),
       this.prisma.savingsGoal.findMany({
-        where: {
-          userId,
-          deletedAt: null,
-        },
-        select: {
-          name: true,
-          currentAmount: true,
-          targetAmount: true,
-        },
+        where: { userId, deletedAt: null },
+        select: { name: true, currentAmount: true, targetAmount: true },
       }),
     ]);
 
     const categories = await this.prisma.category.findMany({
       where: {
         deletedAt: null,
-        OR: [{ type: 'SYSTEM' }, { type: 'CUSTOM', userId }],
+        OR: [
+          { type: CategoryType.SYSTEM },
+          { type: CategoryType.CUSTOM, userId },
+        ],
         id: {
-          in: topCategoryRows.map((row) => row.categoryId).filter((value): value is string => !!value),
+          in: topCategoryRows
+            .map((row) => row.categoryId)
+            .filter((value): value is string => !!value),
         },
       },
-      select: {
-        id: true,
-        name: true,
-      },
+      select: { id: true, name: true },
     });
 
     const categoryMap = new Map(categories.map((item) => [item.id, item.name]));
@@ -96,20 +73,20 @@ export class SummaryService {
       totalExpense,
       netBalance: totalIncome - totalExpense,
       topCategories: topCategoryRows.map((row) => ({
-        categoryName: row.categoryId ? categoryMap.get(row.categoryId) ?? 'Uncategorized' : 'Uncategorized',
+        categoryName: row.categoryId
+          ? (categoryMap.get(row.categoryId) ?? 'Uncategorized')
+          : 'Uncategorized',
         totalExpense: Number(row._sum.amount ?? 0),
       })),
       goalsProgress: goals.map((goal) => {
         const currentAmount = Number(goal.currentAmount);
         const targetAmount = Number(goal.targetAmount);
-        const percent = targetAmount > 0 ? Number(((currentAmount / targetAmount) * 100).toFixed(2)) : 0;
+        const percent =
+          targetAmount > 0
+            ? Number(((currentAmount / targetAmount) * 100).toFixed(2))
+            : 0;
 
-        return {
-          goalName: goal.name,
-          currentAmount,
-          targetAmount,
-          percent,
-        };
+        return { goalName: goal.name, currentAmount, targetAmount, percent };
       }),
     };
   }

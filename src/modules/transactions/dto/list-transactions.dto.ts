@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { TransactionType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsDate, IsIn, IsOptional, IsUUID } from 'class-validator';
-import { TRANSACTION_TYPES } from './create-transaction.dto';
+import { IsDate, IsEnum, IsOptional, IsUUID } from 'class-validator';
 
 export class ListTransactionsDto {
   @ApiPropertyOptional({
@@ -22,10 +22,10 @@ export class ListTransactionsDto {
   @IsDate()
   to?: Date;
 
-  @ApiPropertyOptional({ enum: TRANSACTION_TYPES, example: 'expense' })
+  @ApiPropertyOptional({ enum: TransactionType, example: TransactionType.EXPENSE })
   @IsOptional()
-  @IsIn(TRANSACTION_TYPES)
-  type?: (typeof TRANSACTION_TYPES)[number];
+  @IsEnum(TransactionType)
+  type?: TransactionType;
 
   @ApiPropertyOptional({ example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8' })
   @IsOptional()

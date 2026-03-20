@@ -1,8 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TransactionType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsEnum,
   IsISO8601,
-  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -11,8 +12,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-
-export const TRANSACTION_TYPES = ['expense', 'income'] as const;
 
 export class CreateTransactionDto {
   @ApiPropertyOptional({
@@ -24,7 +23,8 @@ export class CreateTransactionDto {
   categoryId?: string;
 
   @ApiPropertyOptional({
-    description: 'Create and use a custom category for this transaction (cannot be sent with categoryId)',
+    description:
+      'Create and use a custom category for this transaction (cannot be sent with categoryId)',
     example: 'Veterinaria',
     maxLength: 40,
   })
@@ -39,14 +39,14 @@ export class CreateTransactionDto {
   @Min(0.01)
   amount!: number;
 
-  @ApiProperty({ example: 'Compra supermercado' })
+  @ApiProperty({ example: 'Supermarket purchase', maxLength: 255 })
   @IsString()
   @MaxLength(255)
   description!: string;
 
-  @ApiProperty({ enum: TRANSACTION_TYPES, example: 'expense' })
-  @IsIn(TRANSACTION_TYPES)
-  type!: (typeof TRANSACTION_TYPES)[number];
+  @ApiProperty({ enum: TransactionType, example: TransactionType.EXPENSE })
+  @IsEnum(TransactionType)
+  type!: TransactionType;
 
   @ApiPropertyOptional({ example: 'PEN', minLength: 3, maxLength: 3 })
   @IsOptional()
