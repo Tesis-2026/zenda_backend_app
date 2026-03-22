@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
-import { SummaryController } from './summary.controller';
-import { SummaryService } from './summary.service';
+import { PrismaModule } from '../../infra/prisma/prisma.module';
+import { GetMonthSummaryUseCase } from './application/use-cases/get-month-summary.use-case';
+import { SummaryController } from './interface/summary.controller';
 
 @Module({
-	controllers: [SummaryController],
-	providers: [SummaryService],
+  imports: [PrismaModule],
+  controllers: [SummaryController],
+  providers: [GetMonthSummaryUseCase],
 })
 export class InsightsModule {}
