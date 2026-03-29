@@ -3,10 +3,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
+import { EmailModule } from '../../common/email/email.module';
 import { IUserRepository } from './domain/ports/user.repository';
+import { IPasswordResetTokenRepository } from './domain/ports/password-reset-token.repository';
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
+import { PrismaPasswordResetRepository } from './infrastructure/persistence/prisma-password-reset.repository';
 import { RegisterUseCase } from './application/use-cases/register.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
+import { ForgotPasswordUseCase } from './application/use-cases/forgot-password.use-case';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 import { JwtStrategy } from './infrastructure/jwt.strategy';
 import { AuthController } from './interface/auth.controller';
 
@@ -15,6 +20,7 @@ import { AuthController } from './interface/auth.controller';
     ConfigModule,
     PrismaModule,
     PassportModule,
+    EmailModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -28,8 +34,11 @@ import { AuthController } from './interface/auth.controller';
   controllers: [AuthController],
   providers: [
     { provide: IUserRepository, useClass: PrismaUserRepository },
+    { provide: IPasswordResetTokenRepository, useClass: PrismaPasswordResetRepository },
     RegisterUseCase,
     LoginUseCase,
+    ForgotPasswordUseCase,
+    ResetPasswordUseCase,
     JwtStrategy,
   ],
   exports: [JwtModule, IUserRepository],

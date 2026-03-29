@@ -19,6 +19,18 @@ export class PrismaUserRepository implements IUserRepository {
     });
   }
 
+  async findById(id: string): Promise<UserEntity | null> {
+    const row = await this.prisma.user.findUnique({ where: { id, deletedAt: null } });
+    if (!row) return null;
+    return UserEntity.create({
+      id: row.id,
+      email: row.email,
+      passwordHash: row.passwordHash,
+      fullName: row.fullName,
+      createdAt: row.createdAt,
+    });
+  }
+
   async create(params: {
     email: string;
     passwordHash: string;
@@ -37,6 +49,13 @@ export class PrismaUserRepository implements IUserRepository {
       passwordHash: row.passwordHash,
       fullName: row.fullName,
       createdAt: row.createdAt,
+    });
+  }
+
+  async updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
     });
   }
 }
