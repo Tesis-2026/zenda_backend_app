@@ -10,6 +10,7 @@ export class HealthController {
   check(): HealthResponseDto {
     return {
       status: 'ok',
+      version: '1.0.0',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
     };
