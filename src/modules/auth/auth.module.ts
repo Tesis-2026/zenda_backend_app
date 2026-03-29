@@ -2,29 +2,45 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { StringValue } from 'ms';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { JwtStrategy } from './jwt.strategy';
+import { EmailModule } from '../../common/email/email.module';
+import { IUserRepository } from './domain/ports/user.repository';
+import { IPasswordResetTokenRepository } from './domain/ports/password-reset-token.repository';
+import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
+import { PrismaPasswordResetRepository } from './infrastructure/persistence/prisma-password-reset.repository';
+import { RegisterUseCase } from './application/use-cases/register.use-case';
+import { LoginUseCase } from './application/use-cases/login.use-case';
+import { ForgotPasswordUseCase } from './application/use-cases/forgot-password.use-case';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
+import { JwtStrategy } from './infrastructure/jwt.strategy';
+import { AuthController } from './interface/auth.controller';
 
 @Module({
-	imports: [
-		ConfigModule,
-		PrismaModule,
-		PassportModule,
-		JwtModule.registerAsync({
-			inject: [ConfigService],
-			useFactory: (configService: ConfigService) => ({
-				secret: configService.getOrThrow<string>('auth.jwtSecret'),
-				signOptions: {
-					expiresIn: (configService.get<string>('auth.jwtExpiresIn') ?? '7d') as StringValue,
-				},
-			}),
-		}),
-	],
-	controllers: [AuthController],
-	providers: [AuthService, JwtStrategy],
-	exports: [AuthService],
+  imports: [
+    ConfigModule,
+    PrismaModule,
+    PassportModule,
+    EmailModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('auth.jwtSecret'),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        signOptions: { expiresIn: config.get('auth.jwtExpiresIn') as any },
+      }),
+    }),
+  ],
+  controllers: [AuthController],
+  providers: [
+    { provide: IUserRepository, useClass: PrismaUserRepository },
+    { provide: IPasswordResetTokenRepository, useClass: PrismaPasswordResetRepository },
+    RegisterUseCase,
+    LoginUseCase,
+    ForgotPasswordUseCase,
+    ResetPasswordUseCase,
+    JwtStrategy,
+  ],
+  exports: [JwtModule, IUserRepository],
 })
 export class AuthModule {}

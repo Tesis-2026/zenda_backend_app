@@ -4,9 +4,9 @@ export class HealthResponseDto {
   @ApiProperty({ example: 'ok' })
   status!: string;
 
+  @ApiProperty({ example: '2026-01-01T00:00:00.000Z' })
+  timestamp!: string;
+
   @ApiProperty({ example: '1.0.0' })
   version!: string;
-
-  @ApiProperty({ example: '2026-03-03T14:00:00.000Z' })
-  timestamp!: string;
 }

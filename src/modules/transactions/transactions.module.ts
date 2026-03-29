@@ -1,11 +1,22 @@
 import { Module } from '@nestjs/common';
+import { PrismaModule } from '../../infra/prisma/prisma.module';
 import { CategoriesModule } from '../categories/categories.module';
-import { TransactionsController } from './transactions.controller';
-import { TransactionsService } from './transactions.service';
+import { ITransactionRepository } from './domain/ports/transaction.repository';
+import { PrismaTransactionRepository } from './infrastructure/persistence/prisma-transaction.repository';
+import { CreateTransactionUseCase } from './application/use-cases/create-transaction.use-case';
+import { ListTransactionsUseCase } from './application/use-cases/list-transactions.use-case';
+import { DeleteTransactionUseCase } from './application/use-cases/delete-transaction.use-case';
+import { TransactionsController } from './interface/transactions.controller';
 
 @Module({
-  imports: [CategoriesModule],
+  imports: [PrismaModule, CategoriesModule],
   controllers: [TransactionsController],
-  providers: [TransactionsService],
+  providers: [
+    { provide: ITransactionRepository, useClass: PrismaTransactionRepository },
+    CreateTransactionUseCase,
+    ListTransactionsUseCase,
+    DeleteTransactionUseCase,
+  ],
+  exports: [ITransactionRepository],
 })
 export class TransactionsModule {}
