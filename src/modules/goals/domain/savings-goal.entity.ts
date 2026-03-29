@@ -1,12 +1,10 @@
-import { Decimal } from '@prisma/client/runtime/library';
-
 export class SavingsGoalEntity {
   constructor(
     readonly id: string,
     readonly userId: string,
     readonly name: string,
-    readonly targetAmount: Decimal,
-    readonly currentAmount: Decimal,
+    readonly targetAmount: number,
+    readonly currentAmount: number,
     readonly dueDate: Date | null,
     readonly createdAt: Date,
     readonly updatedAt: Date,
@@ -14,23 +12,21 @@ export class SavingsGoalEntity {
   ) {}
 
   get progressPercent(): number {
-    if (this.targetAmount.isZero()) return 0;
-    return Math.min(
-      100,
-      this.currentAmount.div(this.targetAmount).mul(100).toNumber(),
-    );
+    if (this.targetAmount === 0) return 0;
+    return Math.min(100, (this.currentAmount / this.targetAmount) * 100);
   }
 
-  contribute(amount: Decimal): Decimal {
-    return this.currentAmount.add(amount);
+  contribute(amount: number): number {
+    if (amount <= 0) throw new Error('Contribution amount must be positive');
+    return this.currentAmount + amount;
   }
 
   static create(params: {
     id: string;
     userId: string;
     name: string;
-    targetAmount: Decimal;
-    currentAmount: Decimal;
+    targetAmount: number;
+    currentAmount: number;
     dueDate: Date | null;
     createdAt: Date;
     updatedAt: Date;

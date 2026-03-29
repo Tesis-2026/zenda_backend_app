@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { IUserRepository } from '../../domain/ports/user.repository';
 import { IPasswordResetTokenRepository } from '../../domain/ports/password-reset-token.repository';
-import { EmailService } from '../../../../common/email/email.service';
+import { EmailService } from '../../../../infra/email/email.service';
 
 @Injectable()
 export class ForgotPasswordUseCase {

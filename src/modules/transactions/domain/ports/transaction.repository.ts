@@ -1,5 +1,4 @@
-import { TransactionType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { TransactionType } from '../transaction-type.enum';
 import { TransactionEntity } from '../transaction.entity';
 
 export interface TransactionWithCategory {
@@ -7,7 +6,7 @@ export interface TransactionWithCategory {
   userId: string;
   categoryId: string | null;
   type: TransactionType;
-  amount: Decimal;
+  amount: number;
   currency: string;
   description: string | null;
   occurredAt: Date;

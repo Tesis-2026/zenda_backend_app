@@ -69,7 +69,7 @@ export class TransactionsController {
       categoryId: t.categoryId,
       type: t.type.toLowerCase() as 'income' | 'expense',
       currency: t.currency,
-      amount: t.amount.toNumber(),
+      amount: t.amount,
       description: t.description ?? '',
       occurredAt: t.occurredAt.toISOString(),
       createdAt: t.createdAt.toISOString(),

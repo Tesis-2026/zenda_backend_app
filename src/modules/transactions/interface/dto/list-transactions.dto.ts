@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TransactionType } from '@prisma/client';
+import { TransactionType } from '../../domain/transaction-type.enum';
 import { Type } from 'class-transformer';
 import { IsDate, IsEnum, IsOptional, IsUUID } from 'class-validator';
 
