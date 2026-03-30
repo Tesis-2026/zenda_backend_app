@@ -10,5 +10,6 @@ export abstract class ICategoryRepository {
     userId: string;
     transactionType?: TransactionType;
   }): Promise<CategoryEntity>;
+  abstract update(id: string, name: string): Promise<CategoryEntity>;
   abstract softDelete(id: string): Promise<void>;
 }

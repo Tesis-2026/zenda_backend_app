@@ -8,6 +8,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -16,8 +17,10 @@ import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { CreateCategoryUseCase } from '../application/use-cases/create-category.use-case';
 import { ListCategoriesUseCase } from '../application/use-cases/list-categories.use-case';
 import { DeleteCategoryUseCase } from '../application/use-cases/delete-category.use-case';
+import { UpdateCategoryUseCase } from '../application/use-cases/update-category.use-case';
 import { CategoryEntity } from '../domain/category.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseDto } from './dto/category.response.dto';
 
 @ApiTags('Categories')
@@ -28,6 +31,7 @@ export class CategoriesController {
     private readonly createCategory: CreateCategoryUseCase,
     private readonly listCategories: ListCategoriesUseCase,
     private readonly deleteCategory: DeleteCategoryUseCase,
+    private readonly updateCategory: UpdateCategoryUseCase,
   ) {}
 
   @Post()
@@ -45,6 +49,17 @@ export class CategoriesController {
   async findAll(@UserId() userId: string): Promise<CategoryResponseDto[]> {
     const entities = await this.listCategories.execute(userId);
     return entities.map((e) => this.toResponse(e));
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Rename a custom category' })
+  async update(
+    @UserId() userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCategoryDto,
+  ): Promise<CategoryResponseDto> {
+    const entity = await this.updateCategory.execute({ userId, categoryId: id, name: dto.name });
+    return this.toResponse(entity);
   }
 
   @Delete(':id')
