@@ -1,12 +1,15 @@
-export interface MonthSummaryParams {
+export interface PeriodSummaryParams {
   userId: string;
-  year: number;
-  month: number;
   from: Date;
   to: Date;
 }
 
-export interface MonthSummaryData {
+export interface MonthSummaryParams extends PeriodSummaryParams {
+  year: number;
+  month: number;
+}
+
+export interface PeriodSummaryData {
   totalIncome: number;
   totalExpense: number;
   topCategories: { name: string; amount: number }[];
@@ -18,6 +21,18 @@ export interface MonthSummaryData {
   }[];
 }
 
+export type MonthSummaryData = PeriodSummaryData;
+
+export interface MonthComparisonEntry {
+  year: number;
+  month: number;
+  totalIncome: number;
+  totalExpense: number;
+  netBalance: number;
+}
+
 export abstract class IInsightsRepository {
   abstract getMonthSummary(params: MonthSummaryParams): Promise<MonthSummaryData>;
+  abstract getPeriodSummary(params: PeriodSummaryParams): Promise<PeriodSummaryData>;
+  abstract getMonthComparison(userId: string, months: number): Promise<MonthComparisonEntry[]>;
 }
