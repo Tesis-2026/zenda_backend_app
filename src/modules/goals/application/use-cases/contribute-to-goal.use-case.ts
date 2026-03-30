@@ -17,6 +17,10 @@ export class ContributeToGoalUseCase {
     if (!goal) throw new NotFoundException('Goal not found');
 
     const newAmount = goal.contribute(cmd.amount);
-    return this.repo.updateCurrentAmount(cmd.goalId, newAmount);
+    const [updated] = await Promise.all([
+      this.repo.updateCurrentAmount(cmd.goalId, newAmount),
+      this.repo.addContribution(cmd.goalId, cmd.amount),
+    ]);
+    return updated;
   }
 }
