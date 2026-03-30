@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { ISavingsGoalRepository } from '../../domain/ports/savings-goal.repository';
 import { SavingsGoalEntity } from '../../domain/savings-goal.entity';
@@ -13,8 +12,8 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
       id: row.id,
       userId: row.userId,
       name: row.name,
-      targetAmount: row.targetAmount,
-      currentAmount: row.currentAmount,
+      targetAmount: row.targetAmount.toNumber(),
+      currentAmount: row.currentAmount.toNumber(),
       dueDate: row.dueDate,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -32,7 +31,7 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
       data: {
         userId: params.userId,
         name: params.name,
-        targetAmount: new Decimal(params.targetAmount),
+        targetAmount: params.targetAmount,
         dueDate: params.dueDate ?? null,
       },
     });
@@ -54,7 +53,7 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
     return row ? this.toEntity(row) : null;
   }
 
-  async updateCurrentAmount(id: string, newAmount: Decimal): Promise<SavingsGoalEntity> {
+  async updateCurrentAmount(id: string, newAmount: number): Promise<SavingsGoalEntity> {
     const row = await this.prisma.savingsGoal.update({
       where: { id },
       data: { currentAmount: newAmount },

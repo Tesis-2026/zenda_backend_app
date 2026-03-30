@@ -1,4 +1,4 @@
-import { TransactionType } from '@prisma/client';
+import { TransactionType } from '../../../transactions/domain/transaction-type.enum';
 import { CategoryEntity } from '../category.entity';
 
 export abstract class ICategoryRepository {

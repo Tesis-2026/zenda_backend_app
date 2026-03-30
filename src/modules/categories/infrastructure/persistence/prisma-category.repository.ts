@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CategoryType, TransactionType } from '@prisma/client';
+import { CategoryType as PrismaCategoryType, TransactionType as PrismaTransactionType } from '@prisma/client';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { ICategoryRepository } from '../../domain/ports/category.repository';
 import { CategoryEntity } from '../../domain/category.entity';
+import { CategoryType } from '../../domain/category-type.enum';
+import { TransactionType } from '../../../transactions/domain/transaction-type.enum';
 
 @Injectable()
 export class PrismaCategoryRepository implements ICategoryRepository {
@@ -12,9 +14,9 @@ export class PrismaCategoryRepository implements ICategoryRepository {
     return CategoryEntity.create({
       id: row.id,
       name: row.name,
-      type: row.type,
+      type: row.type as CategoryType,
       userId: row.userId,
-      transactionType: row.transactionType,
+      transactionType: row.transactionType as TransactionType | null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
@@ -26,8 +28,8 @@ export class PrismaCategoryRepository implements ICategoryRepository {
       where: {
         deletedAt: null,
         OR: [
-          { type: CategoryType.SYSTEM },
-          { type: CategoryType.CUSTOM, userId },
+          { type: PrismaCategoryType.SYSTEM },
+          { type: PrismaCategoryType.CUSTOM, userId },
         ],
       },
       orderBy: [{ type: 'asc' }, { name: 'asc' }],
@@ -41,8 +43,8 @@ export class PrismaCategoryRepository implements ICategoryRepository {
         id,
         deletedAt: null,
         OR: [
-          { type: CategoryType.SYSTEM },
-          { type: CategoryType.CUSTOM, userId },
+          { type: PrismaCategoryType.SYSTEM },
+          { type: PrismaCategoryType.CUSTOM, userId },
         ],
       },
     });
@@ -55,8 +57,8 @@ export class PrismaCategoryRepository implements ICategoryRepository {
         name: { equals: name, mode: 'insensitive' },
         deletedAt: null,
         OR: [
-          { type: CategoryType.SYSTEM },
-          { type: CategoryType.CUSTOM, userId },
+          { type: PrismaCategoryType.SYSTEM },
+          { type: PrismaCategoryType.CUSTOM, userId },
         ],
       },
     });
@@ -71,9 +73,9 @@ export class PrismaCategoryRepository implements ICategoryRepository {
     const row = await this.prisma.category.create({
       data: {
         name: params.name,
-        type: CategoryType.CUSTOM,
+        type: PrismaCategoryType.CUSTOM,
         userId: params.userId,
-        transactionType: params.transactionType ?? null,
+        transactionType: (params.transactionType as PrismaTransactionType) ?? null,
       },
     });
     return this.toEntity(row);

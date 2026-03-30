@@ -1,25 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import { TransactionType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { TransactionType as PrismaTransactionType } from '@prisma/client';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import {
   ITransactionRepository,
   TransactionFilters,
   TransactionWithCategory,
+  UpdateTransactionParams,
 } from '../../domain/ports/transaction.repository';
 import { TransactionEntity } from '../../domain/transaction.entity';
+import { TransactionType } from '../../domain/transaction-type.enum';
 
 @Injectable()
 export class PrismaTransactionRepository implements ITransactionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private toEntity(row: any): TransactionEntity {
-    return TransactionEntity.create({
+    return TransactionEntity.reconstitute({
       id: row.id,
       userId: row.userId,
       categoryId: row.categoryId,
-      type: row.type,
-      amount: row.amount,
+      type: row.type as TransactionType,
+      amount: row.amount.toNumber(),
       currency: row.currency,
       description: row.description,
       occurredAt: row.occurredAt,
@@ -27,6 +28,23 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
     });
+  }
+
+  private toTransactionWithCategory(row: any): TransactionWithCategory {
+    return {
+      id: row.id,
+      userId: row.userId,
+      categoryId: row.categoryId ?? null,
+      type: row.type as TransactionType,
+      amount: row.amount.toNumber(),
+      currency: row.currency,
+      description: row.description,
+      occurredAt: row.occurredAt,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      deletedAt: row.deletedAt,
+      category: row.category ?? null,
+    };
   }
 
   async create(params: {
@@ -42,15 +60,15 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       data: {
         userId: params.userId,
         categoryId: params.categoryId,
-        type: params.type,
-        amount: new Decimal(params.amount),
+        type: params.type as PrismaTransactionType,
+        amount: params.amount,
         currency: params.currency,
         description: params.description ?? '',
         occurredAt: params.occurredAt,
       },
       include: { category: { select: { id: true, name: true } } },
     });
-    return row as TransactionWithCategory;
+    return this.toTransactionWithCategory(row);
   }
 
   async findAll(
@@ -61,7 +79,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       where: {
         userId,
         deletedAt: null,
-        ...(filters.type && { type: filters.type }),
+        ...(filters.type && { type: filters.type as PrismaTransactionType }),
         ...(filters.categoryId && { categoryId: filters.categoryId }),
         ...(filters.from || filters.to
           ? {
@@ -75,7 +93,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       orderBy: { occurredAt: 'desc' },
       include: { category: { select: { id: true, name: true } } },
     });
-    return rows as TransactionWithCategory[];
+    return rows.map((r) => this.toTransactionWithCategory(r));
   }
 
   async findById(id: string, userId: string): Promise<TransactionEntity | null> {
@@ -83,6 +101,34 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       where: { id, userId, deletedAt: null },
     });
     return row ? this.toEntity(row) : null;
+  }
+
+  async findByIdWithCategory(id: string, userId: string): Promise<TransactionWithCategory | null> {
+    const row = await this.prisma.transaction.findFirst({
+      where: { id, userId, deletedAt: null },
+      include: { category: { select: { id: true, name: true } } },
+    });
+    return row ? this.toTransactionWithCategory(row) : null;
+  }
+
+  async update(id: string, userId: string, params: UpdateTransactionParams): Promise<TransactionWithCategory> {
+    const existing = await this.prisma.transaction.findFirst({
+      where: { id, userId, deletedAt: null },
+    });
+    if (!existing) throw new Error('Transaction not found or access denied');
+
+    const row = await this.prisma.transaction.update({
+      where: { id },
+      data: {
+        ...(params.categoryId !== undefined && { categoryId: params.categoryId }),
+        ...(params.amount !== undefined && { amount: params.amount }),
+        ...(params.currency !== undefined && { currency: params.currency }),
+        ...(params.description !== undefined && { description: params.description }),
+        ...(params.occurredAt !== undefined && { occurredAt: params.occurredAt }),
+      },
+      include: { category: { select: { id: true, name: true } } },
+    });
+    return this.toTransactionWithCategory(row);
   }
 
   async softDelete(id: string): Promise<void> {

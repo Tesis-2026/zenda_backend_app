@@ -1,5 +1,4 @@
-import { TransactionType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { TransactionType } from '../transaction-type.enum';
 import { TransactionEntity } from '../transaction.entity';
 
 export interface TransactionWithCategory {
@@ -7,7 +6,7 @@ export interface TransactionWithCategory {
   userId: string;
   categoryId: string | null;
   type: TransactionType;
-  amount: Decimal;
+  amount: number;
   currency: string;
   description: string | null;
   occurredAt: Date;
@@ -22,6 +21,14 @@ export interface TransactionFilters {
   to?: Date;
   type?: TransactionType;
   categoryId?: string;
+}
+
+export interface UpdateTransactionParams {
+  categoryId?: string;
+  amount?: number;
+  currency?: string;
+  description?: string;
+  occurredAt?: Date;
 }
 
 export abstract class ITransactionRepository {
@@ -41,5 +48,7 @@ export abstract class ITransactionRepository {
   ): Promise<TransactionWithCategory[]>;
 
   abstract findById(id: string, userId: string): Promise<TransactionEntity | null>;
+  abstract findByIdWithCategory(id: string, userId: string): Promise<TransactionWithCategory | null>;
+  abstract update(id: string, userId: string, params: UpdateTransactionParams): Promise<TransactionWithCategory>;
   abstract softDelete(id: string): Promise<void>;
 }

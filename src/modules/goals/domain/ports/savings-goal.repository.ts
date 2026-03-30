@@ -1,4 +1,3 @@
-import { Decimal } from '@prisma/client/runtime/library';
 import { SavingsGoalEntity } from '../savings-goal.entity';
 
 export abstract class ISavingsGoalRepository {
@@ -12,6 +11,6 @@ export abstract class ISavingsGoalRepository {
   abstract findAll(userId: string): Promise<SavingsGoalEntity[]>;
   abstract findById(id: string, userId: string): Promise<SavingsGoalEntity | null>;
 
-  abstract updateCurrentAmount(id: string, newAmount: Decimal): Promise<SavingsGoalEntity>;
+  abstract updateCurrentAmount(id: string, newAmount: number): Promise<SavingsGoalEntity>;
   abstract softDelete(id: string): Promise<void>;
 }

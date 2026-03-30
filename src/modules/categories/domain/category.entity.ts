@@ -1,4 +1,7 @@
-import { CategoryType, TransactionType } from '@prisma/client';
+import { CategoryType } from './category-type.enum';
+import { TransactionType } from '../../transactions/domain/transaction-type.enum';
+
+export { CategoryType, TransactionType };
 
 export class CategoryEntity {
   constructor(

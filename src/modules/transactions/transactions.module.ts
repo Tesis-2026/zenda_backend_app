@@ -6,6 +6,8 @@ import { PrismaTransactionRepository } from './infrastructure/persistence/prisma
 import { CreateTransactionUseCase } from './application/use-cases/create-transaction.use-case';
 import { ListTransactionsUseCase } from './application/use-cases/list-transactions.use-case';
 import { DeleteTransactionUseCase } from './application/use-cases/delete-transaction.use-case';
+import { GetTransactionUseCase } from './application/use-cases/get-transaction.use-case';
+import { UpdateTransactionUseCase } from './application/use-cases/update-transaction.use-case';
 import { TransactionsController } from './interface/transactions.controller';
 
 @Module({
@@ -16,6 +18,8 @@ import { TransactionsController } from './interface/transactions.controller';
     CreateTransactionUseCase,
     ListTransactionsUseCase,
     DeleteTransactionUseCase,
+    GetTransactionUseCase,
+    UpdateTransactionUseCase,
   ],
   exports: [ITransactionRepository],
 })

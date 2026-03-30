@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
-import { EmailModule } from '../../common/email/email.module';
+import { EmailModule } from '../../infra/email/email.module';
 import { IUserRepository } from './domain/ports/user.repository';
 import { IPasswordResetTokenRepository } from './domain/ports/password-reset-token.repository';
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { TransactionType } from '@prisma/client';
+import { TransactionType } from '../../domain/transaction-type.enum';
 import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
 import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
 

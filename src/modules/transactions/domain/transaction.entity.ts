@@ -1,5 +1,6 @@
-import { TransactionType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { TransactionType } from './transaction-type.enum';
+
+export { TransactionType };
 
 export class TransactionEntity {
   constructor(
@@ -7,7 +8,7 @@ export class TransactionEntity {
     readonly userId: string,
     readonly categoryId: string,
     readonly type: TransactionType,
-    readonly amount: Decimal,
+    readonly amount: number,
     readonly currency: string,
     readonly description: string | null,
     readonly occurredAt: Date,
@@ -16,12 +17,13 @@ export class TransactionEntity {
     readonly deletedAt: Date | null,
   ) {}
 
-  static create(params: {
+  /** Reconstitute from persistence — no creation invariants applied. */
+  static reconstitute(params: {
     id: string;
     userId: string;
     categoryId: string;
     type: TransactionType;
-    amount: Decimal;
+    amount: number;
     currency: string;
     description: string | null;
     occurredAt: Date;
