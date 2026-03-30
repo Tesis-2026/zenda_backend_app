@@ -5,6 +5,7 @@ import { PrismaCategoryRepository } from './infrastructure/persistence/prisma-ca
 import { CreateCategoryUseCase } from './application/use-cases/create-category.use-case';
 import { ListCategoriesUseCase } from './application/use-cases/list-categories.use-case';
 import { DeleteCategoryUseCase } from './application/use-cases/delete-category.use-case';
+import { UpdateCategoryUseCase } from './application/use-cases/update-category.use-case';
 import { ResolveCategoryUseCase } from './application/use-cases/resolve-category.use-case';
 import { CategoriesController } from './interface/categories.controller';
 
@@ -16,6 +17,7 @@ import { CategoriesController } from './interface/categories.controller';
     CreateCategoryUseCase,
     ListCategoriesUseCase,
     DeleteCategoryUseCase,
+    UpdateCategoryUseCase,
     ResolveCategoryUseCase,
   ],
   exports: [ResolveCategoryUseCase, ICategoryRepository],

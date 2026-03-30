@@ -81,6 +81,14 @@ export class PrismaCategoryRepository implements ICategoryRepository {
     return this.toEntity(row);
   }
 
+  async update(id: string, name: string): Promise<CategoryEntity> {
+    const row = await this.prisma.category.update({
+      where: { id },
+      data: { name },
+    });
+    return this.toEntity(row);
+  }
+
   async softDelete(id: string): Promise<void> {
     await this.prisma.category.update({
       where: { id },
