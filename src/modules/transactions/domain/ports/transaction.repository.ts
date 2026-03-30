@@ -23,6 +23,14 @@ export interface TransactionFilters {
   categoryId?: string;
 }
 
+export interface UpdateTransactionParams {
+  categoryId?: string;
+  amount?: number;
+  currency?: string;
+  description?: string;
+  occurredAt?: Date;
+}
+
 export abstract class ITransactionRepository {
   abstract create(params: {
     userId: string;
@@ -40,5 +48,7 @@ export abstract class ITransactionRepository {
   ): Promise<TransactionWithCategory[]>;
 
   abstract findById(id: string, userId: string): Promise<TransactionEntity | null>;
+  abstract findByIdWithCategory(id: string, userId: string): Promise<TransactionWithCategory | null>;
+  abstract update(id: string, userId: string, params: UpdateTransactionParams): Promise<TransactionWithCategory>;
   abstract softDelete(id: string): Promise<void>;
 }

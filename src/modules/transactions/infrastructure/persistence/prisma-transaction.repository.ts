@@ -5,6 +5,7 @@ import {
   ITransactionRepository,
   TransactionFilters,
   TransactionWithCategory,
+  UpdateTransactionParams,
 } from '../../domain/ports/transaction.repository';
 import { TransactionEntity } from '../../domain/transaction.entity';
 import { TransactionType } from '../../domain/transaction-type.enum';
@@ -100,6 +101,34 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       where: { id, userId, deletedAt: null },
     });
     return row ? this.toEntity(row) : null;
+  }
+
+  async findByIdWithCategory(id: string, userId: string): Promise<TransactionWithCategory | null> {
+    const row = await this.prisma.transaction.findFirst({
+      where: { id, userId, deletedAt: null },
+      include: { category: { select: { id: true, name: true } } },
+    });
+    return row ? this.toTransactionWithCategory(row) : null;
+  }
+
+  async update(id: string, userId: string, params: UpdateTransactionParams): Promise<TransactionWithCategory> {
+    const existing = await this.prisma.transaction.findFirst({
+      where: { id, userId, deletedAt: null },
+    });
+    if (!existing) throw new Error('Transaction not found or access denied');
+
+    const row = await this.prisma.transaction.update({
+      where: { id },
+      data: {
+        ...(params.categoryId !== undefined && { categoryId: params.categoryId }),
+        ...(params.amount !== undefined && { amount: params.amount }),
+        ...(params.currency !== undefined && { currency: params.currency }),
+        ...(params.description !== undefined && { description: params.description }),
+        ...(params.occurredAt !== undefined && { occurredAt: params.occurredAt }),
+      },
+      include: { category: { select: { id: true, name: true } } },
+    });
+    return this.toTransactionWithCategory(row);
   }
 
   async softDelete(id: string): Promise<void> {
