@@ -58,6 +58,29 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
     month: number;
     year: number;
   }): Promise<BudgetEntity> {
+    // Revive a soft-deleted record for the same slot instead of inserting a duplicate.
+    // This avoids the P2002 unique-constraint violation that occurs when a previously
+    // deleted budget is recreated for the same user / category / period.
+    const softDeleted = await this.prisma.budget.findFirst({
+      where: {
+        userId: params.userId,
+        categoryId: params.categoryId ?? null,
+        month: params.month,
+        year: params.year,
+        deletedAt: { not: null },
+      },
+      include: { category: true },
+    });
+
+    if (softDeleted) {
+      const row = await this.prisma.budget.update({
+        where: { id: softDeleted.id },
+        data: { amountLimit: params.amountLimit, deletedAt: null },
+        include: { category: true },
+      });
+      return this.toEntity(row);
+    }
+
     const row = await this.prisma.budget.create({
       data: {
         userId: params.userId,
@@ -103,20 +126,29 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
     params: { amountLimit: number },
   ): Promise<BudgetEntity> {
     const row = await this.prisma.budget.update({
-      where: { id },
+      where: { id, userId },
       data: { amountLimit: params.amountLimit },
       include: { category: true },
     });
-    // verify ownership (findById already confirmed it before calling update)
-    void userId;
     return this.toEntity(row);
   }
 
   async softDelete(id: string, userId: string): Promise<void> {
     await this.prisma.budget.update({
-      where: { id },
+      where: { id, userId },
       data: { deletedAt: new Date() },
     });
-    void userId;
+  }
+
+  async findGlobalForPeriod(
+    userId: string,
+    month: number,
+    year: number,
+  ): Promise<BudgetEntity | null> {
+    const row = await this.prisma.budget.findFirst({
+      where: { userId, categoryId: null, month, year, deletedAt: null },
+      include: { category: true },
+    });
+    return row ? this.toEntity(row) : null;
   }
 }

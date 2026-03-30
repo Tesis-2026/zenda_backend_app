@@ -24,4 +24,15 @@ export abstract class IBudgetRepository {
   ): Promise<BudgetEntity>;
 
   abstract softDelete(id: string, userId: string): Promise<void>;
+
+  /**
+   * Returns the active global budget (categoryId = null) for the given user/period.
+   * PostgreSQL unique constraints treat NULL as distinct, so this application-level
+   * check is the only reliable guard against duplicate global budgets.
+   */
+  abstract findGlobalForPeriod(
+    userId: string,
+    month: number,
+    year: number,
+  ): Promise<BudgetEntity | null>;
 }

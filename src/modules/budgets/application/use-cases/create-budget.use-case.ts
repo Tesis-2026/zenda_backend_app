@@ -15,6 +15,22 @@ export class CreateBudgetUseCase {
   constructor(private readonly repo: IBudgetRepository) {}
 
   async execute(cmd: CreateBudgetCommand): Promise<BudgetEntity> {
+    // PostgreSQL unique constraints treat NULL as distinct (NULL != NULL), so the
+    // @@unique([userId, categoryId, month, year]) on Budget does NOT prevent two
+    // global budgets (categoryId = null) for the same period. We enforce it here.
+    if (!cmd.categoryId) {
+      const existing = await this.repo.findGlobalForPeriod(
+        cmd.userId,
+        cmd.month,
+        cmd.year,
+      );
+      if (existing) {
+        throw new ConflictException(
+          'A global budget for this period already exists',
+        );
+      }
+    }
+
     try {
       return await this.repo.create({
         userId: cmd.userId,
@@ -24,7 +40,7 @@ export class CreateBudgetUseCase {
         year: cmd.year,
       });
     } catch (err: unknown) {
-      // Prisma P2002 = unique constraint violation (duplicate budget for same category+period)
+      // Prisma P2002 = unique constraint violation (duplicate category-specific budget)
       if (
         typeof err === 'object' &&
         err !== null &&
