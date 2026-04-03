@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
-import { ISavingsGoalRepository } from '../../domain/ports/savings-goal.repository';
+import { ISavingsGoalRepository, GoalContributionRecord } from '../../domain/ports/savings-goal.repository';
 import { SavingsGoalEntity } from '../../domain/savings-goal.entity';
 
 @Injectable()
@@ -19,6 +19,15 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
     });
+  }
+
+  private toContributionRecord(row: any): GoalContributionRecord {
+    return {
+      id: row.id,
+      goalId: row.goalId,
+      amount: row.amount.toNumber(),
+      createdAt: row.createdAt,
+    };
   }
 
   async create(params: {
@@ -66,5 +75,20 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
       where: { id },
       data: { deletedAt: new Date() },
     });
+  }
+
+  async addContribution(goalId: string, amount: number): Promise<GoalContributionRecord> {
+    const row = await this.prisma.goalContribution.create({
+      data: { goalId, amount },
+    });
+    return this.toContributionRecord(row);
+  }
+
+  async findContributions(goalId: string): Promise<GoalContributionRecord[]> {
+    const rows = await this.prisma.goalContribution.findMany({
+      where: { goalId },
+      orderBy: { createdAt: 'asc' },
+    });
+    return rows.map((r) => this.toContributionRecord(r));
   }
 }

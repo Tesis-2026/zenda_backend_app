@@ -17,10 +17,13 @@ import { CreateGoalUseCase } from '../application/use-cases/create-goal.use-case
 import { ListGoalsUseCase } from '../application/use-cases/list-goals.use-case';
 import { ContributeToGoalUseCase } from '../application/use-cases/contribute-to-goal.use-case';
 import { DeleteGoalUseCase } from '../application/use-cases/delete-goal.use-case';
+import { ListGoalContributionsUseCase } from '../application/use-cases/list-goal-contributions.use-case';
 import { SavingsGoalEntity } from '../domain/savings-goal.entity';
+import { GoalContributionRecord } from '../domain/ports/savings-goal.repository';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { ContributeGoalDto } from './dto/contribute-goal.dto';
 import { GoalResponseDto } from './dto/goal.response.dto';
+import { GoalContributionResponseDto } from './dto/goal-contribution.response.dto';
 
 @ApiTags('Goals')
 @UseGuards(JwtAuthGuard)
@@ -31,6 +34,7 @@ export class GoalsController {
     private readonly listGoals: ListGoalsUseCase,
     private readonly contributeToGoal: ContributeToGoalUseCase,
     private readonly deleteGoal: DeleteGoalUseCase,
+    private readonly listContributions: ListGoalContributionsUseCase,
   ) {}
 
   @Post()
@@ -48,6 +52,16 @@ export class GoalsController {
   async findAll(@UserId() userId: string): Promise<GoalResponseDto[]> {
     const entities = await this.listGoals.execute(userId);
     return entities.map((e) => this.toResponse(e));
+  }
+
+  @Get(':id/contributions')
+  @ApiOperation({ summary: 'List contributions for a savings goal' })
+  async getContributions(
+    @UserId() userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<GoalContributionResponseDto[]> {
+    const records = await this.listContributions.execute({ userId, goalId: id });
+    return records.map((r) => this.toContributionResponse(r));
   }
 
   @Post(':id/contribute')
@@ -82,6 +96,15 @@ export class GoalsController {
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
       deletedAt: entity.deletedAt?.toISOString() ?? null,
+    };
+  }
+
+  private toContributionResponse(record: GoalContributionRecord): GoalContributionResponseDto {
+    return {
+      id: record.id,
+      goalId: record.goalId,
+      amount: record.amount,
+      createdAt: record.createdAt.toISOString(),
     };
   }
 }

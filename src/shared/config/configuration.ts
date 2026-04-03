@@ -9,7 +9,8 @@ export default () => ({
   },
   auth: {
     jwtSecret: process.env.JWT_SECRET,
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
+    refreshTokenExpiresDays: Number(process.env.REFRESH_TOKEN_EXPIRES_DAYS ?? 7),
     bcryptRounds: Number(process.env.BCRYPT_ROUNDS ?? 12),
   },
   azureOpenAi: {

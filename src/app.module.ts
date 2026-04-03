@@ -11,6 +11,7 @@ import { AiModule } from './infra/ai/ai.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { BudgetsModule } from './modules/budgets/budgets.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { InsightsModule } from './modules/insights/insights.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
@@ -34,6 +35,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     TransactionsModule,
     CategoriesModule,
+    BudgetsModule,
     GoalsModule,
     InsightsModule,
   ],

@@ -6,6 +6,7 @@ import { CreateGoalUseCase } from './application/use-cases/create-goal.use-case'
 import { ListGoalsUseCase } from './application/use-cases/list-goals.use-case';
 import { ContributeToGoalUseCase } from './application/use-cases/contribute-to-goal.use-case';
 import { DeleteGoalUseCase } from './application/use-cases/delete-goal.use-case';
+import { ListGoalContributionsUseCase } from './application/use-cases/list-goal-contributions.use-case';
 import { GoalsController } from './interface/goals.controller';
 
 @Module({
@@ -17,6 +18,7 @@ import { GoalsController } from './interface/goals.controller';
     ListGoalsUseCase,
     ContributeToGoalUseCase,
     DeleteGoalUseCase,
+    ListGoalContributionsUseCase,
   ],
 })
 export class GoalsModule {}

@@ -13,14 +13,21 @@ const prisma = new PrismaClient();
 // ─────────────────────────────────────────────────────────────────
 
 const EXPENSE_CATEGORIES = [
+  // Core 50/30/20 needs
   'Food',
   'Transportation',
-  'Education',
-  'Entertainment',
-  'Health',
   'Housing',
   'Utilities',
-  'Clothing',
+  'Health',
+  // Wants (mapped from Flutter TransactionCategory enum)
+  'Entertainment',
+  'Shopping',
+  'Subscriptions',
+  'Cravings',
+  // Savings bucket
+  'Savings',
+  // Misc
+  'Education',
   'Other',
 ];
 
