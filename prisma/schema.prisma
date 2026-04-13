@@ -7,72 +7,469 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
 enum CategoryType {
   SYSTEM
   CUSTOM
 }
 
+enum IncomeType {
+  SCHOLARSHIP
+  PART_TIME
+  FAMILY
+  MIXED
+}
+
+enum FinancialLiteracyLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TopicDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum UserChallengeStatus {
+  AVAILABLE
+  ACTIVE
+  COMPLETED
+}
+
+enum RecommendationType {
+  SAVINGS
+  BUDGET
+  GOAL
+}
+
+enum SurveyType {
+  PRE
+  POST
+  SUS
+}
+
+enum NotificationType {
+  BUDGET_ALERT
+  ANOMALY_ALERT
+  PREDICTION_READY
+  CHALLENGE_REMINDER
+  DAILY_REMINDER
+  BADGE_EARNED
+}
+
+enum FeedbackType {
+  BUG
+  SUGGESTION
+  GENERAL
+}
+
+// ─────────────────────────────────────────────────────────────────
+// CORE MODELS
+// ─────────────────────────────────────────────────────────────────
+
 model User {
-  id           String        @id @default(uuid()) @db.Uuid
-  email        String        @unique
-  passwordHash String
-  fullName     String
-  categories   Category[]
-  transactions Transaction[]
-  savingsGoals SavingsGoal[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  deletedAt    DateTime?
+  id                     String                  @id @default(uuid()) @db.Uuid
+  email                  String                  @unique
+  passwordHash           String
+  fullName               String
+
+  // Profile fields collected during onboarding (US-0105)
+  age                    Int?
+  university             String?
+  incomeType             IncomeType?
+  averageMonthlyIncome   Decimal?                @db.Decimal(12, 2)
+  financialLiteracyLevel FinancialLiteracyLevel?
+  profileCompleted       Boolean                 @default(false)
+  currency               String                  @default("PEN")
+
+  // Law 29733 consent (US-1303)
+  consentGiven           Boolean                 @default(false)
+  consentAt              DateTime?
+
+  // Relations
+  categories              Category[]
+  transactions            Transaction[]
+  savingsGoals            SavingsGoal[]
+  budgets                 Budget[]
+  notificationPreferences NotificationPreference[]
+  userTopicProgress       UserTopicProgress[]
+  userChallenges          UserChallenge[]
+  userBadges              UserBadge[]
+  predictions             Prediction[]
+  recommendations         Recommendation[]
+  surveyResponses         SurveyResponse[]
+  analyticsEvents         AnalyticsEvent[]
+  auditLogs               AuditLog[]
+  feedbacks               Feedback[]
+  passwordResetTokens     PasswordResetToken[]
+  refreshTokens           RefreshToken[]
+
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  deletedAt              DateTime?
 
   @@index([email])
 }
 
 model Category {
-  id           String        @id @default(uuid()) @db.Uuid
-  name         String
-  type         CategoryType  @default(CUSTOM)
-  userId       String?       @db.Uuid
-  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  deletedAt    DateTime?
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String
+  type            CategoryType     @default(CUSTOM)
+  // null = usable for both; set when the category is type-specific
+  transactionType TransactionType?
+  userId          String?          @db.Uuid
+  user            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+  budgets         Budget[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
 
   @@index([type, userId, deletedAt])
   @@index([name])
 }
 
 model Transaction {
+  id          String          @id @default(uuid()) @db.Uuid
+  userId      String          @db.Uuid
+  categoryId  String?         @db.Uuid
+  type        TransactionType
+  currency    String          @default("PEN")
+  amount      Decimal         @db.Decimal(12, 2)
+  description String
+  occurredAt  DateTime        @default(now())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
+
+  @@index([userId, occurredAt])
+  @@index([userId, categoryId])
+  @@index([userId, type, occurredAt])
+}
+
+model SavingsGoal {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  name          String
+  targetAmount  Decimal   @db.Decimal(12, 2)
+  currentAmount Decimal   @db.Decimal(12, 2) @default(0)
+  dueDate       DateTime?
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  contributions GoalContribution[]
+
+  @@index([userId])
+}
+
+model GoalContribution {
+  id        String      @id @default(uuid()) @db.Uuid
+  goalId    String      @db.Uuid
+  amount    Decimal     @db.Decimal(12, 2)
+  goal      SavingsGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@index([goalId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// BUDGETS (Phase 6)
+// ─────────────────────────────────────────────────────────────────
+
+model Budget {
   id          String    @id @default(uuid()) @db.Uuid
   userId      String    @db.Uuid
   categoryId  String?   @db.Uuid
-  type        String
-  currency    String    @default("PEN")
-  amount      Decimal   @db.Decimal(12, 2)
-  description String
-  occurredAt  DateTime  @default(now())
+  amountLimit Decimal   @db.Decimal(12, 2)
+  month       Int
+  year        Int
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  @@index([userId])
-  @@index([categoryId])
-  @@index([occurredAt])
+  // categoryId null = global budget; unique per user/category/period
+  @@unique([userId, categoryId, month, year])
+  @@index([userId, month, year])
 }
 
-model SavingsGoal {
-  id            String   @id @default(uuid()) @db.Uuid
-  userId        String   @db.Uuid
-  name          String
-  targetAmount  Decimal  @db.Decimal(12, 2)
-  currentAmount Decimal  @db.Decimal(12, 2) @default(0)
-  dueDate       DateTime?
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  deletedAt     DateTime?
+// ─────────────────────────────────────────────────────────────────
+// NOTIFICATIONS (Phase 11)
+// ─────────────────────────────────────────────────────────────────
+
+model NotificationPreference {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  enabled   Boolean          @default(true)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([userId, type])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// EDUCATION & GAMIFICATION (Phase 10)
+// ─────────────────────────────────────────────────────────────────
+
+model EducationalTopic {
+  id           String              @id @default(uuid()) @db.Uuid
+  title        String
+  content      String
+  difficulty   TopicDifficulty     @default(BEGINNER)
+  order        Int                 @default(0)
+  userProgress UserTopicProgress[]
+
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model UserTopicProgress {
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String           @db.Uuid
+  topicId     String           @db.Uuid
+  completedAt DateTime?
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic       EducationalTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime         @default(now())
+
+  @@unique([userId, topicId])
+  @@index([userId])
+}
+
+model Challenge {
+  id             String          @id @default(uuid()) @db.Uuid
+  title          String
+  description    String
+  criteriaJson   Json
+  reward         String?
+  userChallenges UserChallenge[]
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model UserChallenge {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @db.Uuid
+  challengeId String              @db.Uuid
+  status      UserChallengeStatus @default(AVAILABLE)
+  acceptedAt  DateTime?
+  completedAt DateTime?
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge   Challenge           @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([userId, challengeId])
+  @@index([userId, status])
+}
+
+model Badge {
+  id          String      @id @default(uuid()) @db.Uuid
+  name        String      @unique
+  description String
+  criteria    String
+  iconUrl     String?
+  userBadges  UserBadge[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model UserBadge {
+  id       String   @id @default(uuid()) @db.Uuid
+  userId   String   @db.Uuid
+  badgeId  String   @db.Uuid
+  earnedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// AI / ML (Phase 8–9)
+// ─────────────────────────────────────────────────────────────────
+
+model Prediction {
+  id                  String          @id @default(uuid()) @db.Uuid
+  userId              String          @db.Uuid
+  period              String          // Format: "YYYY-MM", e.g. "2026-04"
+  type                TransactionType
+  predictedTotal      Decimal         @db.Decimal(12, 2)
+  predictedByCategory Json?           // Array of { categoryId, categoryName, amount }
+  confidenceInterval  Json?           // { lower: number, upper: number }
+  modelVersion        String?
+  actualTotal         Decimal?        @db.Decimal(12, 2) // filled after period ends
+  accuracy            Decimal?        @db.Decimal(5, 2)  // retrospective accuracy %
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@unique([userId, period, type])
+  @@index([userId, period])
+}
+
+model Recommendation {
+  id              String                  @id @default(uuid()) @db.Uuid
+  userId          String                  @db.Uuid
+  type            RecommendationType
+  message         String
+  suggestedAction String?
+  isActive        Boolean                 @default(true)
+  feedback        RecommendationFeedback?
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([userId, isActive])
+}
+
+model RecommendationFeedback {
+  id               String         @id @default(uuid()) @db.Uuid
+  recommendationId String         @unique @db.Uuid
+  accepted         Boolean
+  recommendation   Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime       @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────────
+// IMPACT EVALUATION — PRE/POST SURVEYS (Phase 12)
+// ─────────────────────────────────────────────────────────────────
+
+model Survey {
+  id        String           @id @default(uuid()) @db.Uuid
+  type      SurveyType
+  questions SurveyQuestion[]
+  responses SurveyResponse[]
+
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model SurveyQuestion {
+  id       String @id @default(uuid()) @db.Uuid
+  surveyId String @db.Uuid
+  order    Int
+  text     String
+  options  Json   // String[] of answer options
+  survey   Survey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@index([surveyId, order])
+}
+
+model SurveyResponse {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  surveyId    String   @db.Uuid
+  answersJson Json     // Map of questionId → selectedOption
+  score       Decimal? @db.Decimal(5, 2) // 0–100
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  survey      Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, surveyId])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ANALYTICS & AUDIT (Phase 13–15)
+// ─────────────────────────────────────────────────────────────────
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  eventType String   // e.g. "record_transaction", "view_prediction"
+  metadata  Json?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, eventType])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  action    String   // e.g. "DELETE_ACCOUNT", "RESET_PASSWORD"
+  resource  String   // e.g. "User", "Transaction"
+  metadata  Json?
+  ipAddress String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([action, resource])
+  @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Feedback {
+  id         String       @id @default(uuid()) @db.Uuid
+  userId     String       @db.Uuid
+  type       FeedbackType @default(GENERAL)
+  message    String
+  screenName String?
+  rating     Int?         // 1–5
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime     @default(now())
+
+  @@index([userId])
+  @@index([type])
 }

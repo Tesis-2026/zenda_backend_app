@@ -1,9 +1,24 @@
 import { Module } from '@nestjs/common';
-import { GoalsController } from './goals.controller';
-import { GoalsService } from './goals.service';
+import { PrismaModule } from '../../infra/prisma/prisma.module';
+import { ISavingsGoalRepository } from './domain/ports/savings-goal.repository';
+import { PrismaGoalsRepository } from './infrastructure/persistence/prisma-goals.repository';
+import { CreateGoalUseCase } from './application/use-cases/create-goal.use-case';
+import { ListGoalsUseCase } from './application/use-cases/list-goals.use-case';
+import { ContributeToGoalUseCase } from './application/use-cases/contribute-to-goal.use-case';
+import { DeleteGoalUseCase } from './application/use-cases/delete-goal.use-case';
+import { ListGoalContributionsUseCase } from './application/use-cases/list-goal-contributions.use-case';
+import { GoalsController } from './interface/goals.controller';
 
 @Module({
-	controllers: [GoalsController],
-	providers: [GoalsService],
+  imports: [PrismaModule],
+  controllers: [GoalsController],
+  providers: [
+    { provide: ISavingsGoalRepository, useClass: PrismaGoalsRepository },
+    CreateGoalUseCase,
+    ListGoalsUseCase,
+    ContributeToGoalUseCase,
+    DeleteGoalUseCase,
+    ListGoalContributionsUseCase,
+  ],
 })
 export class GoalsModule {}
