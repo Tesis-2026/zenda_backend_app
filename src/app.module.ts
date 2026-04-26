@@ -16,6 +16,11 @@ import { GoalsModule } from './modules/goals/goals.module';
 import { InsightsModule } from './modules/insights/insights.module';
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { EducationModule } from './modules/education/education.module';
+import { ChallengesModule } from './modules/challenges/challenges.module';
+import { BadgesModule } from './modules/badges/badges.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
+import { SurveysModule } from './modules/surveys/surveys.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -42,6 +47,11 @@ import { UsersModule } from './modules/users/users.module';
     InsightsModule,
     PredictionsModule,
     RecommendationsModule,
+    EducationModule,
+    ChallengesModule,
+    BadgesModule,
+    FeedbackModule,
+    SurveysModule,
   ],
   controllers: [HealthController],
   providers: [
