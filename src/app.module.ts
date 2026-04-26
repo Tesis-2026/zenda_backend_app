@@ -14,6 +14,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { BudgetsModule } from './modules/budgets/budgets.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { InsightsModule } from './modules/insights/insights.module';
+import { PredictionsModule } from './modules/predictions/predictions.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -38,6 +39,7 @@ import { UsersModule } from './modules/users/users.module';
     BudgetsModule,
     GoalsModule,
     InsightsModule,
+    PredictionsModule,
   ],
   controllers: [HealthController],
   providers: [
