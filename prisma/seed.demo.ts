@@ -901,6 +901,148 @@ async function seedLucia(categoryMap: Map<string, string>): Promise<void> {
   console.log(`✓ Lucía Torres seeded  (${def.email})`);
 }
 
+// ─────────────────────────────────────────────────────────────────
+// USER 4 — Diego Ramírez (irregular income, gig worker, 6 months)
+// ─────────────────────────────────────────────────────────────────
+
+function diegoTransactions(_year: number, _month: number): TxTemplate[] {
+  return [
+    // ── Income (variable freelance) ──────────────────────────────
+    { categoryName: 'Freelance', type: TransactionType.INCOME, amount: 800.0, description: 'Freelance web project – client A', day: 5 },
+    { categoryName: 'Freelance', type: TransactionType.INCOME, amount: 600.0, description: 'Freelance design gig – Upwork', day: 18 },
+    { categoryName: 'Part-time work', type: TransactionType.INCOME, amount: 400.0, description: 'Bar shift – weekend work', day: 28 },
+    // ── Needs ───────────────────────────────────────────────────
+    { categoryName: 'Housing', type: TransactionType.EXPENSE, amount: 500.0, description: 'Rent – shared room Surquillo', day: 1 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 70.0, description: 'Groceries – La Colmena market', day: 2 },
+    { categoryName: 'Transportation', type: TransactionType.EXPENSE, amount: 50.0, description: 'Bus card top-up', day: 3 },
+    { categoryName: 'Utilities', type: TransactionType.EXPENSE, amount: 40.0, description: 'Internet – Claro', day: 4 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 55.0, description: 'Groceries – Metro', day: 9 },
+    { categoryName: 'Health', type: TransactionType.EXPENSE, amount: 35.0, description: 'Pharmacy – medicine', day: 11 },
+    { categoryName: 'Utilities', type: TransactionType.EXPENSE, amount: 38.0, description: 'Phone bill – Bitel prepaid', day: 13 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 60.0, description: 'Groceries – Tottus', day: 16 },
+    { categoryName: 'Transportation', type: TransactionType.EXPENSE, amount: 30.0, description: 'Taxi – late work night', day: 17 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 52.0, description: 'Groceries – Metro', day: 23 },
+    { categoryName: 'Health', type: TransactionType.EXPENSE, amount: 60.0, description: 'Medical check-up', day: 25 },
+    // ── Wants ───────────────────────────────────────────────────
+    { categoryName: 'Subscriptions', type: TransactionType.EXPENSE, amount: 22.9, description: 'Netflix', day: 6 },
+    { categoryName: 'Subscriptions', type: TransactionType.EXPENSE, amount: 9.9, description: 'YouTube Premium', day: 6 },
+    { categoryName: 'Entertainment', type: TransactionType.EXPENSE, amount: 45.0, description: 'Cinema Cineplanet', day: 8 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 40.0, description: 'Rappi delivery – pizza', day: 10 },
+    { categoryName: 'Shopping', type: TransactionType.EXPENSE, amount: 80.0, description: 'Clothes – Gamarra wholesale', day: 12 },
+    { categoryName: 'Entertainment', type: TransactionType.EXPENSE, amount: 35.0, description: 'Video game top-up', day: 14 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 25.0, description: 'Starbucks – coffee', day: 15 },
+    { categoryName: 'Entertainment', type: TransactionType.EXPENSE, amount: 50.0, description: 'Pub night with coworkers', day: 20 },
+    { categoryName: 'Shopping', type: TransactionType.EXPENSE, amount: 65.0, description: 'Headphones – Falabella', day: 22 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 30.0, description: 'PedidosYa – burger', day: 24 },
+    { categoryName: 'Entertainment', type: TransactionType.EXPENSE, amount: 40.0, description: 'Karaoke night', day: 26 },
+    { categoryName: 'Shopping', type: TransactionType.EXPENSE, amount: 45.0, description: 'Gym accessories', day: 27 },
+    // ── Savings ─────────────────────────────────────────────────
+    { categoryName: 'Savings', type: TransactionType.EXPENSE, amount: 100.0, description: 'Emergency fund – irregular savings', day: 29 },
+    // Additional daily food entries to reach 200+ over 6 months
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 18.0, description: 'Lunch – restaurant near work', day: 7 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 22.0, description: 'Breakfast + coffee', day: 19 },
+    { categoryName: 'Transportation', type: TransactionType.EXPENSE, amount: 12.0, description: 'Combi fare', day: 21 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 20.0, description: 'Lunch – menú del día', day: 30 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 15.0, description: 'Chicha morada + picarones', day: 31 },
+    { categoryName: 'Education', type: TransactionType.EXPENSE, amount: 50.0, description: 'Online course – Udemy', day: 28 },
+  ];
+}
+
+async function seedDiego(categoryMap: Map<string, string>): Promise<void> {
+  const def: DemoUserDef = {
+    email: 'diego.ramirez@zenda.demo',
+    fullName: 'Diego Ramírez',
+    age: 23,
+    university: 'Universidad de Lima',
+    incomeType: IncomeType.MIXED,
+    averageMonthlyIncome: 1800,
+    financialLiteracyLevel: FinancialLiteracyLevel.LOW,
+  };
+  const passwordHash = await hash(DEMO_PASSWORD);
+  const userId = await upsertDemoUser(def, passwordHash);
+
+  const months = [
+    { year: 2025, month: 11 }, { year: 2025, month: 12 },
+    { year: 2026, month: 1 }, { year: 2026, month: 2 },
+    { year: 2026, month: 3 }, { year: 2026, month: 4 },
+  ];
+  await seedTransactions(userId, categoryMap, diegoTransactions, months);
+  await seedNotificationPreferences(userId);
+
+  console.log(`✓ Diego Ramírez seeded  (${def.email})`);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// USER 5 — María Quispe (scholarship + part-time, high saver, 6 months)
+// ─────────────────────────────────────────────────────────────────
+
+function mariaTransactions(_year: number, _month: number): TxTemplate[] {
+  return [
+    // ── Income ──────────────────────────────────────────────────
+    { categoryName: 'Scholarship', type: TransactionType.INCOME, amount: 1200.0, description: 'PRONABEC scholarship monthly disbursement', day: 1 },
+    { categoryName: 'Part-time work', type: TransactionType.INCOME, amount: 600.0, description: 'Library assistant stipend – PUCP', day: 15 },
+    // ── Needs ───────────────────────────────────────────────────
+    { categoryName: 'Housing', type: TransactionType.EXPENSE, amount: 380.0, description: 'Rent – student room Breña', day: 2 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 60.0, description: 'Groceries – Mercado Santa Anita', day: 3 },
+    { categoryName: 'Transportation', type: TransactionType.EXPENSE, amount: 45.0, description: 'Metropolitano card recharge', day: 4 },
+    { categoryName: 'Utilities', type: TransactionType.EXPENSE, amount: 35.0, description: 'Internet – Movistar', day: 5 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 55.0, description: 'Groceries – Metro', day: 8 },
+    { categoryName: 'Health', type: TransactionType.EXPENSE, amount: 25.0, description: 'Pharmacy – vitamin supplements', day: 10 },
+    { categoryName: 'Utilities', type: TransactionType.EXPENSE, amount: 32.0, description: 'Water and electricity split', day: 12 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 50.0, description: 'Groceries – Tottus', day: 15 },
+    { categoryName: 'Transportation', type: TransactionType.EXPENSE, amount: 20.0, description: 'Combi fares – week 3', day: 18 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 48.0, description: 'Groceries – La Colmena', day: 22 },
+    { categoryName: 'Health', type: TransactionType.EXPENSE, amount: 40.0, description: 'Dental check-up', day: 24 },
+    { categoryName: 'Education', type: TransactionType.EXPENSE, amount: 80.0, description: 'PUCP textbooks and print materials', day: 6 },
+    { categoryName: 'Education', type: TransactionType.EXPENSE, amount: 35.0, description: 'Language lab fee', day: 20 },
+    // ── Wants ───────────────────────────────────────────────────
+    { categoryName: 'Subscriptions', type: TransactionType.EXPENSE, amount: 12.9, description: 'Spotify', day: 7 },
+    { categoryName: 'Entertainment', type: TransactionType.EXPENSE, amount: 25.0, description: 'Theatre – student discount', day: 9 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 18.0, description: 'Helados Artika – treat yourself', day: 11 },
+    { categoryName: 'Shopping', type: TransactionType.EXPENSE, amount: 55.0, description: 'Office supplies and stationery', day: 13 },
+    { categoryName: 'Entertainment', type: TransactionType.EXPENSE, amount: 30.0, description: 'Museum entry – student card', day: 17 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 20.0, description: 'Afternoon snacks – campus café', day: 19 },
+    { categoryName: 'Shopping', type: TransactionType.EXPENSE, amount: 42.0, description: 'Clothes – secondhand Gamarra', day: 21 },
+    { categoryName: 'Entertainment', type: TransactionType.EXPENSE, amount: 28.0, description: 'Movie night at home – rental', day: 23 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 15.0, description: 'Jugos naturales – lunch treat', day: 25 },
+    // ── Savings (disciplined – saves 30%+) ───────────────────────
+    { categoryName: 'Savings', type: TransactionType.EXPENSE, amount: 400.0, description: 'Savings transfer – emergency fund', day: 1 },
+    { categoryName: 'Savings', type: TransactionType.EXPENSE, amount: 100.0, description: 'Goal contribution – study abroad', day: 28 },
+    // Additional small transactions for richness
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 14.0, description: 'Lunch menú – near campus', day: 14 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 16.0, description: 'Empanadas + chicha – breakfast', day: 16 },
+    { categoryName: 'Transportation', type: TransactionType.EXPENSE, amount: 8.0, description: 'Bus fare – evening return', day: 26 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 22.0, description: 'Sunday market – fruits and vegetables', day: 27 },
+    { categoryName: 'Health', type: TransactionType.EXPENSE, amount: 18.0, description: 'Nasal spray – allergy season', day: 29 },
+    { categoryName: 'Education', type: TransactionType.EXPENSE, amount: 25.0, description: 'Online library access fee', day: 30 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 12.0, description: 'Chocolate + nuts – study fuel', day: 31 },
+  ];
+}
+
+async function seedMaria(categoryMap: Map<string, string>): Promise<void> {
+  const def: DemoUserDef = {
+    email: 'maria.quispe@zenda.demo',
+    fullName: 'María Quispe',
+    age: 21,
+    university: 'Pontificia Universidad Católica del Perú',
+    incomeType: IncomeType.SCHOLARSHIP,
+    averageMonthlyIncome: 1800,
+    financialLiteracyLevel: FinancialLiteracyLevel.HIGH,
+  };
+  const passwordHash = await hash(DEMO_PASSWORD);
+  const userId = await upsertDemoUser(def, passwordHash);
+
+  const months = [
+    { year: 2025, month: 11 }, { year: 2025, month: 12 },
+    { year: 2026, month: 1 }, { year: 2026, month: 2 },
+    { year: 2026, month: 3 }, { year: 2026, month: 4 },
+  ];
+  await seedTransactions(userId, categoryMap, mariaTransactions, months);
+  await seedNotificationPreferences(userId);
+
+  console.log(`✓ María Quispe seeded  (${def.email})`);
+}
+
 async function main(): Promise<void> {
   console.log('\n── Zenda Demo Seed ─────────────────────────────────────');
   console.log('Ensuring system categories exist...');
@@ -918,11 +1060,19 @@ async function main(): Promise<void> {
   console.log('Seeding Lucía Torres...');
   await seedLucia(categoryMap);
 
+  console.log('Seeding Diego Ramírez...');
+  await seedDiego(categoryMap);
+
+  console.log('Seeding María Quispe...');
+  await seedMaria(categoryMap);
+
   console.log('\n── Demo seed complete ──────────────────────────────────');
   console.log('Demo credentials (all share password: Demo1234!)');
   console.log('  ana.garcia@zenda.demo     — balanced spender, MEDIUM literacy');
   console.log('  carlos.mendoza@zenda.demo — overspender on wants, LOW literacy');
   console.log('  lucia.torres@zenda.demo   — disciplined saver, HIGH literacy');
+  console.log('  diego.ramirez@zenda.demo  — gig worker, irregular income, LOW literacy');
+  console.log('  maria.quispe@zenda.demo   — scholarship + part-time, HIGH literacy');
   console.log('────────────────────────────────────────────────────────\n');
 }
 
