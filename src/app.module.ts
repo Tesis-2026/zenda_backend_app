@@ -21,6 +21,7 @@ import { ChallengesModule } from './modules/challenges/challenges.module';
 import { BadgesModule } from './modules/badges/badges.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { SurveysModule } from './modules/surveys/surveys.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -52,6 +53,7 @@ import { UsersModule } from './modules/users/users.module';
     BadgesModule,
     FeedbackModule,
     SurveysModule,
+    NotificationsModule,
   ],
   controllers: [HealthController],
   providers: [
