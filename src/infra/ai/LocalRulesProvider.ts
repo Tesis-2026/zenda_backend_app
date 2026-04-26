@@ -23,16 +23,6 @@ export class LocalRulesProvider implements AiProvider {
     };
   }
 
-  async predictIncome(_context: SpendingContext): Promise<PredictionResult> {
-    return {
-      predictedTotal: 0,
-      predictedByCategory: [],
-      confidenceLevel: 'low',
-      narrative: 'Predicción no disponible en modo local.',
-      modelVersion: 'local-rules',
-    };
-  }
-
   async generateRecommendations(_context: SpendingContext): Promise<RecommendationResult[]> {
     return [];
   }

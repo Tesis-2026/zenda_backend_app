@@ -103,7 +103,7 @@ export class AzureFoundryProvider implements AiProvider {
   async predictExpenses(context: SpendingContext): Promise<PredictionResult> {
     if (!this.isConfigured) {
       this.logger.warn('Azure OpenAI not configured — using statistical fallback for expense prediction');
-      return this.statisticalPrediction(context, 'expense');
+      return this.statisticalPrediction(context);
     }
 
     try {
@@ -124,35 +124,7 @@ Responde SOLO con JSON válido con esta estructura exacta:
       return { ...parsed, modelVersion: `azure-${this.deployment}` };
     } catch (err) {
       this.logger.error('Azure AI expense prediction failed, using fallback', err);
-      return this.statisticalPrediction(context, 'expense');
-    }
-  }
-
-  async predictIncome(context: SpendingContext): Promise<PredictionResult> {
-    if (!this.isConfigured) {
-      this.logger.warn('Azure OpenAI not configured — using statistical fallback for income prediction');
-      return this.statisticalPrediction(context, 'income');
-    }
-
-    try {
-      const systemPrompt = `Eres un asistente financiero para estudiantes universitarios peruanos.
-Analiza el historial de ingresos y genera una predicción para el próximo mes en formato JSON.
-Responde SOLO con JSON válido con esta estructura exacta:
-{
-  "predictedTotal": number,
-  "predictedByCategory": [{"categoryId": "id", "categoryName": "name", "amount": number}],
-  "confidenceLevel": "high"|"medium"|"low",
-  "narrative": "string en español explicando la predicción de ingresos en 2-3 oraciones"
-}`;
-
-      const userPrompt = `Historial de ingresos del estudiante (últimos ${context.months.length} meses):\n${this.summariseContext(context)}\n\nGenera la predicción de ingresos para el próximo mes.`;
-
-      const raw = await this.callAzure(systemPrompt, userPrompt);
-      const parsed = JSON.parse(raw) as Omit<PredictionResult, 'modelVersion'>;
-      return { ...parsed, modelVersion: `azure-${this.deployment}` };
-    } catch (err) {
-      this.logger.error('Azure AI income prediction failed, using fallback', err);
-      return this.statisticalPrediction(context, 'income');
+      return this.statisticalPrediction(context);
     }
   }
 
@@ -209,10 +181,7 @@ Responde SOLO con JSON: {"categoryName": "string", "confidence": number_0_to_1}`
 
   // ── Statistical fallbacks ──────────────────────────────────────────────────
 
-  private statisticalPrediction(
-    context: SpendingContext,
-    type: 'expense' | 'income',
-  ): PredictionResult {
+  private statisticalPrediction(context: SpendingContext): PredictionResult {
     if (context.months.length === 0) {
       return {
         predictedTotal: 0,
@@ -232,8 +201,7 @@ Responde SOLO con JSON: {"categoryName": "string", "confidence": number_0_to_1}`
 
     sorted.slice(0, 3).forEach((m, i) => {
       const w = weights[i] ?? 0.1;
-      const val = type === 'expense' ? m.totalExpenses : m.totalIncome;
-      weightedTotal += val * w;
+      weightedTotal += m.totalExpenses * w;
       totalWeight += w;
     });
 
@@ -267,10 +235,7 @@ Responde SOLO con JSON: {"categoryName": "string", "confidence": number_0_to_1}`
       predictedTotal: Number(predictedTotal.toFixed(2)),
       predictedByCategory,
       confidenceLevel: confidence,
-      narrative:
-        type === 'expense'
-          ? `Basado en tu historial, se estima que gastarás S/${predictedTotal.toFixed(2)} el próximo mes.`
-          : `Basado en tu historial, se estima que recibirás S/${predictedTotal.toFixed(2)} el próximo mes.`,
+      narrative: `Basado en tu historial, se estima que gastarás S/${predictedTotal.toFixed(2)} el próximo mes.`,
       modelVersion: 'statistical-fallback',
     };
   }

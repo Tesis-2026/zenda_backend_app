@@ -4,7 +4,6 @@ import { PrismaModule } from '../../infra/prisma/prisma.module';
 import { IPredictionRepository } from './domain/ports/prediction.repository';
 import { PrismaPredictionRepository } from './infrastructure/persistence/prisma-prediction.repository';
 import { GetExpensePredictionUseCase } from './application/use-cases/get-expense-prediction.use-case';
-import { GetIncomePredictionUseCase } from './application/use-cases/get-income-prediction.use-case';
 import { PredictionsController } from './interface/predictions.controller';
 
 @Module({
@@ -13,7 +12,6 @@ import { PredictionsController } from './interface/predictions.controller';
   providers: [
     { provide: IPredictionRepository, useClass: PrismaPredictionRepository },
     GetExpensePredictionUseCase,
-    GetIncomePredictionUseCase,
   ],
   exports: [IPredictionRepository],
 })

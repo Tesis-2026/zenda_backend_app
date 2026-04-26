@@ -39,7 +39,6 @@ export interface ClassificationResult {
 export interface AiProvider {
   readonly name: string;
   predictExpenses(context: SpendingContext): Promise<PredictionResult>;
-  predictIncome(context: SpendingContext): Promise<PredictionResult>;
   generateRecommendations(context: SpendingContext): Promise<RecommendationResult[]>;
   classifyTransaction(description: string, amount: number): Promise<ClassificationResult>;
 }
