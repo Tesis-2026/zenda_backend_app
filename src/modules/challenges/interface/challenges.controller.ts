@@ -1,0 +1,29 @@
+import { Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
+import { UserId } from '../../auth/interface/decorators/user-id.decorator';
+import { IChallengeRepository } from '../domain/ports/challenge.repository';
+import { ChallengeResponseDto } from './dto/challenge.response.dto';
+
+@ApiTags('Challenges')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('challenges')
+export class ChallengesController {
+  constructor(private readonly repo: IChallengeRepository) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List all challenges with user status (US-1002)' })
+  async list(@UserId() userId: string): Promise<ChallengeResponseDto[]> {
+    const challenges = await this.repo.list(userId);
+    return challenges.map(ChallengeResponseDto.from);
+  }
+
+  @Post(':id/accept')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Accept a challenge (US-1002)' })
+  async accept(@Param('id', ParseUUIDPipe) id: string, @UserId() userId: string): Promise<ChallengeResponseDto> {
+    const challenge = await this.repo.accept(id, userId);
+    return ChallengeResponseDto.from(challenge);
+  }
+}
