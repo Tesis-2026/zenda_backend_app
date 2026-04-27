@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   AiProvider,
+  ChatMessage,
   ClassificationResult,
   PredictionResult,
   RecommendationResult,
@@ -29,5 +30,9 @@ export class LocalRulesProvider implements AiProvider {
 
   async classifyTransaction(_description: string, _amount: number): Promise<ClassificationResult> {
     return { categoryName: 'Otros', confidence: 0 };
+  }
+
+  async chat(_messages: ChatMessage[]): Promise<string> {
+    return 'El chat con IA no está disponible en modo local.';
   }
 }

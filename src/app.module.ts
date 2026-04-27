@@ -24,6 +24,7 @@ import { SurveysModule } from './modules/surveys/surveys.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { UsersModule } from './modules/users/users.module';
     FeedbackModule,
     SurveysModule,
     NotificationsModule,
+    ChatModule,
   ],
   controllers: [HealthController],
   providers: [

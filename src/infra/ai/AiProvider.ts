@@ -36,9 +36,15 @@ export interface ClassificationResult {
   confidence: number; // 0-1
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
 export interface AiProvider {
   readonly name: string;
   predictExpenses(context: SpendingContext): Promise<PredictionResult>;
   generateRecommendations(context: SpendingContext): Promise<RecommendationResult[]>;
   classifyTransaction(description: string, amount: number): Promise<ClassificationResult>;
+  chat(messages: ChatMessage[]): Promise<string>;
 }

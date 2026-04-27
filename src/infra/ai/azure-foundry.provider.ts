@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   AiProvider,
+  ChatMessage,
   ClassificationResult,
   PredictionResult,
   RecommendationResult,
@@ -238,6 +239,45 @@ Responde SOLO con JSON: {"categoryName": "string", "confidence": number_0_to_1}`
       narrative: `Basado en tu historial, se estima que gastarás S/${predictedTotal.toFixed(2)} el próximo mes.`,
       modelVersion: 'statistical-fallback',
     };
+  }
+
+  async chat(messages: ChatMessage[]): Promise<string> {
+    if (!this.isConfigured) {
+      return 'El asistente de IA no está configurado. Configura las variables AZURE_OPENAI_ENDPOINT y AZURE_OPENAI_KEY.';
+    }
+
+    try {
+      const systemMessage: ChatMessage = {
+        role: 'system',
+        content:
+          'Eres Zenda, un asistente financiero especializado para estudiantes universitarios peruanos. ' +
+          'Responde siempre en español, de forma concisa, práctica y amigable. ' +
+          'Solo responde preguntas relacionadas con finanzas personales, presupuestos, ahorros, gastos e inversiones básicas. ' +
+          'Si te preguntan algo fuera de finanzas, redirige amablemente la conversación al tema financiero.',
+      };
+
+      const url = this.buildChatUrl();
+      const body = JSON.stringify({
+        messages: [systemMessage, ...messages],
+        temperature: 0.5,
+        max_tokens: 512,
+      });
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'api-key': this.apiKey! },
+        body,
+        signal: AbortSignal.timeout(15_000),
+      });
+
+      if (!response.ok) throw new Error(`Azure OpenAI ${response.status}`);
+
+      const data = (await response.json()) as { choices: Array<{ message: { content: string } }> };
+      return data.choices[0]?.message?.content ?? 'Sin respuesta del asistente.';
+    } catch (err) {
+      this.logger.error('Azure AI chat failed', err);
+      return 'No pude procesar tu mensaje en este momento. Inténtalo de nuevo.';
+    }
   }
 
   private ruleBasedRecommendations(context: SpendingContext): RecommendationResult[] {
