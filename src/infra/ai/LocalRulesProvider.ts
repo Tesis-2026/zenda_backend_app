@@ -1,15 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { AiProvider } from './AiProvider';
+import {
+  AiProvider,
+  ChatMessage,
+  ClassificationResult,
+  PredictionResult,
+  RecommendationResult,
+  SpendingContext,
+} from './AiProvider';
 
+// Kept for local/offline development only.
+// In production, AzureFoundryProvider is the active implementation.
 @Injectable()
 export class LocalRulesProvider implements AiProvider {
   readonly name = 'local-rules';
 
-  async classifyTransaction(_input: string): Promise<unknown> {
-    return { provider: this.name, status: 'stub' };
+  async predictExpenses(_context: SpendingContext): Promise<PredictionResult> {
+    return {
+      predictedTotal: 0,
+      predictedByCategory: [],
+      confidenceLevel: 'low',
+      narrative: 'Predicción no disponible en modo local.',
+      modelVersion: 'local-rules',
+    };
   }
 
-  async generateInsight(_input: string): Promise<unknown> {
-    return { provider: this.name, status: 'stub' };
+  async generateRecommendations(_context: SpendingContext): Promise<RecommendationResult[]> {
+    return [];
+  }
+
+  async classifyTransaction(_description: string, _amount: number): Promise<ClassificationResult> {
+    return { categoryName: 'Otros', confidence: 0 };
+  }
+
+  async chat(_messages: ChatMessage[]): Promise<string> {
+    return 'El chat con IA no está disponible en modo local.';
   }
 }

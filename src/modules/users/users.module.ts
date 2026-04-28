@@ -14,6 +14,7 @@ import { UsersController } from './interface/users.controller';
     { provide: IUserProfileRepository, useClass: PrismaUserProfileRepository },
     GetProfileUseCase,
     UpdateProfileUseCase,
+    // PrismaService is available via PrismaModule (global)
   ],
 })
 export class UsersModule {}

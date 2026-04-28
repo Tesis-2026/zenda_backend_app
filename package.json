@@ -9,7 +9,8 @@
     "start:dev": "nest start --watch",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "prisma:seed:demo": "ts-node prisma/seed.demo.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
