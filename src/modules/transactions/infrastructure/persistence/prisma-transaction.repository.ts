@@ -137,4 +137,19 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       data: { deletedAt: new Date() },
     });
   }
+
+  async hasConsecutiveDays(userId: string, days: number): Promise<boolean> {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days + 1);
+    const rows = await this.prisma.transaction.findMany({
+      where: { userId, deletedAt: null, occurredAt: { gte: from, lte: now } },
+      select: { occurredAt: true },
+    });
+    const distinctDates = new Set(rows.map((r) => r.occurredAt.toISOString().slice(0, 10)));
+    for (let i = 0; i < days; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      if (!distinctDates.has(d.toISOString().slice(0, 10))) return false;
+    }
+    return true;
+  }
 }

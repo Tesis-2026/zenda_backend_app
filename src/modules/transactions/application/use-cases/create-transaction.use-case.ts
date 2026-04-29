@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
 import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
@@ -19,6 +20,7 @@ export class CreateTransactionUseCase {
   constructor(
     private readonly repo: ITransactionRepository,
     private readonly resolveCategory: ResolveCategoryUseCase,
+    private readonly badgeRepo: IBadgeRepository,
   ) {}
 
   async execute(cmd: CreateTransactionCommand): Promise<TransactionWithCategory> {
@@ -33,7 +35,7 @@ export class CreateTransactionUseCase {
       newCategoryName: cmd.newCategoryName,
     });
 
-    return this.repo.create({
+    const tx = await this.repo.create({
       userId: cmd.userId,
       categoryId: category.id,
       type: cmd.type,
@@ -42,5 +44,14 @@ export class CreateTransactionUseCase {
       description: cmd.description,
       occurredAt,
     });
+
+    await this.badgeRepo.awardIfNotEarned(cmd.userId, 'First Transaction');
+
+    const hasStreak = await this.repo.hasConsecutiveDays(cmd.userId, 7);
+    if (hasStreak) {
+      await this.badgeRepo.awardIfNotEarned(cmd.userId, 'Consistency');
+    }
+
+    return tx;
   }
 }

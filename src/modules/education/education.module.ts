@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
+import { BadgesModule } from '../badges/badges.module';
 import { IEducationRepository } from './domain/ports/education.repository';
 import { PrismaEducationRepository } from './infrastructure/persistence/prisma-education.repository';
 import { ListTopicsUseCase } from './application/use-cases/list-topics.use-case';
@@ -8,7 +9,7 @@ import { CompleteTopicUseCase } from './application/use-cases/complete-topic.use
 import { EducationController } from './interface/education.controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, BadgesModule],
   controllers: [EducationController],
   providers: [
     { provide: IEducationRepository, useClass: PrismaEducationRepository },

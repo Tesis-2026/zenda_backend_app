@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
+import { BadgesModule } from '../badges/badges.module';
 import { CategoriesModule } from '../categories/categories.module';
 import { ITransactionRepository } from './domain/ports/transaction.repository';
 import { PrismaTransactionRepository } from './infrastructure/persistence/prisma-transaction.repository';
@@ -11,7 +12,7 @@ import { UpdateTransactionUseCase } from './application/use-cases/update-transac
 import { TransactionsController } from './interface/transactions.controller';
 
 @Module({
-  imports: [PrismaModule, CategoriesModule],
+  imports: [PrismaModule, CategoriesModule, BadgesModule],
   controllers: [TransactionsController],
   providers: [
     { provide: ITransactionRepository, useClass: PrismaTransactionRepository },

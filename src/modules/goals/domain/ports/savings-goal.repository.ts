@@ -23,4 +23,6 @@ export abstract class ISavingsGoalRepository {
 
   abstract addContribution(goalId: string, amount: number): Promise<GoalContributionRecord>;
   abstract findContributions(goalId: string): Promise<GoalContributionRecord[]>;
+
+  abstract complete(id: string): Promise<SavingsGoalEntity>;
 }

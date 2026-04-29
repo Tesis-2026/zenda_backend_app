@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcrypt';
 import {
   CategoryType,
   PrismaClient,
@@ -196,13 +197,186 @@ const EDUCATIONAL_TOPICS = [
 ];
 
 // ─────────────────────────────────────────────────────────────────
-// SURVEYS — placeholder records (questions added in Phase 12)
+// SURVEYS — financial literacy knowledge questions (US-1201/1202)
 // ─────────────────────────────────────────────────────────────────
 
 const SURVEYS = [
   { type: SurveyType.PRE },
   { type: SurveyType.POST },
   { type: SurveyType.SUS },
+];
+
+const SURVEY_QUESTIONS: Array<{
+  surveyType: SurveyType;
+  order: number;
+  text: string;
+  options: string[];
+  correctAnswer: string;
+}> = [
+  // PRE-survey questions
+  {
+    surveyType: SurveyType.PRE,
+    order: 1,
+    text: 'What does the 50/30/20 budget rule mean?',
+    options: [
+      '50% needs, 30% wants, 20% savings',
+      '50% savings, 30% needs, 20% wants',
+      '50% wants, 30% savings, 20% needs',
+      'It refers to tax brackets in Peru',
+    ],
+    correctAnswer: '50% needs, 30% wants, 20% savings',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 2,
+    text: 'What is TEA (Tasa Efectiva Anual)?',
+    options: [
+      'The nominal annual interest rate without compounding',
+      'The effective annual rate that accounts for compounding',
+      'A government tax on bank accounts',
+      'A metric for inflation in Peru',
+    ],
+    correctAnswer: 'The effective annual rate that accounts for compounding',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 3,
+    text: 'Which of the following is considered a "need" in the 50/30/20 rule?',
+    options: ['Netflix subscription', 'Rent or housing payment', 'Dining out with friends', 'New sneakers'],
+    correctAnswer: 'Rent or housing payment',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 4,
+    text: 'What does "pay yourself first" mean?',
+    options: [
+      'Spend on luxuries before paying bills',
+      'Save a portion of your income before spending on anything else',
+      'Pay your debts before saving',
+      'Give yourself a weekly allowance',
+    ],
+    correctAnswer: 'Save a portion of your income before spending on anything else',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 5,
+    text: 'If you save S/10 per week, approximately how much will you have saved after one year?',
+    options: ['S/240', 'S/520', 'S/1,200', 'S/50'],
+    correctAnswer: 'S/520',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 6,
+    text: 'What is the "Rule of 72" used for?',
+    options: [
+      'Calculating monthly loan payments',
+      'Estimating how many years it takes to double an investment',
+      'Determining the optimal credit card limit',
+      'Computing inflation-adjusted savings',
+    ],
+    correctAnswer: 'Estimating how many years it takes to double an investment',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 7,
+    text: 'Which digital wallet is associated with Banco de Crédito del Perú (BCP)?',
+    options: ['Plin', 'Yape', 'Tunki', 'Lukita'],
+    correctAnswer: 'Yape',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 8,
+    text: 'What is inflation?',
+    options: [
+      'A decrease in the purchasing power of money over time',
+      'An increase in personal savings rates',
+      'The interest rate on government bonds',
+      'A tax on imported goods',
+    ],
+    correctAnswer: 'A decrease in the purchasing power of money over time',
+  },
+  // POST-survey questions (same questions, tests improvement)
+  {
+    surveyType: SurveyType.POST,
+    order: 1,
+    text: 'What does the 50/30/20 budget rule mean?',
+    options: [
+      '50% needs, 30% wants, 20% savings',
+      '50% savings, 30% needs, 20% wants',
+      '50% wants, 30% savings, 20% needs',
+      'It refers to tax brackets in Peru',
+    ],
+    correctAnswer: '50% needs, 30% wants, 20% savings',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 2,
+    text: 'What is TEA (Tasa Efectiva Anual)?',
+    options: [
+      'The nominal annual interest rate without compounding',
+      'The effective annual rate that accounts for compounding',
+      'A government tax on bank accounts',
+      'A metric for inflation in Peru',
+    ],
+    correctAnswer: 'The effective annual rate that accounts for compounding',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 3,
+    text: 'Which of the following is considered a "need" in the 50/30/20 rule?',
+    options: ['Netflix subscription', 'Rent or housing payment', 'Dining out with friends', 'New sneakers'],
+    correctAnswer: 'Rent or housing payment',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 4,
+    text: 'What does "pay yourself first" mean?',
+    options: [
+      'Spend on luxuries before paying bills',
+      'Save a portion of your income before spending on anything else',
+      'Pay your debts before saving',
+      'Give yourself a weekly allowance',
+    ],
+    correctAnswer: 'Save a portion of your income before spending on anything else',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 5,
+    text: 'If you save S/10 per week, approximately how much will you have saved after one year?',
+    options: ['S/240', 'S/520', 'S/1,200', 'S/50'],
+    correctAnswer: 'S/520',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 6,
+    text: 'What is the "Rule of 72" used for?',
+    options: [
+      'Calculating monthly loan payments',
+      'Estimating how many years it takes to double an investment',
+      'Determining the optimal credit card limit',
+      'Computing inflation-adjusted savings',
+    ],
+    correctAnswer: 'Estimating how many years it takes to double an investment',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 7,
+    text: 'Which digital wallet is associated with Banco de Crédito del Perú (BCP)?',
+    options: ['Plin', 'Yape', 'Tunki', 'Lukita'],
+    correctAnswer: 'Yape',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 8,
+    text: 'What is inflation?',
+    options: [
+      'A decrease in the purchasing power of money over time',
+      'An increase in personal savings rates',
+      'The interest rate on government bonds',
+      'A tax on imported goods',
+    ],
+    correctAnswer: 'A decrease in the purchasing power of money over time',
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -277,15 +451,178 @@ async function seedEducationalTopics(): Promise<void> {
 
 async function seedSurveys(): Promise<void> {
   for (const survey of SURVEYS) {
-    const exists = await prisma.survey.findFirst({
-      where: { type: survey.type },
-      select: { id: true },
-    });
-    if (!exists) {
-      await prisma.survey.create({ data: survey });
+    let record = await prisma.survey.findFirst({ where: { type: survey.type } });
+    if (!record) {
+      record = await prisma.survey.create({ data: survey });
+    }
+    const questions = SURVEY_QUESTIONS.filter((q) => q.surveyType === survey.type);
+    for (const q of questions) {
+      const existingQ = await prisma.surveyQuestion.findFirst({
+        where: { surveyId: record.id, order: q.order },
+        select: { id: true },
+      });
+      if (!existingQ) {
+        await prisma.surveyQuestion.create({
+          data: {
+            surveyId: record.id,
+            order: q.order,
+            text: q.text,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+          },
+        });
+      } else {
+        await prisma.surveyQuestion.update({
+          where: { id: existingQ.id },
+          data: { correctAnswer: q.correctAnswer },
+        });
+      }
     }
   }
-  console.log('✓ Survey records seeded (questions added in Phase 12)');
+  console.log('✓ Surveys and questions seeded');
+}
+
+async function seedDemoUser(): Promise<void> {
+  const DEMO_EMAIL = 'demo@zenda.app';
+  const existing = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
+  if (existing) {
+    console.log('✓ Demo user already exists — skipping demo data seed');
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash('Demo1234!', 12);
+  const user = await prisma.user.create({
+    data: {
+      email: DEMO_EMAIL,
+      fullName: 'Demo Student',
+      passwordHash,
+      age: 21,
+      university: 'UPC',
+      profileCompleted: true,
+    },
+  });
+
+  // Fetch system categories
+  const categories = await prisma.category.findMany({
+    where: { type: CategoryType.SYSTEM, deletedAt: null },
+  });
+  const catByName = new Map(categories.map((c) => [c.name, c.id]));
+
+  // ── 200 realistic transactions over the last 6 months ─────────────
+  const expenseEntries: Array<{ name: string; minAmount: number; maxAmount: number }> = [
+    { name: 'Food', minAmount: 8, maxAmount: 35 },
+    { name: 'Transportation', minAmount: 3, maxAmount: 25 },
+    { name: 'Entertainment', minAmount: 15, maxAmount: 60 },
+    { name: 'Shopping', minAmount: 20, maxAmount: 150 },
+    { name: 'Health', minAmount: 15, maxAmount: 80 },
+    { name: 'Subscriptions', minAmount: 20, maxAmount: 45 },
+    { name: 'Cravings', minAmount: 5, maxAmount: 20 },
+    { name: 'Housing', minAmount: 350, maxAmount: 600 },
+    { name: 'Utilities', minAmount: 30, maxAmount: 100 },
+    { name: 'Other', minAmount: 10, maxAmount: 50 },
+  ];
+
+  const incomeEntries: Array<{ name: string; minAmount: number; maxAmount: number }> = [
+    { name: 'Scholarship', minAmount: 400, maxAmount: 600 },
+    { name: 'Part-time work', minAmount: 300, maxAmount: 700 },
+    { name: 'Family', minAmount: 200, maxAmount: 400 },
+  ];
+
+  const rand = (min: number, max: number): number =>
+    Math.round((min + Math.random() * (max - min)) * 100) / 100;
+
+  const now = new Date();
+  const txData: Array<{
+    userId: string;
+    categoryId: string;
+    type: TransactionType;
+    amount: number;
+    currency: string;
+    description: string;
+    occurredAt: Date;
+  }> = [];
+
+  // 180 expense transactions spread over 180 days
+  for (let i = 0; i < 180; i++) {
+    const daysAgo = Math.floor(Math.random() * 180);
+    const date = new Date(now);
+    date.setDate(date.getDate() - daysAgo);
+    const entry = expenseEntries[Math.floor(Math.random() * expenseEntries.length)];
+    const catId = catByName.get(entry.name);
+    if (!catId) continue;
+    txData.push({
+      userId: user.id,
+      categoryId: catId,
+      type: TransactionType.EXPENSE,
+      amount: rand(entry.minAmount, entry.maxAmount),
+      currency: 'PEN',
+      description: `${entry.name} expense`,
+      occurredAt: date,
+    });
+  }
+
+  // 30 income transactions (roughly 5 per month)
+  for (let i = 0; i < 30; i++) {
+    const daysAgo = Math.floor(Math.random() * 180);
+    const date = new Date(now);
+    date.setDate(date.getDate() - daysAgo);
+    const entry = incomeEntries[Math.floor(Math.random() * incomeEntries.length)];
+    const catId = catByName.get(entry.name);
+    if (!catId) continue;
+    txData.push({
+      userId: user.id,
+      categoryId: catId,
+      type: TransactionType.INCOME,
+      amount: rand(entry.minAmount, entry.maxAmount),
+      currency: 'PEN',
+      description: `${entry.name} income`,
+      occurredAt: date,
+    });
+  }
+
+  await prisma.transaction.createMany({ data: txData });
+
+  // ── 2 savings goals (one completed) ────────────────────────────
+  const completedGoal = await prisma.savingsGoal.create({
+    data: {
+      userId: user.id,
+      name: 'Emergency Fund',
+      targetAmount: 500,
+      currentAmount: 500,
+    },
+  });
+  await prisma.goalContribution.createMany({
+    data: [
+      { goalId: completedGoal.id, amount: 200, createdAt: new Date(now.getTime() - 60 * 86400000) },
+      { goalId: completedGoal.id, amount: 150, createdAt: new Date(now.getTime() - 30 * 86400000) },
+      { goalId: completedGoal.id, amount: 150, createdAt: new Date(now.getTime() - 7 * 86400000) },
+    ],
+  });
+
+  await prisma.savingsGoal.create({
+    data: {
+      userId: user.id,
+      name: 'New Laptop',
+      targetAmount: 2500,
+      currentAmount: 800,
+    },
+  });
+
+  // ── 2 budgets ───────────────────────────────────────────────────
+  const foodCatId = catByName.get('Food');
+  const entCatId = catByName.get('Entertainment');
+  if (foodCatId) {
+    await prisma.budget.create({
+      data: { userId: user.id, categoryId: foodCatId, amountLimit: 300, month: now.getMonth() + 1, year: now.getFullYear() },
+    }).catch(() => undefined);
+  }
+  if (entCatId) {
+    await prisma.budget.create({
+      data: { userId: user.id, categoryId: entCatId, amountLimit: 150, month: now.getMonth() + 1, year: now.getFullYear() },
+    }).catch(() => undefined);
+  }
+
+  console.log(`✓ Demo user seeded: email=${DEMO_EMAIL}, password=Demo1234!, ${txData.length} transactions`);
 }
 
 async function main(): Promise<void> {
@@ -295,6 +632,7 @@ async function main(): Promise<void> {
   await seedBadges();
   await seedEducationalTopics();
   await seedSurveys();
+  await seedDemoUser();
   console.log('Seed complete.');
 }
 

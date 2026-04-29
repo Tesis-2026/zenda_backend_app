@@ -16,6 +16,9 @@ export class GoalResponseDto {
   @ApiProperty({ example: 300 })
   currentAmount!: number;
 
+  @ApiProperty({ example: false, description: 'True when currentAmount >= targetAmount' })
+  isCompleted!: boolean;
+
   @ApiPropertyOptional({ example: '2026-12-31T00:00:00.000Z' })
   dueDate?: string | null;
 

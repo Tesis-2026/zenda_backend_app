@@ -16,6 +16,7 @@ import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { CreateGoalUseCase } from '../application/use-cases/create-goal.use-case';
 import { ListGoalsUseCase } from '../application/use-cases/list-goals.use-case';
 import { ContributeToGoalUseCase } from '../application/use-cases/contribute-to-goal.use-case';
+import { CompleteGoalUseCase } from '../application/use-cases/complete-goal.use-case';
 import { DeleteGoalUseCase } from '../application/use-cases/delete-goal.use-case';
 import { ListGoalContributionsUseCase } from '../application/use-cases/list-goal-contributions.use-case';
 import { SavingsGoalEntity } from '../domain/savings-goal.entity';
@@ -33,6 +34,7 @@ export class GoalsController {
     private readonly createGoal: CreateGoalUseCase,
     private readonly listGoals: ListGoalsUseCase,
     private readonly contributeToGoal: ContributeToGoalUseCase,
+    private readonly completeGoal: CompleteGoalUseCase,
     private readonly deleteGoal: DeleteGoalUseCase,
     private readonly listContributions: ListGoalContributionsUseCase,
   ) {}
@@ -75,6 +77,17 @@ export class GoalsController {
     return this.toResponse(entity);
   }
 
+  @Post(':id/complete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mark a savings goal as complete (US-0505)' })
+  async complete(
+    @UserId() userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<GoalResponseDto> {
+    const entity = await this.completeGoal.execute(userId, id);
+    return this.toResponse(entity);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a savings goal' })
@@ -92,6 +105,7 @@ export class GoalsController {
       name: entity.name,
       targetAmount: entity.targetAmount,
       currentAmount: entity.currentAmount,
+      isCompleted: entity.currentAmount >= entity.targetAmount,
       dueDate: entity.dueDate?.toISOString() ?? null,
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),

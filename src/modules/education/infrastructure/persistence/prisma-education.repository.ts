@@ -46,4 +46,12 @@ export class PrismaEducationRepository implements IEducationRepository {
       update: { completedAt: new Date() },
     });
   }
+
+  countAll(): Promise<number> {
+    return this.prisma.educationalTopic.count();
+  }
+
+  countCompleted(userId: string): Promise<number> {
+    return this.prisma.userTopicProgress.count({ where: { userId } });
+  }
 }

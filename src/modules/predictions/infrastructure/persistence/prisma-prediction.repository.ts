@@ -111,6 +111,10 @@ export class PrismaPredictionRepository implements IPredictionRepository {
     return { userId, months };
   }
 
+  countByUser(userId: string): Promise<number> {
+    return this.prisma.prediction.count({ where: { userId } });
+  }
+
   private toEntity(row: {
     id: string;
     userId: string;

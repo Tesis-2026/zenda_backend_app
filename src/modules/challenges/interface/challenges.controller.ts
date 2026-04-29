@@ -26,4 +26,12 @@ export class ChallengesController {
     const challenge = await this.repo.accept(id, userId);
     return ChallengeResponseDto.from(challenge);
   }
+
+  @Post(':id/complete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mark a challenge as completed (US-1002)' })
+  async complete(@Param('id', ParseUUIDPipe) id: string, @UserId() userId: string): Promise<ChallengeResponseDto> {
+    const challenge = await this.repo.complete(id, userId);
+    return ChallengeResponseDto.from(challenge);
+  }
 }
