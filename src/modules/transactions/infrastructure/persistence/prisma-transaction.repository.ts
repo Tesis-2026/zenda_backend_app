@@ -92,6 +92,8 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       },
       orderBy: { occurredAt: 'desc' },
       include: { category: { select: { id: true, name: true } } },
+      ...(filters.skip !== undefined && { skip: filters.skip }),
+      take: filters.take ?? 100,
     });
     return rows.map((r) => this.toTransactionWithCategory(r));
   }

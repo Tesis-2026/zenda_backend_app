@@ -49,7 +49,11 @@ export class TransactionsController {
   @Post('classify')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'AI-classify a transaction description (US-0702)' })
-  async classify(@Body() dto: ClassifyTransactionDto): Promise<{ categoryName: string; confidence: number }> {
+  async classify(
+    @UserId() userId: string,
+    @Body() dto: ClassifyTransactionDto,
+  ): Promise<{ categoryName: string; confidence: number }> {
+    this.analytics.track(userId, 'classify_transaction', { description: dto.description });
     return this.ai.classifyTransaction(dto.description, dto.amount);
   }
 

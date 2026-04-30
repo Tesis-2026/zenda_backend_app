@@ -21,6 +21,8 @@ export interface TransactionFilters {
   to?: Date;
   type?: TransactionType;
   categoryId?: string;
+  skip?: number;
+  take?: number;
 }
 
 export interface UpdateTransactionParams {

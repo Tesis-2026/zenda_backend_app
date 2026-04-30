@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
 import { VerifyChallengesUseCase } from '../../../challenges/application/use-cases/verify-challenges.use-case';
 import { ISavingsGoalRepository } from '../../domain/ports/savings-goal.repository';
@@ -12,6 +12,8 @@ export interface ContributeToGoalCommand {
 
 @Injectable()
 export class ContributeToGoalUseCase {
+  private readonly logger = new Logger(ContributeToGoalUseCase.name);
+
   constructor(
     private readonly repo: ISavingsGoalRepository,
     private readonly badgeRepo: IBadgeRepository,
@@ -32,7 +34,9 @@ export class ContributeToGoalUseCase {
       await this.badgeRepo.awardIfNotEarned(cmd.userId, 'Goal Achieved');
     }
 
-    this.verifyChallenges.execute(cmd.userId).catch(() => void 0);
+    this.verifyChallenges.execute(cmd.userId).catch((err: unknown) => {
+      this.logger.warn('Challenge verification failed after goal contribution', err);
+    });
 
     return updated;
   }
