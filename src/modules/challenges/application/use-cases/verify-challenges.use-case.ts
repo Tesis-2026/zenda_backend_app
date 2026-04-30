@@ -17,21 +17,24 @@ export class VerifyChallengesUseCase {
     private readonly challengeRepo: IChallengeRepository,
   ) {}
 
-  async execute(userId: string): Promise<void> {
+  async execute(userId: string): Promise<string[]> {
     const activeUserChallenges = await this.prisma.userChallenge.findMany({
       where: { userId, status: UserChallengeStatus.ACTIVE },
       include: { challenge: true },
     });
 
+    const completed: string[] = [];
     await Promise.all(
       activeUserChallenges.map(async (uc) => {
         const criteria = uc.challenge.criteriaJson as CriteriaJson;
         const met = await this.isCriteriaMet(userId, criteria);
         if (met) {
           await this.challengeRepo.complete(uc.challengeId, userId);
+          completed.push(uc.challenge.title);
         }
       }),
     );
+    return completed;
   }
 
   private async isCriteriaMet(userId: string, criteria: CriteriaJson): Promise<boolean> {

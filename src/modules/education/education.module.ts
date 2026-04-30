@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AiModule } from '../../infra/ai/ai.module';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
 import { BadgesModule } from '../badges/badges.module';
 import { IEducationRepository } from './domain/ports/education.repository';
@@ -8,11 +9,12 @@ import { GetTopicUseCase } from './application/use-cases/get-topic.use-case';
 import { CompleteTopicUseCase } from './application/use-cases/complete-topic.use-case';
 import { GetQuizUseCase } from './application/use-cases/get-quiz.use-case';
 import { SubmitQuizUseCase } from './application/use-cases/submit-quiz.use-case';
-import { EducationController } from './interface/education.controller';
+import { GetPersonalizedQuizUseCase } from './application/use-cases/get-personalized-quiz.use-case';
+import { EducationController, PersonalizedQuizController } from './interface/education.controller';
 
 @Module({
-  imports: [PrismaModule, BadgesModule],
-  controllers: [EducationController],
+  imports: [PrismaModule, AiModule, BadgesModule],
+  controllers: [EducationController, PersonalizedQuizController],
   providers: [
     { provide: IEducationRepository, useClass: PrismaEducationRepository },
     ListTopicsUseCase,
@@ -20,6 +22,7 @@ import { EducationController } from './interface/education.controller';
     CompleteTopicUseCase,
     GetQuizUseCase,
     SubmitQuizUseCase,
+    GetPersonalizedQuizUseCase,
   ],
   exports: [IEducationRepository],
 })

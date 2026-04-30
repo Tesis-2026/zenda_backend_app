@@ -16,6 +16,10 @@ export interface CreateTransactionCommand {
   occurredAt?: string;
 }
 
+export type CreateTransactionResult = TransactionWithCategory & {
+  newlyCompletedChallenges: string[];
+};
+
 @Injectable()
 export class CreateTransactionUseCase {
   constructor(
@@ -25,7 +29,7 @@ export class CreateTransactionUseCase {
     private readonly verifyChallenges: VerifyChallengesUseCase,
   ) {}
 
-  async execute(cmd: CreateTransactionCommand): Promise<TransactionWithCategory> {
+  async execute(cmd: CreateTransactionCommand): Promise<CreateTransactionResult> {
     const occurredAt = cmd.occurredAt ? new Date(cmd.occurredAt) : new Date();
     if (occurredAt > new Date()) {
       throw new BadRequestException('occurredAt cannot be in the future');
@@ -54,8 +58,10 @@ export class CreateTransactionUseCase {
       await this.badgeRepo.awardIfNotEarned(cmd.userId, 'Consistency');
     }
 
-    this.verifyChallenges.execute(cmd.userId).catch(() => void 0);
+    const newlyCompletedChallenges = await this.verifyChallenges
+      .execute(cmd.userId)
+      .catch(() => [] as string[]);
 
-    return tx;
+    return { ...tx, newlyCompletedChallenges };
   }
 }

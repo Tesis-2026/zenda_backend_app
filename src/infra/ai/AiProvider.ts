@@ -50,10 +50,24 @@ export interface ChatMessage {
   content: string;
 }
 
+export type PersonalizedQuizDifficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+
+export interface PersonalizedQuizQuestion {
+  text: string;
+  options: string[];
+  correctAnswer: string;
+  difficulty: PersonalizedQuizDifficulty;
+}
+
+export interface PersonalizedQuizResult {
+  questions: PersonalizedQuizQuestion[];
+}
+
 export interface AiProvider {
   readonly name: string;
   predictExpenses(context: SpendingContext): Promise<PredictionResult>;
   generateRecommendations(context: SpendingContext): Promise<RecommendationResult[]>;
   classifyTransaction(description: string, amount: number): Promise<ClassificationResult>;
   chat(messages: ChatMessage[], userProfile?: UserProfile): Promise<string>;
+  generatePersonalizedQuiz(context: SpendingContext, language: string): Promise<PersonalizedQuizResult>;
 }

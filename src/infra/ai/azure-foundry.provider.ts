@@ -4,6 +4,9 @@ import {
   AiProvider,
   ChatMessage,
   ClassificationResult,
+  PersonalizedQuizDifficulty,
+  PersonalizedQuizQuestion,
+  PersonalizedQuizResult,
   PredictionResult,
   RecommendationResult,
   SpendingContext,
@@ -300,6 +303,80 @@ Responde SOLO con JSON: {"categoryName": "string", "confidence": number_0_to_1}`
       this.logger.error('Azure AI chat failed', err);
       return 'No pude procesar tu mensaje en este momento. Inténtalo de nuevo.';
     }
+  }
+
+  async generatePersonalizedQuiz(context: SpendingContext, language: string): Promise<PersonalizedQuizResult> {
+    if (!this.isConfigured) {
+      this.logger.warn('Azure OpenAI not configured — using fallback personalized quiz');
+      return { questions: this.fallbackPersonalizedQuestions(language) };
+    }
+
+    try {
+      const topCategories = context.months
+        .flatMap((m) => m.categories)
+        .sort((a, b) => b.totalAmount - a.totalAmount)
+        .slice(0, 3)
+        .map((c) => c.categoryName)
+        .join(', ');
+
+      const latestMonth = context.months.sort((a, b) => b.period.localeCompare(a.period))[0];
+      const isEs = language === 'es';
+      const langLabel = isEs ? 'en español' : 'in English';
+
+      const systemPrompt = `Eres un generador de quizzes de educación financiera para estudiantes universitarios peruanos.
+Genera exactamente 5 preguntas de opción múltiple ${langLabel} sobre finanzas personales, adaptadas a los hábitos de gasto del usuario.
+Cada pregunta debe tener exactamente 4 opciones (A), B), C), D)) y una sola respuesta correcta.
+Distribución de dificultad: 2 BEGINNER, 2 INTERMEDIATE, 1 ADVANCED.
+Las preguntas deben relacionarse directamente con las categorías de mayor gasto del usuario.
+Responde SOLO con JSON válido con esta estructura:
+{
+  "questions": [
+    {
+      "text": "texto de la pregunta",
+      "options": ["A) opción", "B) opción", "C) opción", "D) opción"],
+      "correctAnswer": "A) texto exacto de la opción correcta",
+      "difficulty": "BEGINNER"
+    }
+  ]
+}`;
+
+      const userPrompt = `Categorías de mayor gasto: ${topCategories || 'gastos generales'}.
+Ingreso mensual: S/${(latestMonth?.totalIncome ?? 0).toFixed(2)}, gastos: S/${(latestMonth?.totalExpenses ?? 0).toFixed(2)}.
+${this.describeUserProfile(context.userProfile)}
+Genera 5 preguntas personalizadas de educación financiera enfocadas en sus hábitos de gasto.`;
+
+      const raw = await this.callAzure(systemPrompt, userPrompt);
+      const parsed = JSON.parse(raw) as { questions: PersonalizedQuizQuestion[] };
+
+      if (!Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+        throw new Error('Invalid AI response format');
+      }
+
+      return { questions: parsed.questions.slice(0, 5) };
+    } catch (err) {
+      this.logger.error('Azure AI personalized quiz failed, using fallback', err);
+      return { questions: this.fallbackPersonalizedQuestions(language) };
+    }
+  }
+
+  private fallbackPersonalizedQuestions(language: string): PersonalizedQuizQuestion[] {
+    const isEs = language === 'es';
+    if (isEs) {
+      return [
+        { text: '¿Qué porcentaje de ingresos recomienda la regla 50/30/20 para necesidades básicas?', options: ['A) 20%', 'B) 30%', 'C) 50%', 'D) 70%'], correctAnswer: 'C) 50%', difficulty: 'BEGINNER' as PersonalizedQuizDifficulty },
+        { text: '¿Qué se recomienda hacer primero al recibir tu salario?', options: ['A) Gastar en entretenimiento', 'B) Pagar deudas', 'C) Apartar el ahorro antes de gastar', 'D) Invertir en bolsa'], correctAnswer: 'C) Apartar el ahorro antes de gastar', difficulty: 'BEGINNER' as PersonalizedQuizDifficulty },
+        { text: '¿Cuántos meses de gastos debe cubrir un fondo de emergencia?', options: ['A) 1 mes', 'B) 3 a 6 meses', 'C) 12 meses', 'D) Solo 2 semanas'], correctAnswer: 'B) 3 a 6 meses', difficulty: 'INTERMEDIATE' as PersonalizedQuizDifficulty },
+        { text: '¿Cuál de estas opciones es una deuda "productiva"?', options: ['A) Deuda en tarjeta por ropa', 'B) Préstamo para estudios universitarios', 'C) Crédito para vacaciones', 'D) Deuda por artículos de lujo'], correctAnswer: 'B) Préstamo para estudios universitarios', difficulty: 'INTERMEDIATE' as PersonalizedQuizDifficulty },
+        { text: '¿Qué es el interés compuesto?', options: ['A) Interés solo sobre el capital inicial', 'B) Interés calculado sobre capital más intereses acumulados', 'C) Un préstamo sin intereses', 'D) El interés mensual del banco'], correctAnswer: 'B) Interés calculado sobre capital más intereses acumulados', difficulty: 'ADVANCED' as PersonalizedQuizDifficulty },
+      ];
+    }
+    return [
+      { text: 'What percentage of income does the 50/30/20 rule recommend for basic needs?', options: ['A) 20%', 'B) 30%', 'C) 50%', 'D) 70%'], correctAnswer: 'C) 50%', difficulty: 'BEGINNER' as PersonalizedQuizDifficulty },
+      { text: 'What should you do first when you receive your salary?', options: ['A) Spend on entertainment', 'B) Pay debts', 'C) Save before spending', 'D) Invest in stocks'], correctAnswer: 'C) Save before spending', difficulty: 'BEGINNER' as PersonalizedQuizDifficulty },
+      { text: 'How many months of expenses should an emergency fund cover?', options: ['A) 1 month', 'B) 3 to 6 months', 'C) 12 months', 'D) Just 2 weeks'], correctAnswer: 'B) 3 to 6 months', difficulty: 'INTERMEDIATE' as PersonalizedQuizDifficulty },
+      { text: 'Which of these is considered "productive debt"?', options: ['A) Credit card debt for clothing', 'B) Student loan for university', 'C) Loan for vacation', 'D) Debt for luxury items'], correctAnswer: 'B) Student loan for university', difficulty: 'INTERMEDIATE' as PersonalizedQuizDifficulty },
+      { text: 'What is compound interest?', options: ['A) Interest only on the initial capital', 'B) Interest calculated on capital plus accumulated interest', 'C) An interest-free loan', 'D) The monthly bank interest'], correctAnswer: 'B) Interest calculated on capital plus accumulated interest', difficulty: 'ADVANCED' as PersonalizedQuizDifficulty },
+    ];
   }
 
   private ruleBasedRecommendations(context: SpendingContext): RecommendationResult[] {

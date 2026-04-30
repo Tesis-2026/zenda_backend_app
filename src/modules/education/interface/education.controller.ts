@@ -7,6 +7,7 @@ import { GetTopicUseCase } from '../application/use-cases/get-topic.use-case';
 import { CompleteTopicUseCase } from '../application/use-cases/complete-topic.use-case';
 import { GetQuizUseCase } from '../application/use-cases/get-quiz.use-case';
 import { SubmitQuizUseCase } from '../application/use-cases/submit-quiz.use-case';
+import { GetPersonalizedQuizUseCase } from '../application/use-cases/get-personalized-quiz.use-case';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { TopicResponseDto } from './dto/topic.response.dto';
 import { QuizResponseDto, QuizSubmitResponseDto } from './dto/quiz-response.dto';
@@ -23,6 +24,7 @@ export class EducationController {
     private readonly completeTopic: CompleteTopicUseCase,
     private readonly getQuiz: GetQuizUseCase,
     private readonly submitQuiz: SubmitQuizUseCase,
+    private readonly getPersonalizedQuiz: GetPersonalizedQuizUseCase,
     private readonly analytics: AnalyticsService,
   ) {}
 
@@ -38,6 +40,7 @@ export class EducationController {
   async detail(@Param('id', ParseUUIDPipe) id: string, @UserId() userId: string): Promise<TopicResponseDto> {
     const topic = await this.getTopic.execute(id, userId);
     if (!topic) throw new NotFoundException('Topic not found');
+    this.analytics.track(userId, 'view_topic', { topicId: id });
     return TopicResponseDto.from(topic);
   }
 
@@ -69,6 +72,42 @@ export class EducationController {
   ): Promise<QuizSubmitResponseDto> {
     const result = await this.submitQuiz.execute({ topicId: id, answers: dto.answers });
     this.analytics.track(userId, 'submit_quiz', { topicId: id, score: result.score });
+    return result;
+  }
+}
+
+// ─── Personalized Quiz Controller (US-1006/US-1007) ───────────────────────────
+
+@ApiTags('Education')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('education/quiz')
+export class PersonalizedQuizController {
+  constructor(
+    private readonly getPersonalizedQuiz: GetPersonalizedQuizUseCase,
+    private readonly submitQuiz: SubmitQuizUseCase,
+    private readonly analytics: AnalyticsService,
+  ) {}
+
+  @Get('personalized')
+  @ApiOperation({ summary: 'Generate AI-personalized quiz based on spending habits (US-1007), max 5/day' })
+  @ApiQuery({ name: 'language', required: false, enum: ['en', 'es'] })
+  async personalized(
+    @UserId() userId: string,
+    @Query('language') language = 'es',
+  ) {
+    return this.getPersonalizedQuiz.execute({ userId, language });
+  }
+
+  @Post('personalized/submit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Submit personalized quiz answers (US-1007)' })
+  async submitPersonalized(
+    @UserId() userId: string,
+    @Body() dto: SubmitQuizDto,
+  ): Promise<QuizSubmitResponseDto> {
+    const result = await this.submitQuiz.execute({ topicId: 'personalized', answers: dto.answers });
+    this.analytics.track(userId, 'submit_quiz_personalized', { score: result.score });
     return result;
   }
 }

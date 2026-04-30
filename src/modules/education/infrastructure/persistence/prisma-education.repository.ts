@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { EducationTopicEntity } from '../../domain/education-topic.entity';
-import { QuizQuestionEntity } from '../../domain/quiz-question.entity';
-import { IEducationRepository } from '../../domain/ports/education.repository';
+import { QuizDifficulty, QuizQuestionEntity } from '../../domain/quiz-question.entity';
+import { IEducationRepository, PersonalizedQuestionInput } from '../../domain/ports/education.repository';
 
 @Injectable()
 export class PrismaEducationRepository implements IEducationRepository {
@@ -83,11 +83,43 @@ export class PrismaEducationRepository implements IEducationRepository {
         r.topicId,
         r.questionGroupKey,
         r.language,
-        r.difficulty as QuizQuestionEntity['difficulty'],
+        r.difficulty as QuizDifficulty,
         r.text,
         r.options as string[],
         r.correctAnswer,
       ),
+    );
+  }
+
+  async savePersonalizedQuestions(questions: PersonalizedQuestionInput[], language: string): Promise<QuizQuestionEntity[]> {
+    const groupKey = `personalized_${Date.now()}`;
+    const created = await Promise.all(
+      questions.map((q) =>
+        this.prisma.quizQuestion.create({
+          data: {
+            topicId: null,
+            questionGroupKey: groupKey,
+            language,
+            difficulty: q.difficulty,
+            text: q.text,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+          },
+        }),
+      ),
+    );
+    return created.map(
+      (r) =>
+        new QuizQuestionEntity(
+          r.id,
+          r.topicId,
+          r.questionGroupKey,
+          r.language,
+          r.difficulty as QuizDifficulty,
+          r.text,
+          r.options as string[],
+          r.correctAnswer,
+        ),
     );
   }
 }
