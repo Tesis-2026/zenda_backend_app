@@ -5,7 +5,13 @@ export class UserEntity {
     readonly passwordHash: string,
     readonly fullName: string,
     readonly createdAt: Date,
+    readonly failedLoginAttempts: number = 0,
+    readonly lockedUntil: Date | null = null,
   ) {}
+
+  get isLocked(): boolean {
+    return this.lockedUntil !== null && this.lockedUntil > new Date();
+  }
 
   static create(params: {
     id: string;
@@ -13,6 +19,8 @@ export class UserEntity {
     passwordHash: string;
     fullName: string;
     createdAt: Date;
+    failedLoginAttempts?: number;
+    lockedUntil?: Date | null;
   }): UserEntity {
     return new UserEntity(
       params.id,
@@ -20,6 +28,8 @@ export class UserEntity {
       params.passwordHash,
       params.fullName,
       params.createdAt,
+      params.failedLoginAttempts ?? 0,
+      params.lockedUntil ?? null,
     );
   }
 }
