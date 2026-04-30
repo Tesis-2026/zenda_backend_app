@@ -96,6 +96,10 @@ model User {
   consentGiven           Boolean                 @default(false)
   consentAt              DateTime?
 
+  // Login lockout (US-0102)
+  failedLoginAttempts    Int                     @default(0)
+  lockedUntil            DateTime?
+
   // Relations
   categories              Category[]
   transactions            Transaction[]
@@ -112,6 +116,7 @@ model User {
   auditLogs               AuditLog[]
   feedbacks               Feedback[]
   passwordResetTokens     PasswordResetToken[]
+  passwordResetOtps       PasswordResetOtp[]
   refreshTokens           RefreshToken[]
 
   createdAt              DateTime                @default(now())
@@ -235,15 +240,41 @@ model NotificationPreference {
 // ─────────────────────────────────────────────────────────────────
 
 model EducationalTopic {
-  id           String              @id @default(uuid()) @db.Uuid
-  title        String
-  content      String
-  difficulty   TopicDifficulty     @default(BEGINNER)
-  order        Int                 @default(0)
-  userProgress UserTopicProgress[]
+  id            String              @id @default(uuid()) @db.Uuid
+  title         String
+  content       String
+  difficulty    TopicDifficulty     @default(BEGINNER)
+  order         Int                 @default(0)
+  userProgress  UserTopicProgress[]
+  quizQuestions QuizQuestion[]
 
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────
+// QUIZ QUESTION POOL (US-1004)
+// Bilingual, difficulty-tagged questions for in-app quizzes.
+// EN and ES variants share a questionGroupKey so the backend can
+// serve either language from the same pool.
+// ─────────────────────────────────────────────────────────────────
+
+model QuizQuestion {
+  id               String           @id @default(uuid()) @db.Uuid
+  topicId          String?          @db.Uuid
+  questionGroupKey String           // groups EN + ES variants of the same question
+  language         String           // 'en' or 'es'
+  difficulty       TopicDifficulty
+  text             String
+  options          Json             // String[]
+  correctAnswer    String
+  topic            EducationalTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([topicId, difficulty, language])
+  @@index([questionGroupKey])
 }
 
 model UserTopicProgress {
@@ -445,6 +476,20 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([token])
+  @@index([userId])
+}
+
+model PasswordResetOtp {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  email     String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@index([email])
   @@index([userId])
 }
 
