@@ -7,6 +7,7 @@ import {
   PredictionResult,
   RecommendationResult,
   SpendingContext,
+  UserProfile,
 } from './AiProvider';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,6 +89,24 @@ export class AzureFoundryProvider implements AiProvider {
     return data.choices[0]?.message?.content ?? '{}';
   }
 
+  private describeUserProfile(profile: UserProfile): string {
+    const level = profile.financialLiteracyLevel;
+    const levelInstruction =
+      level === 'HIGH'
+        ? 'El usuario tiene un nivel ALTO de educación financiera. Puedes usar terminología técnica, hacer referencia a conceptos como rendimiento compuesto, diversificación y tasa efectiva anual, y proponer estrategias más sofisticadas.'
+        : level === 'MEDIUM'
+          ? 'El usuario tiene un nivel MEDIO de educación financiera. Usa un lenguaje claro con algunos términos financieros explicados brevemente cuando sea necesario.'
+          : 'El usuario tiene un nivel BAJO de educación financiera (o desconocido). Usa un lenguaje muy sencillo, evita jerga financiera y prioriza consejos básicos y accionables.';
+
+    const parts: string[] = [levelInstruction];
+    if (profile.age) parts.push(`Edad: ${profile.age} años.`);
+    if (profile.university) parts.push(`Universidad: ${profile.university}.`);
+    if (profile.incomeType) parts.push(`Fuente de ingresos: ${profile.incomeType}.`);
+    if (profile.averageMonthlyIncome) parts.push(`Ingreso mensual promedio: S/${profile.averageMonthlyIncome.toFixed(2)}.`);
+
+    return parts.join(' ');
+  }
+
   private summariseContext(context: SpendingContext): string {
     return context.months
       .map((m) => {
@@ -148,7 +167,8 @@ Responde SOLO con JSON válido con esta estructura exacta:
     }
   ]
 }
-Genera entre 2 y 5 recomendaciones relevantes.`;
+Genera entre 2 y 5 recomendaciones relevantes.
+${this.describeUserProfile(context.userProfile)}`;
 
       const userPrompt = `Datos financieros del estudiante:\n${this.summariseContext(context)}`;
 
@@ -241,19 +261,21 @@ Responde SOLO con JSON: {"categoryName": "string", "confidence": number_0_to_1}`
     };
   }
 
-  async chat(messages: ChatMessage[]): Promise<string> {
+  async chat(messages: ChatMessage[], userProfile?: UserProfile): Promise<string> {
     if (!this.isConfigured) {
       return 'El asistente de IA no está configurado. Configura las variables AZURE_OPENAI_ENDPOINT y AZURE_OPENAI_KEY.';
     }
 
     try {
+      const profileContext = userProfile ? `\n${this.describeUserProfile(userProfile)}` : '';
       const systemMessage: ChatMessage = {
         role: 'system',
         content:
           'Eres Zenda, un asistente financiero especializado para estudiantes universitarios peruanos. ' +
           'Responde siempre en español, de forma concisa, práctica y amigable. ' +
           'Solo responde preguntas relacionadas con finanzas personales, presupuestos, ahorros, gastos e inversiones básicas. ' +
-          'Si te preguntan algo fuera de finanzas, redirige amablemente la conversación al tema financiero.',
+          'Si te preguntan algo fuera de finanzas, redirige amablemente la conversación al tema financiero.' +
+          profileContext,
       };
 
       const url = this.buildChatUrl();

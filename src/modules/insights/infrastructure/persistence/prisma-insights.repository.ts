@@ -69,7 +69,6 @@ export class PrismaInsightsRepository implements IInsightsRepository {
         where: { userId, type: TransactionType.EXPENSE, occurredAt: { gte: from, lte: to }, deletedAt: null },
         _sum: { amount: true },
         orderBy: { _sum: { amount: 'desc' } },
-        take: 5,
       }),
       this.prisma.savingsGoal.findMany({
         where: { userId, deletedAt: null },
