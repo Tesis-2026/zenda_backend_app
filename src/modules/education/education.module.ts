@@ -6,6 +6,8 @@ import { PrismaEducationRepository } from './infrastructure/persistence/prisma-e
 import { ListTopicsUseCase } from './application/use-cases/list-topics.use-case';
 import { GetTopicUseCase } from './application/use-cases/get-topic.use-case';
 import { CompleteTopicUseCase } from './application/use-cases/complete-topic.use-case';
+import { GetQuizUseCase } from './application/use-cases/get-quiz.use-case';
+import { SubmitQuizUseCase } from './application/use-cases/submit-quiz.use-case';
 import { EducationController } from './interface/education.controller';
 
 @Module({
@@ -16,6 +18,8 @@ import { EducationController } from './interface/education.controller';
     ListTopicsUseCase,
     GetTopicUseCase,
     CompleteTopicUseCase,
+    GetQuizUseCase,
+    SubmitQuizUseCase,
   ],
   exports: [IEducationRepository],
 })

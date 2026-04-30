@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { EducationTopicEntity } from '../../domain/education-topic.entity';
+import { QuizQuestionEntity } from '../../domain/quiz-question.entity';
 import { IEducationRepository } from '../../domain/ports/education.repository';
 
 @Injectable()
@@ -53,5 +54,40 @@ export class PrismaEducationRepository implements IEducationRepository {
 
   countCompleted(userId: string): Promise<number> {
     return this.prisma.userTopicProgress.count({ where: { userId } });
+  }
+
+  async getQuizPool(topicId: string, language: string): Promise<QuizQuestionEntity[]> {
+    const rows = await this.prisma.quizQuestion.findMany({
+      where: { topicId, language },
+      orderBy: { difficulty: 'asc' },
+    });
+    return rows.map((r) =>
+      new QuizQuestionEntity(
+        r.id,
+        r.topicId,
+        r.questionGroupKey,
+        r.language,
+        r.difficulty as QuizQuestionEntity['difficulty'],
+        r.text,
+        r.options as string[],
+        r.correctAnswer,
+      ),
+    );
+  }
+
+  async getQuizQuestionsByIds(ids: string[]): Promise<QuizQuestionEntity[]> {
+    const rows = await this.prisma.quizQuestion.findMany({ where: { id: { in: ids } } });
+    return rows.map((r) =>
+      new QuizQuestionEntity(
+        r.id,
+        r.topicId,
+        r.questionGroupKey,
+        r.language,
+        r.difficulty as QuizQuestionEntity['difficulty'],
+        r.text,
+        r.options as string[],
+        r.correctAnswer,
+      ),
+    );
   }
 }
