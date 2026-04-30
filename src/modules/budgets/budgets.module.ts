@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
+import { BadgesModule } from '../badges/badges.module';
 import { IBudgetRepository } from './domain/ports/budget.repository';
 import { PrismaBudgetsRepository } from './infrastructure/persistence/prisma-budgets.repository';
 import { CreateBudgetUseCase } from './application/use-cases/create-budget.use-case';
@@ -9,7 +10,7 @@ import { DeleteBudgetUseCase } from './application/use-cases/delete-budget.use-c
 import { BudgetsController } from './interface/budgets.controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, BadgesModule],
   controllers: [BudgetsController],
   providers: [
     { provide: IBudgetRepository, useClass: PrismaBudgetsRepository },

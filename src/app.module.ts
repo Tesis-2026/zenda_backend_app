@@ -8,6 +8,7 @@ import configuration from './shared/config/configuration';
 import { AppLogger } from './shared/logger/app-logger.service';
 import { HealthController } from './health/health.controller';
 import { AiModule } from './infra/ai/ai.module';
+import { AnalyticsModule } from './infra/analytics/analytics.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -40,6 +41,7 @@ import { ChatModule } from './modules/chat/chat.module';
     ]),
     PrismaModule,
     AiModule,
+    AnalyticsModule,
     AuthModule,
     UsersModule,
     TransactionsModule,
