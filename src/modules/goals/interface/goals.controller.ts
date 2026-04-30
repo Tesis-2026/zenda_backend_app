@@ -25,6 +25,7 @@ import { CreateGoalDto } from './dto/create-goal.dto';
 import { ContributeGoalDto } from './dto/contribute-goal.dto';
 import { GoalResponseDto } from './dto/goal.response.dto';
 import { GoalContributionResponseDto } from './dto/goal-contribution.response.dto';
+import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 
 @ApiTags('Goals')
 @UseGuards(JwtAuthGuard)
@@ -37,6 +38,7 @@ export class GoalsController {
     private readonly completeGoal: CompleteGoalUseCase,
     private readonly deleteGoal: DeleteGoalUseCase,
     private readonly listContributions: ListGoalContributionsUseCase,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @Post()
@@ -46,6 +48,7 @@ export class GoalsController {
     @Body() dto: CreateGoalDto,
   ): Promise<GoalResponseDto> {
     const entity = await this.createGoal.execute({ userId, ...dto });
+    this.analytics.track(userId, 'create_goal', { name: dto.name, targetAmount: dto.targetAmount });
     return this.toResponse(entity);
   }
 
@@ -74,6 +77,7 @@ export class GoalsController {
     @Body() dto: ContributeGoalDto,
   ): Promise<GoalResponseDto> {
     const entity = await this.contributeToGoal.execute({ userId, goalId: id, amount: dto.amount });
+    this.analytics.track(userId, 'contribute_goal', { goalId: id, amount: dto.amount });
     return this.toResponse(entity);
   }
 
@@ -85,6 +89,7 @@ export class GoalsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<GoalResponseDto> {
     const entity = await this.completeGoal.execute(userId, id);
+    this.analytics.track(userId, 'complete_goal', { goalId: id });
     return this.toResponse(entity);
   }
 

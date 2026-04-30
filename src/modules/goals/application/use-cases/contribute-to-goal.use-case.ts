@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
+import { VerifyChallengesUseCase } from '../../../challenges/application/use-cases/verify-challenges.use-case';
 import { ISavingsGoalRepository } from '../../domain/ports/savings-goal.repository';
 import { SavingsGoalEntity } from '../../domain/savings-goal.entity';
 
@@ -14,6 +15,7 @@ export class ContributeToGoalUseCase {
   constructor(
     private readonly repo: ISavingsGoalRepository,
     private readonly badgeRepo: IBadgeRepository,
+    private readonly verifyChallenges: VerifyChallengesUseCase,
   ) {}
 
   async execute(cmd: ContributeToGoalCommand): Promise<SavingsGoalEntity> {
@@ -29,6 +31,8 @@ export class ContributeToGoalUseCase {
     if (updated.progressPercent >= 100) {
       await this.badgeRepo.awardIfNotEarned(cmd.userId, 'Goal Achieved');
     }
+
+    this.verifyChallenges.execute(cmd.userId).catch(() => void 0);
 
     return updated;
   }

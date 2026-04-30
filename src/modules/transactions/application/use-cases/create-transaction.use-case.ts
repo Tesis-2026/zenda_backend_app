@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
+import { VerifyChallengesUseCase } from '../../../challenges/application/use-cases/verify-challenges.use-case';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
 import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
@@ -21,6 +22,7 @@ export class CreateTransactionUseCase {
     private readonly repo: ITransactionRepository,
     private readonly resolveCategory: ResolveCategoryUseCase,
     private readonly badgeRepo: IBadgeRepository,
+    private readonly verifyChallenges: VerifyChallengesUseCase,
   ) {}
 
   async execute(cmd: CreateTransactionCommand): Promise<TransactionWithCategory> {
@@ -51,6 +53,8 @@ export class CreateTransactionUseCase {
     if (hasStreak) {
       await this.badgeRepo.awardIfNotEarned(cmd.userId, 'Consistency');
     }
+
+    this.verifyChallenges.execute(cmd.userId).catch(() => void 0);
 
     return tx;
   }

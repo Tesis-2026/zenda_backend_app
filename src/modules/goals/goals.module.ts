@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
 import { BadgesModule } from '../badges/badges.module';
+import { ChallengesModule } from '../challenges/challenges.module';
 import { ISavingsGoalRepository } from './domain/ports/savings-goal.repository';
 import { PrismaGoalsRepository } from './infrastructure/persistence/prisma-goals.repository';
 import { CreateGoalUseCase } from './application/use-cases/create-goal.use-case';
@@ -12,7 +13,7 @@ import { ListGoalContributionsUseCase } from './application/use-cases/list-goal-
 import { GoalsController } from './interface/goals.controller';
 
 @Module({
-  imports: [PrismaModule, BadgesModule],
+  imports: [PrismaModule, BadgesModule, ChallengesModule],
   controllers: [GoalsController],
   providers: [
     { provide: ISavingsGoalRepository, useClass: PrismaGoalsRepository },
