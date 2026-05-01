@@ -8,6 +8,8 @@ export interface ListTransactionsQuery {
   to?: Date;
   type?: TransactionType;
   categoryId?: string;
+  skip?: number;
+  take?: number;
 }
 
 @Injectable()
@@ -20,6 +22,8 @@ export class ListTransactionsUseCase {
       to: query.to,
       type: query.type,
       categoryId: query.categoryId,
+      skip: query.skip,
+      take: query.take,
     });
   }
 }

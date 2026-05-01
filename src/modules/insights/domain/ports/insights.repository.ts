@@ -31,8 +31,15 @@ export interface MonthComparisonEntry {
   netBalance: number;
 }
 
+export interface DailyBreakdown {
+  date: string; // YYYY-MM-DD
+  totalIncome: number;
+  totalExpense: number;
+}
+
 export abstract class IInsightsRepository {
   abstract getMonthSummary(params: MonthSummaryParams): Promise<MonthSummaryData>;
   abstract getPeriodSummary(params: PeriodSummaryParams): Promise<PeriodSummaryData>;
   abstract getMonthComparison(userId: string, months: number): Promise<MonthComparisonEntry[]>;
+  abstract getDailyBreakdown(params: PeriodSummaryParams): Promise<DailyBreakdown[]>;
 }

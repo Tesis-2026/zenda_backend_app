@@ -21,6 +21,8 @@ export interface TransactionFilters {
   to?: Date;
   type?: TransactionType;
   categoryId?: string;
+  skip?: number;
+  take?: number;
 }
 
 export interface UpdateTransactionParams {
@@ -51,4 +53,6 @@ export abstract class ITransactionRepository {
   abstract findByIdWithCategory(id: string, userId: string): Promise<TransactionWithCategory | null>;
   abstract update(id: string, userId: string, params: UpdateTransactionParams): Promise<TransactionWithCategory>;
   abstract softDelete(id: string): Promise<void>;
+
+  abstract hasConsecutiveDays(userId: string, days: number): Promise<boolean>;
 }

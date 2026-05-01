@@ -16,6 +16,8 @@ export class PrismaUserRepository implements IUserRepository {
       passwordHash: row.passwordHash,
       fullName: row.fullName,
       createdAt: row.createdAt,
+      failedLoginAttempts: row.failedLoginAttempts,
+      lockedUntil: row.lockedUntil,
     });
   }
 
@@ -28,6 +30,8 @@ export class PrismaUserRepository implements IUserRepository {
       passwordHash: row.passwordHash,
       fullName: row.fullName,
       createdAt: row.createdAt,
+      failedLoginAttempts: row.failedLoginAttempts,
+      lockedUntil: row.lockedUntil,
     });
   }
 
@@ -56,6 +60,27 @@ export class PrismaUserRepository implements IUserRepository {
     await this.prisma.user.update({
       where: { id: userId },
       data: { passwordHash },
+    });
+  }
+
+  async incrementFailedLogin(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginAttempts: { increment: 1 } },
+    });
+  }
+
+  async clearFailedLogin(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
+  }
+
+  async lockAccount(userId: string, until: Date): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lockedUntil: until },
     });
   }
 }

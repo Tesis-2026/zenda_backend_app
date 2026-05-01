@@ -101,7 +101,15 @@ export class SurveysController {
     // Simple scoring: each correct answer = (100 / totalQuestions) points
     // In the real app, correct answers are stored in the survey question options JSON
     const total = survey.questions.length;
-    const score = total > 0 ? Math.min(100, Math.round((Object.keys(answers).length / total) * 100)) : 50;
+    const gradeable = survey.questions.filter((q) => q.correctAnswer != null);
+    let score: number;
+    if (gradeable.length > 0) {
+      const correct = gradeable.filter((q) => answers[q.id] === q.correctAnswer).length;
+      score = Math.round((correct / gradeable.length) * 100);
+    } else {
+      // No correct answers defined yet: full score for completion
+      score = total > 0 && Object.keys(answers).length === total ? 100 : 50;
+    }
 
     await this.prisma.surveyResponse.upsert({
       where: { userId_surveyId: { userId, surveyId: survey.id } },

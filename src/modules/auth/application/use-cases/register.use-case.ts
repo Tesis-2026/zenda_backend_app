@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { IUserRepository } from '../../domain/ports/user.repository';
 import { IRefreshTokenRepository } from '../../domain/ports/refresh-token.repository';
+import { AnalyticsService } from '../../../../infra/analytics/analytics.service';
 
 export interface RegisterCommand {
   email: string;
@@ -19,6 +20,7 @@ export class RegisterUseCase {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly refreshTokenRepository: IRefreshTokenRepository,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   async execute(cmd: RegisterCommand): Promise<{ accessToken: string; refreshToken: string }> {
@@ -38,6 +40,8 @@ export class RegisterUseCase {
 
     const accessToken = this.jwtService.sign({ sub: user.id, email: user.email });
     const refreshToken = await this._issueRefreshToken(user.id);
+
+    this.analytics.track(user.id, 'register');
 
     return { accessToken, refreshToken };
   }

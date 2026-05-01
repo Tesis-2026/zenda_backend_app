@@ -14,6 +14,8 @@ import { ForgotPasswordUseCase } from '../application/use-cases/forgot-password.
 import { ResetPasswordUseCase } from '../application/use-cases/reset-password.use-case';
 import { RefreshAccessTokenUseCase } from '../application/use-cases/refresh-access-token.use-case';
 import { LogoutUseCase } from '../application/use-cases/logout.use-case';
+import { SendOtpUseCase } from '../application/use-cases/send-otp.use-case';
+import { VerifyOtpUseCase } from '../application/use-cases/verify-otp.use-case';
 import { JwtAuthGuard } from '../infrastructure/jwt-auth.guard';
 import { UserId } from './decorators/user-id.decorator';
 import { RegisterDto } from './dto/register.dto';
@@ -21,6 +23,8 @@ import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { SendOtpDto } from './dto/send-otp.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { AuthTokenResponseDto } from './dto/auth-token.response.dto';
 
 @ApiTags('Auth')
@@ -33,6 +37,8 @@ export class AuthController {
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
     private readonly refreshAccessTokenUseCase: RefreshAccessTokenUseCase,
     private readonly logoutUseCase: LogoutUseCase,
+    private readonly sendOtpUseCase: SendOtpUseCase,
+    private readonly verifyOtpUseCase: VerifyOtpUseCase,
   ) {}
 
   @Post('register')
@@ -44,7 +50,7 @@ export class AuthController {
 
   @Post('login')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
-  @ApiOperation({ summary: 'Login — returns access + refresh tokens' })
+  @ApiOperation({ summary: 'Login — returns access + refresh tokens (locks after 3 failures)' })
   login(@Body() dto: LoginDto): Promise<AuthTokenResponseDto> {
     return this.loginUseCase.execute(dto);
   }
@@ -68,15 +74,31 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: 'Request a password reset email' })
+  @ApiOperation({ summary: 'Request a password reset email (link-based — legacy)' })
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
     await this.forgotPasswordUseCase.execute(dto.email);
+  }
+
+  @Post('send-otp')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Send a 6-digit OTP code for password reset (VERIF-01)' })
+  async sendOtp(@Body() dto: SendOtpDto): Promise<void> {
+    await this.sendOtpUseCase.execute(dto.email);
+  }
+
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Verify OTP code — returns a resetToken for use with reset-password (VERIF-01)' })
+  verifyOtp(@Body() dto: VerifyOtpDto): Promise<{ resetToken: string }> {
+    return this.verifyOtpUseCase.execute(dto.email, dto.code);
   }
 
   @Post('reset-password')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: 'Reset password using token from email' })
+  @ApiOperation({ summary: 'Reset password using token from email or verify-otp' })
   async resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
     await this.resetPasswordUseCase.execute({ token: dto.token, newPassword: dto.newPassword });
   }

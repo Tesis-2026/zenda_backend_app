@@ -3,6 +3,7 @@ import { TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import {
+  DailyBreakdown,
   IInsightsRepository,
   MonthComparisonEntry,
   MonthSummaryData,
@@ -54,6 +55,39 @@ export class PrismaInsightsRepository implements IInsightsRepository {
     return entries;
   }
 
+  async getDailyBreakdown(params: PeriodSummaryParams): Promise<DailyBreakdown[]> {
+    const { userId, from, to } = params;
+    const transactions = await this.prisma.transaction.findMany({
+      where: { userId, occurredAt: { gte: from, lte: to }, deletedAt: null },
+      select: { amount: true, type: true, occurredAt: true },
+    });
+
+    const dayMap = new Map<string, { income: number; expense: number }>();
+    for (const t of transactions) {
+      const key = t.occurredAt.toISOString().slice(0, 10);
+      const existing = dayMap.get(key) ?? { income: 0, expense: 0 };
+      if (t.type === TransactionType.INCOME) {
+        existing.income += t.amount.toNumber();
+      } else {
+        existing.expense += t.amount.toNumber();
+      }
+      dayMap.set(key, existing);
+    }
+
+    const result: DailyBreakdown[] = [];
+    const cur = new Date(from);
+    cur.setHours(0, 0, 0, 0);
+    const end = new Date(to);
+    end.setHours(0, 0, 0, 0);
+    while (cur <= end) {
+      const key = cur.toISOString().slice(0, 10);
+      const data = dayMap.get(key) ?? { income: 0, expense: 0 };
+      result.push({ date: key, totalIncome: data.income, totalExpense: data.expense });
+      cur.setDate(cur.getDate() + 1);
+    }
+    return result;
+  }
+
   private async fetchPeriodSummary(userId: string, from: Date, to: Date): Promise<PeriodSummaryData> {
     const [incomeAgg, expenseAgg, expenseByCategory, goals] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -69,7 +103,6 @@ export class PrismaInsightsRepository implements IInsightsRepository {
         where: { userId, type: TransactionType.EXPENSE, occurredAt: { gte: from, lte: to }, deletedAt: null },
         _sum: { amount: true },
         orderBy: { _sum: { amount: 'desc' } },
-        take: 5,
       }),
       this.prisma.savingsGoal.findMany({
         where: { userId, deletedAt: null },

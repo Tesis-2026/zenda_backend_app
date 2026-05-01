@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { RecommendationType as PrismaRecType, TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
-import { SpendingContext } from '../../../../infra/ai/AiProvider';
+import { SpendingContext, UserProfile } from '../../../../infra/ai/AiProvider';
 import { RecommendationEntity } from '../../domain/recommendation.entity';
 import { IRecommendationRepository } from '../../domain/ports/recommendation.repository';
 
@@ -58,6 +58,18 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
     const now = new Date();
     const months: SpendingContext['months'] = [];
 
+    const userRow = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { financialLiteracyLevel: true, age: true, university: true, incomeType: true, averageMonthlyIncome: true },
+    });
+    const userProfile: UserProfile = {
+      financialLiteracyLevel: (userRow?.financialLiteracyLevel as UserProfile['financialLiteracyLevel']) ?? null,
+      age: userRow?.age ?? null,
+      university: userRow?.university ?? null,
+      incomeType: userRow?.incomeType ?? null,
+      averageMonthlyIncome: userRow?.averageMonthlyIncome?.toNumber() ?? null,
+    };
+
     for (let i = 2; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const year = d.getFullYear();
@@ -89,6 +101,6 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
       });
     }
 
-    return { userId, months };
+    return { userId, userProfile, months };
   }
 }

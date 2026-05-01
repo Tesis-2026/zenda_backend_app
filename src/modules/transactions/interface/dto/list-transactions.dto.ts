@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { Type } from 'class-transformer';
-import { IsDate, IsEnum, IsOptional, IsUUID } from 'class-validator';
+import { IsDate, IsEnum, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
 
 export class ListTransactionsDto {
   @ApiPropertyOptional({
@@ -31,4 +31,19 @@ export class ListTransactionsDto {
   @IsOptional()
   @IsUUID('4')
   categoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Number of records to skip', example: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  skip?: number;
+
+  @ApiPropertyOptional({ description: 'Max records to return (max 100)', example: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  take?: number;
 }
