@@ -24,6 +24,7 @@ import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { BudgetResponseDto } from './dto/budget.response.dto';
 import { ListBudgetsDto } from './dto/list-budgets.dto';
+import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 
 @ApiTags('Budgets')
 @UseGuards(JwtAuthGuard)
@@ -34,6 +35,7 @@ export class BudgetsController {
     private readonly listBudgets: ListBudgetsUseCase,
     private readonly updateBudget: UpdateBudgetUseCase,
     private readonly deleteBudget: DeleteBudgetUseCase,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @Post()
@@ -43,6 +45,12 @@ export class BudgetsController {
     @Body() dto: CreateBudgetDto,
   ): Promise<BudgetResponseDto> {
     const entity = await this.createBudget.execute({ userId, ...dto });
+    this.analytics.track(userId, 'create_budget', {
+      categoryId: dto.categoryId ?? null,
+      amountLimit: dto.amountLimit,
+      month: dto.month,
+      year: dto.year,
+    });
     return this.toResponse(entity);
   }
 

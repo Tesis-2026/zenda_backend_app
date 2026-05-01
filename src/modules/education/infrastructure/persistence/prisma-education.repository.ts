@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { EducationTopicEntity } from '../../domain/education-topic.entity';
-import { IEducationRepository } from '../../domain/ports/education.repository';
+import { QuizDifficulty, QuizQuestionEntity } from '../../domain/quiz-question.entity';
+import { IEducationRepository, PersonalizedQuestionInput } from '../../domain/ports/education.repository';
 
 @Injectable()
 export class PrismaEducationRepository implements IEducationRepository {
@@ -45,5 +46,80 @@ export class PrismaEducationRepository implements IEducationRepository {
       create: { userId, topicId, completedAt: new Date() },
       update: { completedAt: new Date() },
     });
+  }
+
+  countAll(): Promise<number> {
+    return this.prisma.educationalTopic.count();
+  }
+
+  countCompleted(userId: string): Promise<number> {
+    return this.prisma.userTopicProgress.count({ where: { userId } });
+  }
+
+  async getQuizPool(topicId: string, language: string): Promise<QuizQuestionEntity[]> {
+    const rows = await this.prisma.quizQuestion.findMany({
+      where: { topicId, language },
+      orderBy: { difficulty: 'asc' },
+    });
+    return rows.map((r) =>
+      new QuizQuestionEntity(
+        r.id,
+        r.topicId,
+        r.questionGroupKey,
+        r.language,
+        r.difficulty as QuizQuestionEntity['difficulty'],
+        r.text,
+        r.options as string[],
+        r.correctAnswer,
+      ),
+    );
+  }
+
+  async getQuizQuestionsByIds(ids: string[]): Promise<QuizQuestionEntity[]> {
+    const rows = await this.prisma.quizQuestion.findMany({ where: { id: { in: ids } } });
+    return rows.map((r) =>
+      new QuizQuestionEntity(
+        r.id,
+        r.topicId,
+        r.questionGroupKey,
+        r.language,
+        r.difficulty as QuizDifficulty,
+        r.text,
+        r.options as string[],
+        r.correctAnswer,
+      ),
+    );
+  }
+
+  async savePersonalizedQuestions(questions: PersonalizedQuestionInput[], language: string): Promise<QuizQuestionEntity[]> {
+    const groupKey = `personalized_${Date.now()}`;
+    const created = await Promise.all(
+      questions.map((q) =>
+        this.prisma.quizQuestion.create({
+          data: {
+            topicId: null,
+            questionGroupKey: groupKey,
+            language,
+            difficulty: q.difficulty,
+            text: q.text,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+          },
+        }),
+      ),
+    );
+    return created.map(
+      (r) =>
+        new QuizQuestionEntity(
+          r.id,
+          r.topicId,
+          r.questionGroupKey,
+          r.language,
+          r.difficulty as QuizDifficulty,
+          r.text,
+          r.options as string[],
+          r.correctAnswer,
+        ),
+    );
   }
 }

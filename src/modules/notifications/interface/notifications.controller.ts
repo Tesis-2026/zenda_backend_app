@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
 import { UpdatePreferenceDto } from './dto/update-preference.dto';
+import { NotificationPreferenceResponseDto } from './dto/notification-preference.response.dto';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -15,11 +16,10 @@ export class NotificationsController {
 
   @Get('preferences')
   @ApiOperation({ summary: 'List notification preferences for the current user (US-1104)' })
-  async getPreferences(@UserId() userId: string): Promise<object[]> {
+  async getPreferences(@UserId() userId: string): Promise<NotificationPreferenceResponseDto[]> {
     const existing = await this.prisma.notificationPreference.findMany({ where: { userId } });
     const existingMap = new Map(existing.map((p) => [p.type, p.enabled]));
 
-    // Return all known types, defaulting to enabled=true if not yet persisted
     return Object.values(NotificationType).map((type) => ({
       type,
       enabled: existingMap.get(type) ?? true,

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
-import { SpendingContext } from '../../../../infra/ai/AiProvider';
+import { SpendingContext, UserProfile } from '../../../../infra/ai/AiProvider';
 import { PredictionEntity, PredictionType } from '../../domain/prediction.entity';
 import { IPredictionRepository } from '../../domain/ports/prediction.repository';
 
@@ -66,6 +66,18 @@ export class PrismaPredictionRepository implements IPredictionRepository {
     const now = new Date();
     const months: SpendingContext['months'] = [];
 
+    const userRow = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { financialLiteracyLevel: true, age: true, university: true, incomeType: true, averageMonthlyIncome: true },
+    });
+    const userProfile: UserProfile = {
+      financialLiteracyLevel: (userRow?.financialLiteracyLevel as UserProfile['financialLiteracyLevel']) ?? null,
+      age: userRow?.age ?? null,
+      university: userRow?.university ?? null,
+      incomeType: userRow?.incomeType ?? null,
+      averageMonthlyIncome: userRow?.averageMonthlyIncome?.toNumber() ?? null,
+    };
+
     for (let i = monthsBack - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const year = d.getFullYear();
@@ -108,7 +120,11 @@ export class PrismaPredictionRepository implements IPredictionRepository {
       });
     }
 
-    return { userId, months };
+    return { userId, userProfile, months };
+  }
+
+  countByUser(userId: string): Promise<number> {
+    return this.prisma.prediction.count({ where: { userId } });
   }
 
   private toEntity(row: {

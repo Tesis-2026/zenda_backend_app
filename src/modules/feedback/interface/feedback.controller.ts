@@ -4,6 +4,7 @@ import { FeedbackType } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
+import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 
 @ApiTags('Feedback')
@@ -11,7 +12,10 @@ import { CreateFeedbackDto } from './dto/create-feedback.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('feedback')
 export class FeedbackController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analytics: AnalyticsService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -27,10 +31,7 @@ export class FeedbackController {
       },
     });
 
-    // Fire-and-forget analytics event
-    this.prisma.analyticsEvent
-      .create({ data: { userId, eventType: 'submit_feedback', metadata: { type: dto.type, rating: dto.rating } } })
-      .catch(() => undefined);
+    this.analytics.track(userId, 'submit_feedback', { type: dto.type, rating: dto.rating });
 
     return { id: feedback.id };
   }

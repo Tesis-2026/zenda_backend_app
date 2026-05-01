@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class TopCategoryItemDto {
   @ApiProperty({ example: 'Alimentación' })
@@ -37,4 +37,18 @@ export class MonthSummaryResponseDto {
 
   @ApiProperty({ type: () => [GoalProgressItemDto] })
   goalsProgress!: GoalProgressItemDto[];
+
+  @ApiPropertyOptional({ type: () => [DailyBreakdownItemDto] })
+  dailyBreakdown?: DailyBreakdownItemDto[];
+}
+
+class DailyBreakdownItemDto {
+  @ApiProperty({ example: '2026-04-28' })
+  date!: string;
+
+  @ApiProperty({ example: 0 })
+  totalIncome!: number;
+
+  @ApiProperty({ example: 120.5 })
+  totalExpense!: number;
 }

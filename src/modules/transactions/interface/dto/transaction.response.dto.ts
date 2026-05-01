@@ -44,4 +44,7 @@ export class TransactionResponseDto {
 
   @ApiPropertyOptional({ type: () => TransactionCategoryDto })
   category?: TransactionCategoryDto | null;
+
+  @ApiPropertyOptional({ type: [String], example: ['Daily Habit Challenge'] })
+  newlyCompletedChallenges?: string[];
 }

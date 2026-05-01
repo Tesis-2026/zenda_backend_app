@@ -13,4 +13,6 @@ export abstract class IPredictionRepository {
   abstract upsert(prediction: Omit<PredictionEntity, 'createdAt'>): Promise<PredictionEntity>;
 
   abstract getSpendingContext(userId: string, monthsBack: number): Promise<SpendingContext>;
+
+  abstract countByUser(userId: string): Promise<number>;
 }

@@ -91,4 +91,14 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
     });
     return rows.map((r) => this.toContributionRecord(r));
   }
+
+  async complete(id: string): Promise<SavingsGoalEntity> {
+    const goal = await this.prisma.savingsGoal.findUnique({ where: { id } });
+    if (!goal) throw new Error('Goal not found');
+    const row = await this.prisma.savingsGoal.update({
+      where: { id },
+      data: { currentAmount: goal.targetAmount },
+    });
+    return this.toEntity(row);
+  }
 }

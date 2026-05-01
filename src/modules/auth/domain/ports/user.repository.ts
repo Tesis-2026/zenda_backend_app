@@ -9,4 +9,7 @@ export abstract class IUserRepository {
     fullName: string;
   }): Promise<UserEntity>;
   abstract updatePasswordHash(userId: string, passwordHash: string): Promise<void>;
+  abstract incrementFailedLogin(userId: string): Promise<void>;
+  abstract clearFailedLogin(userId: string): Promise<void>;
+  abstract lockAccount(userId: string, until: Date): Promise<void>;
 }

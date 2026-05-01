@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
+import { VerifyChallengesUseCase } from '../../../challenges/application/use-cases/verify-challenges.use-case';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
 import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
@@ -14,14 +16,20 @@ export interface CreateTransactionCommand {
   occurredAt?: string;
 }
 
+export type CreateTransactionResult = TransactionWithCategory & {
+  newlyCompletedChallenges: string[];
+};
+
 @Injectable()
 export class CreateTransactionUseCase {
   constructor(
     private readonly repo: ITransactionRepository,
     private readonly resolveCategory: ResolveCategoryUseCase,
+    private readonly badgeRepo: IBadgeRepository,
+    private readonly verifyChallenges: VerifyChallengesUseCase,
   ) {}
 
-  async execute(cmd: CreateTransactionCommand): Promise<TransactionWithCategory> {
+  async execute(cmd: CreateTransactionCommand): Promise<CreateTransactionResult> {
     const occurredAt = cmd.occurredAt ? new Date(cmd.occurredAt) : new Date();
     if (occurredAt > new Date()) {
       throw new BadRequestException('occurredAt cannot be in the future');
@@ -33,7 +41,7 @@ export class CreateTransactionUseCase {
       newCategoryName: cmd.newCategoryName,
     });
 
-    return this.repo.create({
+    const tx = await this.repo.create({
       userId: cmd.userId,
       categoryId: category.id,
       type: cmd.type,
@@ -42,5 +50,18 @@ export class CreateTransactionUseCase {
       description: cmd.description,
       occurredAt,
     });
+
+    await this.badgeRepo.awardIfNotEarned(cmd.userId, 'First Transaction');
+
+    const hasStreak = await this.repo.hasConsecutiveDays(cmd.userId, 7);
+    if (hasStreak) {
+      await this.badgeRepo.awardIfNotEarned(cmd.userId, 'Consistency');
+    }
+
+    const newlyCompletedChallenges = await this.verifyChallenges
+      .execute(cmd.userId)
+      .catch(() => [] as string[]);
+
+    return { ...tx, newlyCompletedChallenges };
   }
 }

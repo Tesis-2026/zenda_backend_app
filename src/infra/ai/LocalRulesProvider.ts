@@ -3,9 +3,11 @@ import {
   AiProvider,
   ChatMessage,
   ClassificationResult,
+  PersonalizedQuizResult,
   PredictionResult,
   RecommendationResult,
   SpendingContext,
+  UserProfile,
 } from './AiProvider';
 
 // Kept for local/offline development only.
@@ -32,7 +34,11 @@ export class LocalRulesProvider implements AiProvider {
     return { categoryName: 'Otros', confidence: 0 };
   }
 
-  async chat(_messages: ChatMessage[]): Promise<string> {
+  async chat(_messages: ChatMessage[], _userProfile?: UserProfile): Promise<string> {
     return 'El chat con IA no está disponible en modo local.';
+  }
+
+  async generatePersonalizedQuiz(_context: SpendingContext, _language: string): Promise<PersonalizedQuizResult> {
+    return { questions: [] };
   }
 }

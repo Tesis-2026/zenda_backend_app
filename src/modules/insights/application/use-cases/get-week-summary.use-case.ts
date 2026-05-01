@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IInsightsRepository, PeriodSummaryData } from '../../domain/ports/insights.repository';
+import { DailyBreakdown, IInsightsRepository, PeriodSummaryData } from '../../domain/ports/insights.repository';
 
 export interface GetWeekSummaryQuery {
   userId: string;
@@ -7,7 +7,10 @@ export interface GetWeekSummaryQuery {
   week: number;
 }
 
-export type WeekSummaryResult = PeriodSummaryData & { netBalance: number };
+export type WeekSummaryResult = PeriodSummaryData & {
+  netBalance: number;
+  dailyBreakdown: DailyBreakdown[];
+};
 
 function isoWeekBounds(year: number, week: number): { from: Date; to: Date } {
   // ISO week 1 is the week containing the first Thursday of the year.
@@ -36,11 +39,15 @@ export class GetWeekSummaryUseCase {
     const { userId, year, week } = query;
     const { from, to } = isoWeekBounds(year, week);
 
-    const data = await this.repo.getPeriodSummary({ userId, from, to });
+    const [data, dailyBreakdown] = await Promise.all([
+      this.repo.getPeriodSummary({ userId, from, to }),
+      this.repo.getDailyBreakdown({ userId, from, to }),
+    ]);
 
     return {
       ...data,
       netBalance: data.totalIncome - data.totalExpense,
+      dailyBreakdown,
     };
   }
 }

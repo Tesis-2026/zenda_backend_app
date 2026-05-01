@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Post,
@@ -13,14 +14,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AI_PROVIDER } from '../../../infra/ai/ai.module';
+import { AiProvider } from '../../../infra/ai/AiProvider';
+import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
-import { CreateTransactionUseCase } from '../application/use-cases/create-transaction.use-case';
+import { CreateTransactionResult, CreateTransactionUseCase } from '../application/use-cases/create-transaction.use-case';
 import { ListTransactionsUseCase } from '../application/use-cases/list-transactions.use-case';
 import { DeleteTransactionUseCase } from '../application/use-cases/delete-transaction.use-case';
 import { GetTransactionUseCase } from '../application/use-cases/get-transaction.use-case';
 import { UpdateTransactionUseCase } from '../application/use-cases/update-transaction.use-case';
 import { TransactionWithCategory } from '../domain/ports/transaction.repository';
+import { ClassifyTransactionDto } from './dto/classify-transaction.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { ListTransactionsDto } from './dto/list-transactions.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -37,7 +42,20 @@ export class TransactionsController {
     private readonly deleteTransaction: DeleteTransactionUseCase,
     private readonly getTransaction: GetTransactionUseCase,
     private readonly updateTransaction: UpdateTransactionUseCase,
+    @Inject(AI_PROVIDER) private readonly ai: AiProvider,
+    private readonly analytics: AnalyticsService,
   ) {}
+
+  @Post('classify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'AI-classify a transaction description (US-0702)' })
+  async classify(
+    @UserId() userId: string,
+    @Body() dto: ClassifyTransactionDto,
+  ): Promise<{ categoryName: string; confidence: number }> {
+    this.analytics.track(userId, 'classify_transaction', { description: dto.description });
+    return this.ai.classifyTransaction(dto.description, dto.amount);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a transaction' })
@@ -46,7 +64,12 @@ export class TransactionsController {
     @Body() dto: CreateTransactionDto,
   ): Promise<TransactionResponseDto> {
     const result = await this.createTransaction.execute({ userId, ...dto });
-    return this.toResponse(result);
+    this.analytics.track(userId, 'record_transaction', {
+      type: dto.type,
+      amount: dto.amount,
+      categoryId: dto.categoryId ?? null,
+    });
+    return { ...this.toResponse(result), newlyCompletedChallenges: result.newlyCompletedChallenges };
   }
 
   @Get()
@@ -83,14 +106,15 @@ export class TransactionsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft delete a transaction' })
-  remove(
+  async remove(
     @UserId() userId: string,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<void> {
-    return this.deleteTransaction.execute(userId, id);
+    await this.deleteTransaction.execute(userId, id);
+    this.analytics.track(userId, 'delete_transaction', { transactionId: id });
   }
 
-  private toResponse(t: TransactionWithCategory): TransactionResponseDto {
+  private toResponse(t: TransactionWithCategory | CreateTransactionResult): TransactionResponseDto {
     return {
       id: t.id,
       userId: t.userId,

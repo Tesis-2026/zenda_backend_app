@@ -1,5 +1,14 @@
+export interface UserProfile {
+  financialLiteracyLevel: 'LOW' | 'MEDIUM' | 'HIGH' | null;
+  age: number | null;
+  university: string | null;
+  incomeType: string | null;
+  averageMonthlyIncome: number | null;
+}
+
 export interface SpendingContext {
   userId: string;
+  userProfile: UserProfile;
   months: Array<{
     period: string; // "YYYY-MM"
     categories: Array<{
@@ -41,10 +50,24 @@ export interface ChatMessage {
   content: string;
 }
 
+export type PersonalizedQuizDifficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+
+export interface PersonalizedQuizQuestion {
+  text: string;
+  options: string[];
+  correctAnswer: string;
+  difficulty: PersonalizedQuizDifficulty;
+}
+
+export interface PersonalizedQuizResult {
+  questions: PersonalizedQuizQuestion[];
+}
+
 export interface AiProvider {
   readonly name: string;
   predictExpenses(context: SpendingContext): Promise<PredictionResult>;
   generateRecommendations(context: SpendingContext): Promise<RecommendationResult[]>;
   classifyTransaction(description: string, amount: number): Promise<ClassificationResult>;
-  chat(messages: ChatMessage[]): Promise<string>;
+  chat(messages: ChatMessage[], userProfile?: UserProfile): Promise<string>;
+  generatePersonalizedQuiz(context: SpendingContext, language: string): Promise<PersonalizedQuizResult>;
 }
