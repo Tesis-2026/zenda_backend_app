@@ -8,7 +8,7 @@ export class PrismaUserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByEmail(email: string): Promise<UserEntity | null> {
-    const row = await this.prisma.user.findUnique({ where: { email } });
+    const row = await this.prisma.user.findFirst({ where: { email, deletedAt: null } });
     if (!row) return null;
     return UserEntity.create({
       id: row.id,
@@ -63,11 +63,13 @@ export class PrismaUserRepository implements IUserRepository {
     });
   }
 
-  async incrementFailedLogin(userId: string): Promise<void> {
-    await this.prisma.user.update({
+  async incrementFailedLogin(userId: string): Promise<number> {
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { failedLoginAttempts: { increment: 1 } },
+      select: { failedLoginAttempts: true },
     });
+    return updated.failedLoginAttempts;
   }
 
   async clearFailedLogin(userId: string): Promise<void> {

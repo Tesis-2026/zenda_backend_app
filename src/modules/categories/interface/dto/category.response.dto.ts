@@ -18,7 +18,4 @@ export class CategoryResponseDto {
 
   @ApiProperty({ example: '2026-03-03T14:00:00.000Z' })
   updatedAt!: string;
-
-  @ApiPropertyOptional({ example: null })
-  deletedAt?: string | null;
 }

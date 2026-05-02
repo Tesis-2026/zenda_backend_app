@@ -89,7 +89,7 @@ export class AuthController {
 
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Verify OTP code — returns a resetToken for use with reset-password (VERIF-01)' })
   verifyOtp(@Body() dto: VerifyOtpDto): Promise<{ resetToken: string }> {
     return this.verifyOtpUseCase.execute(dto.email, dto.code);

@@ -10,6 +10,10 @@ export interface ListTransactionsQuery {
   categoryId?: string;
   skip?: number;
   take?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  search?: string;
+  sort?: 'asc' | 'desc';
 }
 
 @Injectable()
@@ -24,6 +28,10 @@ export class ListTransactionsUseCase {
       categoryId: query.categoryId,
       skip: query.skip,
       take: query.take,
+      minAmount: query.minAmount,
+      maxAmount: query.maxAmount,
+      search: query.search,
+      sort: query.sort,
     });
   }
 }

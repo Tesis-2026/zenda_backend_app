@@ -10,5 +10,4 @@ export class BudgetResponseDto {
   percentageUsed!: number;
   createdAt!: string;
   updatedAt!: string;
-  deletedAt!: string | null;
 }

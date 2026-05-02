@@ -13,6 +13,11 @@ export class GetRecommendationsUseCase {
 
   async execute(userId: string): Promise<RecommendationEntity[]> {
     const context = await this.repo.getSpendingContext(userId);
+
+    if (context.months.length === 0) {
+      return this.repo.listActive(userId);
+    }
+
     const results = await this.ai.generateRecommendations(context);
 
     if (results.length === 0) {

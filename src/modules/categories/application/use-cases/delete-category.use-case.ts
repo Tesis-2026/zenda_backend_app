@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ICategoryRepository } from '../../domain/ports/category.repository';
 
 @Injectable()
@@ -12,6 +12,10 @@ export class DeleteCategoryUseCase {
     }
     if (!category.isOwnedBy(userId)) {
       throw new ForbiddenException('Cannot delete system categories');
+    }
+    const hasTx = await this.repo.hasTransactions(categoryId);
+    if (hasTx) {
+      throw new ConflictException('Cannot delete a category that has existing transactions');
     }
     await this.repo.softDelete(categoryId);
   }
