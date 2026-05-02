@@ -33,9 +33,9 @@ import { AuthController } from './interface/auth.controller';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('auth.jwtSecret'),
+        secret: config.getOrThrow<string>('auth.jwtSecret'),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        signOptions: { expiresIn: config.get('auth.jwtExpiresIn') as any },
+        signOptions: { expiresIn: config.getOrThrow('auth.jwtExpiresIn') as any },
       }),
     }),
   ],

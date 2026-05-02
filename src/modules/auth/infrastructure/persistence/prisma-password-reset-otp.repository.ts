@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { IPasswordResetOtpRepository, OtpRecord } from '../../domain/ports/password-reset-otp.repository';
@@ -6,15 +7,21 @@ import { IPasswordResetOtpRepository, OtpRecord } from '../../domain/ports/passw
 export class PrismaPasswordResetOtpRepository implements IPasswordResetOtpRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private hashCode(code: string): string {
+    return createHash('sha256').update(code).digest('hex');
+  }
+
   async create(params: { userId: string; email: string; code: string; expiresAt: Date }): Promise<OtpRecord> {
-    return this.prisma.passwordResetOtp.create({ data: params });
+    return this.prisma.passwordResetOtp.create({
+      data: { ...params, code: this.hashCode(params.code) },
+    });
   }
 
   async findValid(email: string, code: string): Promise<OtpRecord | null> {
     const record = await this.prisma.passwordResetOtp.findFirst({
       where: {
         email: email.toLowerCase(),
-        code,
+        code: this.hashCode(code),
         usedAt: null,
         expiresAt: { gt: new Date() },
       },

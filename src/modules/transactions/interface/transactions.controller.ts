@@ -25,6 +25,8 @@ import { DeleteTransactionUseCase } from '../application/use-cases/delete-transa
 import { GetTransactionUseCase } from '../application/use-cases/get-transaction.use-case';
 import { UpdateTransactionUseCase } from '../application/use-cases/update-transaction.use-case';
 import { TransactionWithCategory } from '../domain/ports/transaction.repository';
+import { SpendingAlertService } from '../../../infra/spending-alert/spending-alert.service';
+import { TransactionType } from '../domain/transaction-type.enum';
 import { ClassifyTransactionDto } from './dto/classify-transaction.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { ListTransactionsDto } from './dto/list-transactions.dto';
@@ -44,6 +46,7 @@ export class TransactionsController {
     private readonly updateTransaction: UpdateTransactionUseCase,
     @Inject(AI_PROVIDER) private readonly ai: AiProvider,
     private readonly analytics: AnalyticsService,
+    private readonly spendingAlert: SpendingAlertService,
   ) {}
 
   @Post('classify')
@@ -69,7 +72,20 @@ export class TransactionsController {
       amount: dto.amount,
       categoryId: dto.categoryId ?? null,
     });
-    return { ...this.toResponse(result), newlyCompletedChallenges: result.newlyCompletedChallenges };
+
+    // US-016: check spending anomaly (>20% over 3-month category average)
+    const anomalyAlert =
+      dto.type === TransactionType.EXPENSE && result.categoryId
+        ? await this.spendingAlert
+            .checkAnomaly(userId, result.categoryId, result.occurredAt)
+            .catch(() => null)
+        : null;
+
+    return {
+      ...this.toResponse(result),
+      newlyCompletedChallenges: result.newlyCompletedChallenges,
+      anomalyAlert,
+    };
   }
 
   @Get()
@@ -126,7 +142,6 @@ export class TransactionsController {
       occurredAt: t.occurredAt.toISOString(),
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
-      deletedAt: t.deletedAt?.toISOString() ?? null,
       category: t.category,
     };
   }

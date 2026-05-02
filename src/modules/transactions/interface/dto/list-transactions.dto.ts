@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { Type } from 'class-transformer';
-import { IsDate, IsEnum, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { IsDate, IsEnum, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export class ListTransactionsDto {
   @ApiPropertyOptional({
@@ -46,4 +46,29 @@ export class ListTransactionsDto {
   @Min(1)
   @Max(100)
   take?: number;
+
+  @ApiPropertyOptional({ description: 'Minimum amount filter', example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  minAmount?: number;
+
+  @ApiPropertyOptional({ description: 'Maximum amount filter', example: 500 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  maxAmount?: number;
+
+  @ApiPropertyOptional({ description: 'Search in description (case-insensitive)', example: 'pizza' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @ApiPropertyOptional({ description: 'Sort order by date', enum: ['asc', 'desc'], default: 'desc' })
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sort?: 'asc' | 'desc';
 }

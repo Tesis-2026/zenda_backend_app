@@ -39,9 +39,8 @@ export class LoginUseCase {
 
     const valid = await bcrypt.compare(cmd.password, user.passwordHash);
     if (!valid) {
-      await this.userRepository.incrementFailedLogin(user.id);
+      const attempts = await this.userRepository.incrementFailedLogin(user.id);
 
-      const attempts = user.failedLoginAttempts + 1;
       if (attempts >= MAX_FAILED_ATTEMPTS) {
         const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000);
         await this.userRepository.lockAccount(user.id, lockUntil);

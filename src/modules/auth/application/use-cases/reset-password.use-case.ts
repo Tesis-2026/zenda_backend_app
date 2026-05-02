@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { IPasswordResetTokenRepository } from '../../domain/ports/password-reset-token.repository';
+import { IRefreshTokenRepository } from '../../domain/ports/refresh-token.repository';
 import { IUserRepository } from '../../domain/ports/user.repository';
 
 export interface ResetPasswordCommand {
@@ -14,6 +15,7 @@ export class ResetPasswordUseCase {
   constructor(
     private readonly tokenRepository: IPasswordResetTokenRepository,
     private readonly userRepository: IUserRepository,
+    private readonly refreshTokenRepository: IRefreshTokenRepository,
     private readonly config: ConfigService,
   ) {}
 
@@ -35,5 +37,6 @@ export class ResetPasswordUseCase {
 
     await this.userRepository.updatePasswordHash(record.userId, passwordHash);
     await this.tokenRepository.markUsed(record.id);
+    await this.refreshTokenRepository.deleteByUserId(record.userId);
   }
 }

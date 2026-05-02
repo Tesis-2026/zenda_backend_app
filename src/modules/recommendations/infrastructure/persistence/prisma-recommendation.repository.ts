@@ -54,6 +54,18 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
     });
   }
 
+  async getStats(userId: string): Promise<{ total: number; accepted: number; acceptanceRate: number }> {
+    const recs = await this.prisma.recommendation.findMany({
+      where: { userId },
+      include: { feedback: true },
+    });
+    const withFeedback = recs.filter((r) => r.feedback !== null);
+    const accepted = withFeedback.filter((r) => r.feedback?.accepted === true).length;
+    const total = withFeedback.length;
+    const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) / 100 : 0;
+    return { total, accepted, acceptanceRate };
+  }
+
   async getSpendingContext(userId: string): Promise<SpendingContext> {
     const now = new Date();
     const months: SpendingContext['months'] = [];

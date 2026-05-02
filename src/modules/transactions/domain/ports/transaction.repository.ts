@@ -23,6 +23,10 @@ export interface TransactionFilters {
   categoryId?: string;
   skip?: number;
   take?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  search?: string;
+  sort?: 'asc' | 'desc';
 }
 
 export interface UpdateTransactionParams {

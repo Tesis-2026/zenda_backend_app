@@ -89,8 +89,19 @@ export class PrismaTransactionRepository implements ITransactionRepository {
               },
             }
           : {}),
+        ...(filters.minAmount !== undefined || filters.maxAmount !== undefined
+          ? {
+              amount: {
+                ...(filters.minAmount !== undefined && { gte: filters.minAmount }),
+                ...(filters.maxAmount !== undefined && { lte: filters.maxAmount }),
+              },
+            }
+          : {}),
+        ...(filters.search && {
+          description: { contains: filters.search, mode: 'insensitive' as const },
+        }),
       },
-      orderBy: { occurredAt: 'desc' },
+      orderBy: { occurredAt: filters.sort === 'asc' ? 'asc' : 'desc' },
       include: { category: { select: { id: true, name: true } } },
       ...(filters.skip !== undefined && { skip: filters.skip }),
       take: filters.take ?? 100,

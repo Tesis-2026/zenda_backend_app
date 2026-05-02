@@ -83,6 +83,61 @@ export class VerifyChallengesUseCase {
         return total >= minimumAmount;
       }
 
+      case 'no_transactions_category': {
+        const { categoryName, durationDays } = criteria;
+        const from = new Date();
+        from.setDate(from.getDate() - durationDays);
+        from.setHours(0, 0, 0, 0);
+
+        const category = await this.prisma.category.findFirst({
+          where: { name: { equals: categoryName, mode: 'insensitive' }, deletedAt: null },
+          select: { id: true },
+        });
+        if (!category) return true;
+
+        const count = await this.prisma.transaction.count({
+          where: {
+            userId,
+            categoryId: category.id,
+            deletedAt: null,
+            occurredAt: { gte: from },
+          },
+        });
+        return count === 0;
+      }
+
+      case 'category_reduction_percentage': {
+        const { categoryName, reductionPercent } = criteria;
+
+        const category = await this.prisma.category.findFirst({
+          where: { name: { equals: categoryName, mode: 'insensitive' }, deletedAt: null },
+          select: { id: true },
+        });
+        if (!category) return false;
+
+        const now = new Date();
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        const [current, previous] = await Promise.all([
+          this.prisma.transaction.aggregate({
+            where: { userId, categoryId: category.id, deletedAt: null, occurredAt: { gte: currentMonthStart } },
+            _sum: { amount: true },
+          }),
+          this.prisma.transaction.aggregate({
+            where: { userId, categoryId: category.id, deletedAt: null, occurredAt: { gte: prevMonthStart, lt: currentMonthStart } },
+            _sum: { amount: true },
+          }),
+        ]);
+
+        const prevTotal = (previous._sum.amount ?? new Decimal(0)).toNumber();
+        if (prevTotal === 0) return false;
+
+        const currTotal = (current._sum.amount ?? new Decimal(0)).toNumber();
+        const reduction = ((prevTotal - currTotal) / prevTotal) * 100;
+        return reduction >= reductionPercent;
+      }
+
       default:
         return false;
     }

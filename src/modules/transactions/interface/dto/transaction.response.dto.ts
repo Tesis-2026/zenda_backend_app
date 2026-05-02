@@ -39,12 +39,12 @@ export class TransactionResponseDto {
   @ApiProperty({ example: '2026-03-03T10:30:10.000Z' })
   updatedAt!: string;
 
-  @ApiPropertyOptional({ example: null })
-  deletedAt?: string | null;
-
   @ApiPropertyOptional({ type: () => TransactionCategoryDto })
   category?: TransactionCategoryDto | null;
 
   @ApiPropertyOptional({ type: [String], example: ['Daily Habit Challenge'] })
   newlyCompletedChallenges?: string[];
+
+  @ApiPropertyOptional({ type: Object, nullable: true, example: { categoryName: 'Food', pctOver: 35 } })
+  anomalyAlert?: { categoryName: string; pctOver: number } | null;
 }

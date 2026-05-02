@@ -80,7 +80,6 @@ export class CategoriesController {
       userId: entity.userId,
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
-      deletedAt: entity.deletedAt?.toISOString() ?? null,
     };
   }
 }
