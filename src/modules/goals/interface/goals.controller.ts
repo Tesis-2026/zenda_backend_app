@@ -114,7 +114,6 @@ export class GoalsController {
       dueDate: entity.dueDate?.toISOString() ?? null,
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
-      deletedAt: entity.deletedAt?.toISOString() ?? null,
     };
   }
 

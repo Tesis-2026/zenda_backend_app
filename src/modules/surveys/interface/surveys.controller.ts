@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, ConflictException, Controller, Get, HttpCode, HttpStatus, NotFoundException, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SurveyType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -30,7 +30,9 @@ export class SurveysController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit pre-usage survey response (US-1201)' })
   async submitPre(@UserId() userId: string, @Body() dto: SubmitSurveyDto): Promise<{ score: number; level: string }> {
-    return this.submitResponse(userId, SurveyType.PRE, dto.answers);
+    const result = await this.submitResponse(userId, SurveyType.PRE, dto.answers);
+    void this.prisma.user.update({ where: { id: userId }, data: { financialLiteracyLevel: result.level as any, profileCompleted: true } });
+    return result;
   }
 
   @Post('post/response')
@@ -52,6 +54,44 @@ export class SurveysController {
     return { ...postResult, improvement };
   }
 
+  @Get('sus')
+  @ApiOperation({ summary: 'Get SUS usability questionnaire (US-035)' })
+  async getSusSurvey(): Promise<object> {
+    return this.getSurveyByType(SurveyType.SUS);
+  }
+
+  @Post('sus/response')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Submit SUS survey response and compute SUS score (US-035)' })
+  async submitSus(@UserId() userId: string, @Body() dto: SubmitSurveyDto): Promise<{ susScore: number; grade: string }> {
+    const survey = await this.prisma.survey.findFirst({
+      where: { type: SurveyType.SUS },
+      include: { questions: { orderBy: { order: 'asc' } } },
+    });
+    if (!survey) throw new NotFoundException('SUS survey not configured');
+
+    const existing = await this.prisma.surveyResponse.findUnique({
+      where: { userId_surveyId: { userId, surveyId: survey.id } },
+    });
+    if (existing) throw new ConflictException('SUS survey already submitted');
+
+    // Standard SUS scoring formula over 10 Likert items
+    let contributionSum = 0;
+    for (const question of survey.questions) {
+      const raw = parseInt(dto.answers[question.id] ?? '3', 10);
+      const contribution = question.order % 2 !== 0 ? raw - 1 : 5 - raw;
+      contributionSum += contribution;
+    }
+    const susScore = Math.round(contributionSum * 2.5);
+
+    await this.prisma.surveyResponse.create({
+      data: { userId, surveyId: survey.id, answersJson: dto.answers, score: new Decimal(susScore) },
+    });
+
+    const grade = susScore >= 85 ? 'Excelente' : susScore >= 70 ? 'Bueno' : susScore >= 50 ? 'Regular' : 'Bajo';
+    return { susScore, grade };
+  }
+
   @Get('comparison')
   @ApiOperation({ summary: 'Get pre/post comparison for a user (US-1203)' })
   async comparison(@UserId() userId: string): Promise<object> {
@@ -67,9 +107,12 @@ export class SurveysController {
 
     const preScore = preResp?.score?.toNumber() ?? null;
     const postScore = postResp?.score?.toNumber() ?? null;
-    const improvement = preScore !== null && postScore !== null ? postScore - preScore : null;
+    const improvementPercentage =
+      preScore !== null && postScore !== null && preScore > 0
+        ? Math.round(((postScore - preScore) / preScore) * 100)
+        : null;
 
-    return { preScore, postScore, improvementPercentage: improvement };
+    return { preScore, postScore, improvementPercentage };
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
@@ -111,10 +154,15 @@ export class SurveysController {
       score = total > 0 && Object.keys(answers).length === total ? 100 : 50;
     }
 
-    await this.prisma.surveyResponse.upsert({
+    const existing = await this.prisma.surveyResponse.findUnique({
       where: { userId_surveyId: { userId, surveyId: survey.id } },
-      create: { userId, surveyId: survey.id, answersJson: answers, score: new Decimal(score) },
-      update: { answersJson: answers, score: new Decimal(score) },
+    });
+    if (existing) {
+      throw new ConflictException('Survey response already submitted');
+    }
+
+    await this.prisma.surveyResponse.create({
+      data: { userId, surveyId: survey.id, answersJson: answers, score: new Decimal(score) },
     });
 
     const level = score >= 70 ? 'HIGH' : score >= 40 ? 'MEDIUM' : 'LOW';

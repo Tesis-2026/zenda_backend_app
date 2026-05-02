@@ -95,4 +95,11 @@ export class PrismaCategoryRepository implements ICategoryRepository {
       data: { deletedAt: new Date() },
     });
   }
+
+  async hasTransactions(categoryId: string): Promise<boolean> {
+    const count = await this.prisma.transaction.count({
+      where: { categoryId, deletedAt: null },
+    });
+    return count > 0;
+  }
 }

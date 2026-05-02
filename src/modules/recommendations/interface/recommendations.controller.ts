@@ -1,7 +1,8 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
+import { IRecommendationRepository } from '../domain/ports/recommendation.repository';
 import { GetRecommendationsUseCase } from '../application/use-cases/get-recommendations.use-case';
 import { SubmitFeedbackUseCase } from '../application/use-cases/submit-feedback.use-case';
 import { RecommendationResponseDto } from './dto/recommendation.response.dto';
@@ -15,6 +16,7 @@ export class RecommendationsController {
   constructor(
     private readonly getRecommendations: GetRecommendationsUseCase,
     private readonly submitFeedback: SubmitFeedbackUseCase,
+    @Inject(IRecommendationRepository) private readonly recommendationRepository: IRecommendationRepository,
   ) {}
 
   @Get()
@@ -22,6 +24,12 @@ export class RecommendationsController {
   async list(@UserId() userId: string): Promise<RecommendationResponseDto[]> {
     const recs = await this.getRecommendations.execute(userId);
     return recs.map(RecommendationResponseDto.from);
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Get recommendation acceptance rate stats (US-0902)' })
+  async stats(@UserId() userId: string): Promise<{ total: number; accepted: number; acceptanceRate: number }> {
+    return this.recommendationRepository.getStats(userId);
   }
 
   @Post(':id/feedback')

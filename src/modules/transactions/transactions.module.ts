@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AiModule } from '../../infra/ai/ai.module';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
+import { SpendingAlertService } from '../../infra/spending-alert/spending-alert.service';
 import { BadgesModule } from '../badges/badges.module';
 import { CategoriesModule } from '../categories/categories.module';
 import { ChallengesModule } from '../challenges/challenges.module';
@@ -23,6 +24,7 @@ import { TransactionsController } from './interface/transactions.controller';
     DeleteTransactionUseCase,
     GetTransactionUseCase,
     UpdateTransactionUseCase,
+    SpendingAlertService,
   ],
   exports: [ITransactionRepository],
 })

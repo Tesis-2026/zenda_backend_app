@@ -1,10 +1,14 @@
 import * as bcrypt from 'bcrypt';
 import {
   CategoryType,
+  FinancialLiteracyLevel,
+  IncomeType,
   PrismaClient,
-  TransactionType,
-  TopicDifficulty,
+  RecommendationType,
   SurveyType,
+  TopicDifficulty,
+  TransactionType,
+  UserChallengeStatus,
 } from '@prisma/client';
 
 type QuizDifficulty = TopicDifficulty;
@@ -379,6 +383,167 @@ const SURVEY_QUESTIONS: Array<{
     ],
     correctAnswer: 'A decrease in the purchasing power of money over time',
   },
+  // PRE questions 9–15
+  {
+    surveyType: SurveyType.PRE,
+    order: 9,
+    text: 'How many months of expenses should an emergency fund ideally cover?',
+    options: ['1 month', '2 months', '3 to 6 months', '12 months'],
+    correctAnswer: '3 to 6 months',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 10,
+    text: 'If you do not pay your full credit card balance, interest is charged on:',
+    options: [
+      'Only the new purchases made that month',
+      'The unpaid balance, compounding each billing cycle',
+      'Only the minimum payment amount',
+      'Nothing — credit cards are interest-free if you pay the minimum',
+    ],
+    correctAnswer: 'The unpaid balance, compounding each billing cycle',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 11,
+    text: 'If inflation is 6% and your savings account earns 3%, what happens to the real value of your savings?',
+    options: [
+      'It grows at 9%',
+      'It stays the same',
+      'It decreases — your purchasing power falls by approximately 3% per year',
+      'It depends on the bank',
+    ],
+    correctAnswer: 'It decreases — your purchasing power falls by approximately 3% per year',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 12,
+    text: 'What is "opportunity cost"?',
+    options: [
+      'The discount you receive when buying in bulk',
+      'The value of the next-best alternative you give up when making a choice',
+      'The extra cost of buying on credit instead of cash',
+      'A government subsidy for low-income students',
+    ],
+    correctAnswer: 'The value of the next-best alternative you give up when making a choice',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 13,
+    text: 'What is the main difference between a debit card and a credit card?',
+    options: [
+      'Debit cards charge interest; credit cards do not',
+      'Debit cards spend your own money; credit cards borrow money you must repay',
+      'Credit cards can only be used online; debit cards only in stores',
+      'There is no difference — both draw from your bank account',
+    ],
+    correctAnswer: 'Debit cards spend your own money; credit cards borrow money you must repay',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 14,
+    text: 'In Peru\'s AFP pension system, which fund type is recommended for young workers (under 30)?',
+    options: ['Fondo 0 (capital preservation)', 'Fondo 1 (conservative bonds)', 'Fondo 2 (balanced)', 'Fondo 3 (aggressive growth)'],
+    correctAnswer: 'Fondo 3 (aggressive growth)',
+  },
+  {
+    surveyType: SurveyType.PRE,
+    order: 15,
+    text: 'What is dollar cost averaging (DCA)?',
+    options: [
+      'Exchanging soles to dollars to protect against inflation',
+      'Investing a fixed amount regularly regardless of market price to reduce timing risk',
+      'Buying assets only when prices are at their lowest',
+      'A strategy used only by professional investors',
+    ],
+    correctAnswer: 'Investing a fixed amount regularly regardless of market price to reduce timing risk',
+  },
+  // POST questions 9–15 (same concepts, different phrasing)
+  {
+    surveyType: SurveyType.POST,
+    order: 9,
+    text: 'Financial experts recommend saving at least how many months of living expenses as an emergency fund?',
+    options: ['1 month', '2 months', '3 to 6 months', '18 months'],
+    correctAnswer: '3 to 6 months',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 10,
+    text: 'A Scotiabank credit card has a 60% TEA. You carry a S/500 balance for one year without paying. Approximately how much will you owe?',
+    options: ['S/530', 'S/600', 'S/800', 'S/1,050'],
+    correctAnswer: 'S/800',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 11,
+    text: 'Peru\'s BCRP targets annual inflation at approximately 2%. If your salary stays the same but prices rise 2%, your real purchasing power:',
+    options: [
+      'Increases by 2%',
+      'Stays exactly the same',
+      'Decreases by approximately 2%',
+      'Depends entirely on the dollar exchange rate',
+    ],
+    correctAnswer: 'Decreases by approximately 2%',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 12,
+    text: 'You spend S/300 on a new phone instead of contributing to your emergency fund. The S/300 of savings you forgo is called:',
+    options: [
+      'A sunk cost',
+      'The opportunity cost of buying the phone',
+      'A fixed cost',
+      'A discretionary expense',
+    ],
+    correctAnswer: 'The opportunity cost of buying the phone',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 13,
+    text: 'You pay for groceries with your Interbank debit card. The money comes from:',
+    options: [
+      'A line of credit you repay next month',
+      'Your own bank account balance immediately',
+      'A loan from Interbank at the prevailing TEA',
+      'A government subsidy for essential purchases',
+    ],
+    correctAnswer: 'Your own bank account balance immediately',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 14,
+    text: 'Between 2020 and 2022, Congress allowed Peruvians to withdraw AFP funds. What long-term risk does this create for young workers who withdrew?',
+    options: [
+      'No risk — the AFP refills balances automatically',
+      'Loss of decades of compound growth in their retirement fund',
+      'The withdrawn amount counts as taxable income at 29.5%',
+      'They lose access to future AFP Fondo 3',
+    ],
+    correctAnswer: 'Loss of decades of compound growth in their retirement fund',
+  },
+  {
+    surveyType: SurveyType.POST,
+    order: 15,
+    text: 'A university student invests S/100 every month in a fondo mutuo regardless of whether the market is up or down. This strategy is called:',
+    options: [
+      'Market timing',
+      'Dollar cost averaging',
+      'Hedging',
+      'Arbitrage',
+    ],
+    correctAnswer: 'Dollar cost averaging',
+  },
+  // SUS survey — 10 standard Likert-scale questions (no correctAnswer; scored by formula)
+  { surveyType: SurveyType.SUS, order: 1,  text: 'Creo que me gustaría usar esta aplicación con frecuencia.',                                                    options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SUS, order: 2,  text: 'Encontré la aplicación innecesariamente compleja.',                                                            options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SUS, order: 3,  text: 'Pensé que la aplicación era fácil de usar.',                                                                   options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SUS, order: 4,  text: 'Creo que necesitaría el apoyo de una persona técnica para poder usar esta aplicación.',                         options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SUS, order: 5,  text: 'Encontré que las distintas funciones de la aplicación estaban bien integradas.',                               options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SUS, order: 6,  text: 'Pensé que había demasiada inconsistencia en esta aplicación.',                                                 options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SUS, order: 7,  text: 'Imagino que la mayoría de personas aprendería a usar esta aplicación muy rápidamente.',                        options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SUS, order: 8,  text: 'Encontré la aplicación muy difícil de usar.',                                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SUS, order: 9,  text: 'Me sentí muy seguro/a usando la aplicación.',                                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SUS, order: 10, text: 'Necesité aprender muchas cosas antes de poder comenzar a usar esta aplicación.',                               options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -484,147 +649,563 @@ async function seedSurveys(): Promise<void> {
   console.log('✓ Surveys and questions seeded');
 }
 
-async function seedDemoUser(): Promise<void> {
-  const DEMO_EMAIL = 'demo@zenda.app';
-  const existing = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
-  if (existing) {
-    console.log('✓ Demo user already exists — skipping demo data seed');
-    return;
-  }
+// ─────────────────────────────────────────────────────────────────
+// PILOT USERS — 5 distinct profiles for thesis testing
+// All passwords: Demo1234!
+// ─────────────────────────────────────────────────────────────────
 
-  const passwordHash = await bcrypt.hash('Demo1234!', 12);
-  const user = await prisma.user.create({
-    data: {
-      email: DEMO_EMAIL,
-      fullName: 'Demo Student',
-      passwordHash,
-      age: 21,
-      university: 'UPC',
-      profileCompleted: true,
-    },
-  });
-
-  // Fetch system categories
-  const categories = await prisma.category.findMany({
-    where: { type: CategoryType.SYSTEM, deletedAt: null },
-  });
+async function seedPilotUsers(): Promise<void> {
+  // ── Shared reference data ────────────────────────────────────────
+  const categories = await prisma.category.findMany({ where: { type: CategoryType.SYSTEM, deletedAt: null } });
   const catByName = new Map(categories.map((c) => [c.name, c.id]));
 
-  // ── 200 realistic transactions over the last 6 months ─────────────
-  const expenseEntries: Array<{ name: string; minAmount: number; maxAmount: number }> = [
-    { name: 'Food', minAmount: 8, maxAmount: 35 },
-    { name: 'Transportation', minAmount: 3, maxAmount: 25 },
-    { name: 'Entertainment', minAmount: 15, maxAmount: 60 },
-    { name: 'Shopping', minAmount: 20, maxAmount: 150 },
-    { name: 'Health', minAmount: 15, maxAmount: 80 },
-    { name: 'Subscriptions', minAmount: 20, maxAmount: 45 },
-    { name: 'Cravings', minAmount: 5, maxAmount: 20 },
-    { name: 'Housing', minAmount: 350, maxAmount: 600 },
-    { name: 'Utilities', minAmount: 30, maxAmount: 100 },
-    { name: 'Other', minAmount: 10, maxAmount: 50 },
-  ];
+  const allChallenges = await prisma.challenge.findMany();
+  const challengeByTitle = new Map(allChallenges.map((c) => [c.title, c.id]));
 
-  const incomeEntries: Array<{ name: string; minAmount: number; maxAmount: number }> = [
-    { name: 'Scholarship', minAmount: 400, maxAmount: 600 },
-    { name: 'Part-time work', minAmount: 300, maxAmount: 700 },
-    { name: 'Family', minAmount: 200, maxAmount: 400 },
-  ];
+  const allBadges = await prisma.badge.findMany();
+  const badgeByName = new Map(allBadges.map((b) => [b.name, b.id]));
+
+  const allTopics = await prisma.educationalTopic.findMany({ orderBy: { order: 'asc' } });
+  const topicByTitle = new Map(allTopics.map((t) => [t.title, t.id]));
+  const allTopicIds = allTopics.map((t) => t.id);
+
+  const preSurvey = await prisma.survey.findFirst({ where: { type: SurveyType.PRE } });
+  const postSurvey = await prisma.survey.findFirst({ where: { type: SurveyType.POST } });
+
+  const passwordHash = await bcrypt.hash('Demo1234!', 12);
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
 
   const rand = (min: number, max: number): number =>
     Math.round((min + Math.random() * (max - min)) * 100) / 100;
+  const daysBack = (n: number): Date => new Date(now.getTime() - n * 86400000);
 
-  const now = new Date();
-  const txData: Array<{
-    userId: string;
-    categoryId: string;
-    type: TransactionType;
-    amount: number;
-    currency: string;
-    description: string;
-    occurredAt: Date;
-  }> = [];
+  type TxRow = {
+    userId: string; categoryId: string; type: TransactionType;
+    amount: number; currency: string; description: string; occurredAt: Date;
+  };
 
-  // 180 expense transactions spread over 180 days
-  for (let i = 0; i < 180; i++) {
-    const daysAgo = Math.floor(Math.random() * 180);
-    const date = new Date(now);
-    date.setDate(date.getDate() - daysAgo);
-    const entry = expenseEntries[Math.floor(Math.random() * expenseEntries.length)];
-    const catId = catByName.get(entry.name);
-    if (!catId) continue;
-    txData.push({
-      userId: user.id,
-      categoryId: catId,
-      type: TransactionType.EXPENSE,
-      amount: rand(entry.minAmount, entry.maxAmount),
-      currency: 'PEN',
-      description: `${entry.name} expense`,
-      occurredAt: date,
+  // ─── Helper: build random transactions for a user ───────────────
+  function buildTransactions(
+    userId: string,
+    expenseRules: Array<{ name: string; min: number; max: number; weight?: number }>,
+    incomeRules: Array<{ name: string; min: number; max: number }>,
+    windowDays: number,
+    expenseCount: number,
+    incomeCount: number,
+    // optional bias: force extra current-month expenses for specific categories
+    currentMonthBias?: Array<{ name: string; min: number; max: number; count: number }>,
+  ): TxRow[] {
+    const rows: TxRow[] = [];
+
+    for (let i = 0; i < expenseCount; i++) {
+      const totalWeight = expenseRules.reduce((s, r) => s + (r.weight ?? 1), 0);
+      let pick = Math.random() * totalWeight;
+      const entry = expenseRules.find((r) => { pick -= (r.weight ?? 1); return pick <= 0; }) ?? expenseRules[0];
+      const catId = catByName.get(entry.name);
+      if (!catId) continue;
+      rows.push({
+        userId, categoryId: catId, type: TransactionType.EXPENSE,
+        amount: rand(entry.min, entry.max), currency: 'PEN',
+        description: `${entry.name} expense`,
+        occurredAt: daysBack(Math.floor(Math.random() * windowDays)),
+      });
+    }
+
+    if (currentMonthBias) {
+      for (const bias of currentMonthBias) {
+        const catId = catByName.get(bias.name);
+        if (!catId) continue;
+        for (let i = 0; i < bias.count; i++) {
+          rows.push({
+            userId, categoryId: catId, type: TransactionType.EXPENSE,
+            amount: rand(bias.min, bias.max), currency: 'PEN',
+            description: `${bias.name} expense`,
+            occurredAt: daysBack(Math.floor(Math.random() * (now.getDate() - 1))),
+          });
+        }
+      }
+    }
+
+    for (let i = 0; i < incomeCount; i++) {
+      const entry = incomeRules[Math.floor(Math.random() * incomeRules.length)];
+      const catId = catByName.get(entry.name);
+      if (!catId) continue;
+      rows.push({
+        userId, categoryId: catId, type: TransactionType.INCOME,
+        amount: rand(entry.min, entry.max), currency: 'PEN',
+        description: `${entry.name}`,
+        occurredAt: daysBack(Math.floor(Math.random() * windowDays)),
+      });
+    }
+
+    return rows;
+  }
+
+  // ─── Helper: award challenges idempotently ───────────────────────
+  async function awardChallenges(
+    userId: string,
+    entries: Array<{ title: string; status: UserChallengeStatus; completedAt?: Date }>,
+  ): Promise<void> {
+    for (const e of entries) {
+      const challengeId = challengeByTitle.get(e.title);
+      if (!challengeId) continue;
+      await prisma.userChallenge.upsert({
+        where: { userId_challengeId: { userId, challengeId } },
+        create: { userId, challengeId, status: e.status, acceptedAt: daysBack(10), completedAt: e.completedAt },
+        update: {},
+      });
+    }
+  }
+
+  // ─── Helper: award badges idempotently ──────────────────────────
+  async function awardBadges(userId: string, names: string[]): Promise<void> {
+    for (const name of names) {
+      const badgeId = badgeByName.get(name);
+      if (!badgeId) continue;
+      await prisma.userBadge.upsert({
+        where: { userId_badgeId: { userId, badgeId } },
+        create: { userId, badgeId, earnedAt: daysBack(Math.floor(Math.random() * 30)) },
+        update: {},
+      });
+    }
+  }
+
+  // ─── Helper: mark education topics completed ─────────────────────
+  async function completeTopics(userId: string, titles: string[]): Promise<void> {
+    for (const title of titles) {
+      const topicId = topicByTitle.get(title);
+      if (!topicId) continue;
+      await prisma.userTopicProgress.upsert({
+        where: { userId_topicId: { userId, topicId } },
+        create: { userId, topicId, completedAt: daysBack(Math.floor(Math.random() * 20) + 5) },
+        update: {},
+      });
+    }
+  }
+
+  // ─── Helper: create survey response idempotently ─────────────────
+  async function createSurveyResponse(userId: string, surveyId: string, score: number): Promise<void> {
+    const exists = await prisma.surveyResponse.findUnique({
+      where: { userId_surveyId: { userId, surveyId } },
+    });
+    if (exists) return;
+    await prisma.surveyResponse.create({
+      data: { userId, surveyId, answersJson: { seeded: true }, score },
     });
   }
 
-  // 30 income transactions (roughly 5 per month)
-  for (let i = 0; i < 30; i++) {
-    const daysAgo = Math.floor(Math.random() * 180);
-    const date = new Date(now);
-    date.setDate(date.getDate() - daysAgo);
-    const entry = incomeEntries[Math.floor(Math.random() * incomeEntries.length)];
-    const catId = catByName.get(entry.name);
-    if (!catId) continue;
-    txData.push({
-      userId: user.id,
-      categoryId: catId,
-      type: TransactionType.INCOME,
-      amount: rand(entry.minAmount, entry.maxAmount),
-      currency: 'PEN',
-      description: `${entry.name} income`,
-      occurredAt: date,
-    });
+  // ─── Helper: create recommendations ─────────────────────────────
+  async function createRecommendations(
+    userId: string,
+    recs: Array<{ type: RecommendationType; message: string; suggestedAction: string }>,
+  ): Promise<void> {
+    const existing = await prisma.recommendation.count({ where: { userId } });
+    if (existing > 0) return;
+    for (const r of recs) {
+      await prisma.recommendation.create({
+        data: { userId, type: r.type, message: r.message, suggestedAction: r.suggestedAction, isActive: true },
+      });
+    }
   }
 
-  await prisma.transaction.createMany({ data: txData });
+  // ═══════════════════════════════════════════════════════════════
+  // USER 1 — demo@zenda.app (Demo Student · balanced, mid-literacy)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    let user = await prisma.user.findUnique({ where: { email: 'demo@zenda.app' } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: 'demo@zenda.app', fullName: 'Demo Student', passwordHash,
+          age: 21, university: 'UPC', incomeType: IncomeType.PART_TIME,
+          averageMonthlyIncome: 650, financialLiteracyLevel: FinancialLiteracyLevel.MEDIUM,
+          profileCompleted: true, consentGiven: true, consentAt: daysBack(60),
+        },
+      });
+      const txs = buildTransactions(
+        user.id,
+        [
+          { name: 'Food', min: 8, max: 35, weight: 4 },
+          { name: 'Transportation', min: 3, max: 25, weight: 3 },
+          { name: 'Entertainment', min: 15, max: 55, weight: 2 },
+          { name: 'Shopping', min: 20, max: 120, weight: 2 },
+          { name: 'Health', min: 15, max: 70, weight: 1 },
+          { name: 'Subscriptions', min: 20, max: 45, weight: 1 },
+          { name: 'Cravings', min: 5, max: 20, weight: 2 },
+          { name: 'Housing', min: 350, max: 550, weight: 1 },
+          { name: 'Utilities', min: 30, max: 90, weight: 1 },
+        ],
+        [
+          { name: 'Scholarship', min: 400, max: 600 },
+          { name: 'Part-time work', min: 300, max: 500 },
+        ],
+        180, 180, 30,
+      );
+      await prisma.transaction.createMany({ data: txs });
 
-  // ── 2 savings goals (one completed) ────────────────────────────
-  const completedGoal = await prisma.savingsGoal.create({
-    data: {
-      userId: user.id,
-      name: 'Emergency Fund',
-      targetAmount: 500,
-      currentAmount: 500,
-    },
-  });
-  await prisma.goalContribution.createMany({
-    data: [
-      { goalId: completedGoal.id, amount: 200, createdAt: new Date(now.getTime() - 60 * 86400000) },
-      { goalId: completedGoal.id, amount: 150, createdAt: new Date(now.getTime() - 30 * 86400000) },
-      { goalId: completedGoal.id, amount: 150, createdAt: new Date(now.getTime() - 7 * 86400000) },
-    ],
-  });
+      const emergencyGoal = await prisma.savingsGoal.create({
+        data: { userId: user.id, name: 'Emergency Fund', targetAmount: 500, currentAmount: 500 },
+      });
+      await prisma.goalContribution.createMany({
+        data: [
+          { goalId: emergencyGoal.id, amount: 200, createdAt: daysBack(60) },
+          { goalId: emergencyGoal.id, amount: 150, createdAt: daysBack(30) },
+          { goalId: emergencyGoal.id, amount: 150, createdAt: daysBack(7) },
+        ],
+      });
+      await prisma.savingsGoal.create({
+        data: { userId: user.id, name: 'New Laptop', targetAmount: 2500, currentAmount: 800 },
+      });
 
-  await prisma.savingsGoal.create({
-    data: {
-      userId: user.id,
-      name: 'New Laptop',
-      targetAmount: 2500,
-      currentAmount: 800,
-    },
-  });
+      for (const [catName, limit] of [['Food', 300], ['Entertainment', 150]] as const) {
+        const catId = catByName.get(catName);
+        if (catId) await prisma.budget.create({
+          data: { userId: user.id, categoryId: catId, amountLimit: limit, month: currentMonth, year: currentYear },
+        }).catch(() => undefined);
+      }
+    }
 
-  // ── 2 budgets ───────────────────────────────────────────────────
-  const foodCatId = catByName.get('Food');
-  const entCatId = catByName.get('Entertainment');
-  if (foodCatId) {
-    await prisma.budget.create({
-      data: { userId: user.id, categoryId: foodCatId, amountLimit: 300, month: now.getMonth() + 1, year: now.getFullYear() },
-    }).catch(() => undefined);
+    await awardChallenges(user.id, [
+      { title: 'Record expenses for 7 consecutive days', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(5) },
+      { title: 'Save S/20 this week', status: UserChallengeStatus.ACTIVE },
+    ]);
+    await awardBadges(user.id, ['First Transaction', 'Goal Achieved']);
+    await completeTopics(user.id, ['Personal Budget', 'Savings Habits', 'Inflation']);
+    if (preSurvey) await createSurveyResponse(user.id, preSurvey.id, 60);
+    await createRecommendations(user.id, [
+      { type: RecommendationType.SAVINGS, message: 'You\'re spending 42% on needs. Try allocating 8% more to savings to reach the 20% target.', suggestedAction: 'Set a savings goal of S/130 this month.' },
+      { type: RecommendationType.BUDGET, message: 'Your entertainment budget is at 78%. You have S/33 left this month.', suggestedAction: 'Limit entertainment outings to 2 this week.' },
+    ]);
+
+    console.log('✓ User 1 seeded: demo@zenda.app / Demo1234!');
   }
-  if (entCatId) {
-    await prisma.budget.create({
-      data: { userId: user.id, categoryId: entCatId, amountLimit: 150, month: now.getMonth() + 1, year: now.getFullYear() },
-    }).catch(() => undefined);
+
+  // ═══════════════════════════════════════════════════════════════
+  // USER 2 — ana.garcia@zenda.app (Ana García · responsible saver)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    let user = await prisma.user.findUnique({ where: { email: 'ana.garcia@zenda.app' } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: 'ana.garcia@zenda.app', fullName: 'Ana García', passwordHash,
+          age: 22, university: 'PUCP', incomeType: IncomeType.SCHOLARSHIP,
+          averageMonthlyIncome: 850, financialLiteracyLevel: FinancialLiteracyLevel.HIGH,
+          profileCompleted: true, consentGiven: true, consentAt: daysBack(90),
+        },
+      });
+      // 4 months of data — expenses well below budget, income healthy
+      const txs = buildTransactions(
+        user.id,
+        [
+          { name: 'Food', min: 8, max: 28, weight: 4 },
+          { name: 'Transportation', min: 3, max: 18, weight: 3 },
+          { name: 'Entertainment', min: 10, max: 35, weight: 2 },
+          { name: 'Shopping', min: 15, max: 80, weight: 2 },
+          { name: 'Subscriptions', min: 20, max: 35, weight: 1 },
+          { name: 'Health', min: 15, max: 50, weight: 1 },
+          { name: 'Cravings', min: 4, max: 12, weight: 1 },
+          { name: 'Savings', min: 50, max: 100, weight: 1 },
+        ],
+        [
+          { name: 'Scholarship', min: 700, max: 900 },
+          { name: 'Family', min: 150, max: 250 },
+        ],
+        120, 120, 20,
+      );
+      await prisma.transaction.createMany({ data: txs });
+
+      const travelGoal = await prisma.savingsGoal.create({
+        data: { userId: user.id, name: 'Viaje a Colombia', targetAmount: 2000, currentAmount: 1200 },
+      });
+      await prisma.goalContribution.createMany({
+        data: [
+          { goalId: travelGoal.id, amount: 300, createdAt: daysBack(90) },
+          { goalId: travelGoal.id, amount: 300, createdAt: daysBack(60) },
+          { goalId: travelGoal.id, amount: 300, createdAt: daysBack(30) },
+          { goalId: travelGoal.id, amount: 300, createdAt: daysBack(10) },
+        ],
+      });
+      await prisma.savingsGoal.create({
+        data: { userId: user.id, name: 'Fondo de emergencia', targetAmount: 1000, currentAmount: 650 },
+      });
+
+      for (const [catName, limit] of [['Food', 250], ['Shopping', 200], ['Entertainment', 100]] as const) {
+        const catId = catByName.get(catName);
+        if (catId) await prisma.budget.create({
+          data: { userId: user.id, categoryId: catId, amountLimit: limit, month: currentMonth, year: currentYear },
+        }).catch(() => undefined);
+      }
+    }
+
+    await awardChallenges(user.id, [
+      { title: 'No delivery spending for 3 days', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(20) },
+      { title: 'Record expenses for 7 consecutive days', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(15) },
+      { title: 'Save S/20 this week', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(8) },
+      { title: 'Reduce entertainment spending by 10%', status: UserChallengeStatus.ACTIVE },
+    ]);
+    await awardBadges(user.id, ['First Transaction', 'Consistency', 'Goal Achieved', 'Challenger']);
+    await completeTopics(user.id, ['Personal Budget', 'Savings Habits', 'Credit and Debt', 'Inflation', 'Interest Rates']);
+    if (preSurvey) await createSurveyResponse(user.id, preSurvey.id, 80);
+    if (postSurvey) await createSurveyResponse(user.id, postSurvey.id, 95);
+    await createRecommendations(user.id, [
+      { type: RecommendationType.GOAL, message: 'You\'re 60% towards your Colombia trip! At your current pace you\'ll reach it in 2 months.', suggestedAction: 'Increase your monthly contribution to S/350 to reach the goal one month early.' },
+      { type: RecommendationType.SAVINGS, message: 'You consistently save over 20% each month. Consider opening a savings account to earn interest.', suggestedAction: 'Research high-yield savings options available to students in Peru.' },
+    ]);
+
+    console.log('✓ User 2 seeded: ana.garcia@zenda.app / Demo1234!');
   }
 
-  console.log(`✓ Demo user seeded: email=${DEMO_EMAIL}, password=Demo1234!, ${txData.length} transactions`);
+  // ═══════════════════════════════════════════════════════════════
+  // USER 3 — carlos.mendoza@zenda.app (Carlos Mendoza · overspender)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    let user = await prisma.user.findUnique({ where: { email: 'carlos.mendoza@zenda.app' } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: 'carlos.mendoza@zenda.app', fullName: 'Carlos Mendoza', passwordHash,
+          age: 20, university: 'UPC', incomeType: IncomeType.FAMILY,
+          averageMonthlyIncome: 500, financialLiteracyLevel: FinancialLiteracyLevel.LOW,
+          profileCompleted: true, consentGiven: true, consentAt: daysBack(45),
+        },
+      });
+      // 2 months of data — expenses exceed income, heavy food & entertainment
+      // Historical (last month) data
+      const txsHistory = buildTransactions(
+        user.id,
+        [
+          { name: 'Food', min: 20, max: 50, weight: 5 },
+          { name: 'Entertainment', min: 30, max: 80, weight: 4 },
+          { name: 'Shopping', min: 30, max: 120, weight: 2 },
+          { name: 'Cravings', min: 10, max: 30, weight: 3 },
+          { name: 'Transportation', min: 5, max: 20, weight: 2 },
+          { name: 'Housing', min: 300, max: 400, weight: 1 },
+        ],
+        [{ name: 'Family', min: 400, max: 550 }],
+        60, 50, 6,
+      );
+      await prisma.transaction.createMany({ data: txsHistory });
+
+      // Current-month bias: push Food well above 200 budget and Entertainment above 100
+      const currentMonthExpenses: TxRow[] = [];
+      const foodId = catByName.get('Food');
+      const entId = catByName.get('Entertainment');
+      const cravId = catByName.get('Cravings');
+      if (foodId) {
+        // ~280–320 food this month (budget is 200)
+        for (let i = 0; i < 10; i++) currentMonthExpenses.push({
+          userId: user.id, categoryId: foodId, type: TransactionType.EXPENSE,
+          amount: rand(25, 38), currency: 'PEN', description: 'Food expense',
+          occurredAt: daysBack(Math.floor(Math.random() * (now.getDate() - 1) + 1)),
+        });
+      }
+      if (entId) {
+        // ~180–220 entertainment this month (budget is 100)
+        for (let i = 0; i < 7; i++) currentMonthExpenses.push({
+          userId: user.id, categoryId: entId, type: TransactionType.EXPENSE,
+          amount: rand(28, 38), currency: 'PEN', description: 'Entertainment expense',
+          occurredAt: daysBack(Math.floor(Math.random() * (now.getDate() - 1) + 1)),
+        });
+      }
+      if (cravId) {
+        for (let i = 0; i < 5; i++) currentMonthExpenses.push({
+          userId: user.id, categoryId: cravId, type: TransactionType.EXPENSE,
+          amount: rand(12, 25), currency: 'PEN', description: 'Cravings expense',
+          occurredAt: daysBack(Math.floor(Math.random() * (now.getDate() - 1) + 1)),
+        });
+      }
+      if (currentMonthExpenses.length > 0) await prisma.transaction.createMany({ data: currentMonthExpenses });
+
+      for (const [catName, limit] of [['Food', 200], ['Entertainment', 100]] as const) {
+        const catId = catByName.get(catName);
+        if (catId) await prisma.budget.create({
+          data: { userId: user.id, categoryId: catId, amountLimit: limit, month: currentMonth, year: currentYear },
+        }).catch(() => undefined);
+      }
+      // No goals — hasn't set any yet
+    }
+
+    await awardBadges(user.id, ['First Transaction']);
+    // No challenges accepted, no education progress, no survey
+    await createRecommendations(user.id, [
+      { type: RecommendationType.BUDGET, message: 'You\'ve exceeded your Food budget by over 40% this month. That\'s S/80 over your S/200 limit.', suggestedAction: 'Cook at home at least 3 days this week to cut food costs.' },
+      { type: RecommendationType.BUDGET, message: 'Entertainment spending is 180% of your monthly budget. Consider a no-spend weekend.', suggestedAction: 'Look for free events on campus this weekend.' },
+    ]);
+
+    console.log('✓ User 3 seeded: carlos.mendoza@zenda.app / Demo1234!');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // USER 4 — lucia.torres@zenda.app (Lucia Torres · new user)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    let user = await prisma.user.findUnique({ where: { email: 'lucia.torres@zenda.app' } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: 'lucia.torres@zenda.app', fullName: 'Lucia Torres', passwordHash,
+          age: 19, university: 'UNI', incomeType: IncomeType.PART_TIME,
+          averageMonthlyIncome: 350, financialLiteracyLevel: FinancialLiteracyLevel.LOW,
+          profileCompleted: true, consentGiven: true, consentAt: daysBack(21),
+        },
+      });
+      // Only 3 weeks of data — just getting started
+      const txs = buildTransactions(
+        user.id,
+        [
+          { name: 'Food', min: 6, max: 22, weight: 4 },
+          { name: 'Transportation', min: 2, max: 12, weight: 3 },
+          { name: 'Cravings', min: 4, max: 15, weight: 2 },
+          { name: 'Shopping', min: 15, max: 60, weight: 1 },
+        ],
+        [{ name: 'Part-time work', min: 280, max: 380 }],
+        21, 18, 3,
+      );
+      await prisma.transaction.createMany({ data: txs });
+
+      const textbooksGoal = await prisma.savingsGoal.create({
+        data: { userId: user.id, name: 'Libros del ciclo', targetAmount: 300, currentAmount: 50 },
+      });
+      await prisma.goalContribution.create({
+        data: { goalId: textbooksGoal.id, amount: 50, createdAt: daysBack(5) },
+      });
+
+      const foodId = catByName.get('Food');
+      if (foodId) await prisma.budget.create({
+        data: { userId: user.id, categoryId: foodId, amountLimit: 150, month: currentMonth, year: currentYear },
+      }).catch(() => undefined);
+    }
+
+    // No challenges, no badges, no education, no survey responses
+    await createRecommendations(user.id, [
+      { type: RecommendationType.SAVINGS, message: 'Great start! You\'ve recorded 3 weeks of expenses. Try setting a savings goal to build your financial habits.', suggestedAction: 'Set aside S/50 this month for your textbooks goal.' },
+    ]);
+
+    console.log('✓ User 4 seeded: lucia.torres@zenda.app / Demo1234!');
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // USER 5 — miguel.rios@zenda.app (Miguel Ríos · power user)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    let user = await prisma.user.findUnique({ where: { email: 'miguel.rios@zenda.app' } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: 'miguel.rios@zenda.app', fullName: 'Miguel Ríos', passwordHash,
+          age: 23, university: 'UNMSM', incomeType: IncomeType.MIXED,
+          averageMonthlyIncome: 1500, financialLiteracyLevel: FinancialLiteracyLevel.HIGH,
+          profileCompleted: true, consentGiven: true, consentAt: daysBack(180),
+        },
+      });
+      // 6 months of dense data — healthy, consistent savings
+      const txs = buildTransactions(
+        user.id,
+        [
+          { name: 'Food', min: 8, max: 30, weight: 4 },
+          { name: 'Transportation', min: 3, max: 20, weight: 3 },
+          { name: 'Housing', min: 400, max: 550, weight: 1 },
+          { name: 'Utilities', min: 40, max: 100, weight: 1 },
+          { name: 'Shopping', min: 15, max: 80, weight: 2 },
+          { name: 'Health', min: 20, max: 60, weight: 1 },
+          { name: 'Subscriptions', min: 20, max: 40, weight: 1 },
+          { name: 'Entertainment', min: 10, max: 40, weight: 2 },
+          { name: 'Savings', min: 100, max: 200, weight: 2 },
+        ],
+        [
+          { name: 'Scholarship', min: 600, max: 800 },
+          { name: 'Part-time work', min: 500, max: 800 },
+          { name: 'Family', min: 200, max: 300 },
+        ],
+        180, 220, 36,
+      );
+      await prisma.transaction.createMany({ data: txs });
+
+      const mastersFund = await prisma.savingsGoal.create({
+        data: { userId: user.id, name: 'Fondo Maestría', targetAmount: 8000, currentAmount: 3000 },
+      });
+      await prisma.goalContribution.createMany({
+        data: [
+          { goalId: mastersFund.id, amount: 500, createdAt: daysBack(150) },
+          { goalId: mastersFund.id, amount: 500, createdAt: daysBack(120) },
+          { goalId: mastersFund.id, amount: 500, createdAt: daysBack(90) },
+          { goalId: mastersFund.id, amount: 500, createdAt: daysBack(60) },
+          { goalId: mastersFund.id, amount: 500, createdAt: daysBack(30) },
+          { goalId: mastersFund.id, amount: 500, createdAt: daysBack(7) },
+        ],
+      });
+
+      const apartmentGoal = await prisma.savingsGoal.create({
+        data: { userId: user.id, name: 'Depósito Apartamento', targetAmount: 6000, currentAmount: 2000 },
+      });
+      await prisma.goalContribution.createMany({
+        data: [
+          { goalId: apartmentGoal.id, amount: 500, createdAt: daysBack(90) },
+          { goalId: apartmentGoal.id, amount: 750, createdAt: daysBack(60) },
+          { goalId: apartmentGoal.id, amount: 750, createdAt: daysBack(30) },
+        ],
+      });
+
+      const conferenceGoal = await prisma.savingsGoal.create({
+        data: { userId: user.id, name: 'Conferencia Internacional', targetAmount: 1500, currentAmount: 1500 },
+      });
+      await prisma.goalContribution.createMany({
+        data: [
+          { goalId: conferenceGoal.id, amount: 500, createdAt: daysBack(60) },
+          { goalId: conferenceGoal.id, amount: 500, createdAt: daysBack(40) },
+          { goalId: conferenceGoal.id, amount: 500, createdAt: daysBack(20) },
+        ],
+      });
+
+      for (const [catName, limit] of [['Food', 400], ['Transportation', 100], ['Entertainment', 200], ['Shopping', 300]] as const) {
+        const catId = catByName.get(catName);
+        if (catId) await prisma.budget.create({
+          data: { userId: user.id, categoryId: catId, amountLimit: limit, month: currentMonth, year: currentYear },
+        }).catch(() => undefined);
+      }
+    }
+
+    // All challenges completed
+    await awardChallenges(user.id, allChallenges.map((c) => ({
+      title: c.title,
+      status: UserChallengeStatus.COMPLETED,
+      completedAt: daysBack(Math.floor(Math.random() * 60) + 5),
+    })));
+
+    // All badges
+    await awardBadges(user.id, allBadges.map((b) => b.name));
+
+    // All education topics completed
+    for (const topicId of allTopicIds) {
+      await prisma.userTopicProgress.upsert({
+        where: { userId_topicId: { userId: user.id, topicId } },
+        create: { userId: user.id, topicId, completedAt: daysBack(Math.floor(Math.random() * 30) + 5) },
+        update: {},
+      });
+    }
+
+    // Pre-survey (score 70) + post-survey (score 90 = 28.6% improvement)
+    if (preSurvey) await createSurveyResponse(user.id, preSurvey.id, 70);
+    if (postSurvey) await createSurveyResponse(user.id, postSurvey.id, 90);
+
+    await createRecommendations(user.id, [
+      { type: RecommendationType.GOAL, message: 'You\'re 37.5% toward your Masters Fund. Increasing monthly contributions by S/100 would shave 4 months off the timeline.', suggestedAction: 'Review non-essential subscriptions and redirect savings to this goal.' },
+      { type: RecommendationType.SAVINGS, message: 'You\'ve saved consistently for 6 months. Your savings rate is 22% — right on target with the 50/30/20 rule.', suggestedAction: 'Consider low-risk investment options to make your savings work harder.' },
+      { type: RecommendationType.BUDGET, message: 'Your Shopping category is at 68% this month with 10 days remaining. Good control.', suggestedAction: 'You have S/96 left in your shopping budget — hold off on non-essentials until next month.' },
+    ]);
+
+    console.log('✓ User 5 seeded: miguel.rios@zenda.app / Demo1234!');
+  }
+
+  console.log('\n📋 All pilot users ready (password for all: Demo1234!)');
+  console.log('  demo@zenda.app       — balanced mid-literacy student');
+  console.log('  ana.garcia@zenda.app — responsible saver, HIGH literacy, pre+post survey done');
+  console.log('  carlos.mendoza@zenda.app — overspender, budgets exceeded, LOW literacy');
+  console.log('  lucia.torres@zenda.app   — new user, 3 weeks data, minimal progress');
+  console.log('  miguel.rios@zenda.app    — power user, all badges/challenges/topics, pre+post done');
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1877,7 +2458,7 @@ async function main(): Promise<void> {
   await seedEducationalTopics();
   await seedSurveys();
   await seedQuizQuestions();
-  await seedDemoUser();
+  await seedPilotUsers();
   console.log('Seed complete.');
 }
 
