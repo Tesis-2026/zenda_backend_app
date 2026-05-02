@@ -651,7 +651,7 @@ async function seedSurveys(): Promise<void> {
 
 // ─────────────────────────────────────────────────────────────────
 // PILOT USERS — 5 distinct profiles for thesis testing
-// All passwords: Demo1234!
+// All passwords: Demo1234!Zenda
 // ─────────────────────────────────────────────────────────────────
 
 async function seedPilotUsers(): Promise<void> {
@@ -672,7 +672,7 @@ async function seedPilotUsers(): Promise<void> {
   const preSurvey = await prisma.survey.findFirst({ where: { type: SurveyType.PRE } });
   const postSurvey = await prisma.survey.findFirst({ where: { type: SurveyType.POST } });
 
-  const passwordHash = await bcrypt.hash('Demo1234!', 12);
+  const passwordHash = await bcrypt.hash('Demo1234!Zenda', 12);
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
@@ -879,7 +879,7 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.BUDGET, message: 'Your entertainment budget is at 78%. You have S/33 left this month.', suggestedAction: 'Limit entertainment outings to 2 this week.' },
     ]);
 
-    console.log('✓ User 1 seeded: demo@zenda.app / Demo1234!');
+    console.log('✓ User 1 seeded: demo@zenda.app / Demo1234!Zenda');
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -955,7 +955,7 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.SAVINGS, message: 'You consistently save over 20% each month. Consider opening a savings account to earn interest.', suggestedAction: 'Research high-yield savings options available to students in Peru.' },
     ]);
 
-    console.log('✓ User 2 seeded: ana.garcia@zenda.app / Demo1234!');
+    console.log('✓ User 2 seeded: ana.garcia@zenda.app / Demo1234!Zenda');
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1035,7 +1035,7 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.BUDGET, message: 'Entertainment spending is 180% of your monthly budget. Consider a no-spend weekend.', suggestedAction: 'Look for free events on campus this weekend.' },
     ]);
 
-    console.log('✓ User 3 seeded: carlos.mendoza@zenda.app / Demo1234!');
+    console.log('✓ User 3 seeded: carlos.mendoza@zenda.app / Demo1234!Zenda');
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1084,7 +1084,7 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.SAVINGS, message: 'Great start! You\'ve recorded 3 weeks of expenses. Try setting a savings goal to build your financial habits.', suggestedAction: 'Set aside S/50 this month for your textbooks goal.' },
     ]);
 
-    console.log('✓ User 4 seeded: lucia.torres@zenda.app / Demo1234!');
+    console.log('✓ User 4 seeded: lucia.torres@zenda.app / Demo1234!Zenda');
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1197,10 +1197,10 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.BUDGET, message: 'Your Shopping category is at 68% this month with 10 days remaining. Good control.', suggestedAction: 'You have S/96 left in your shopping budget — hold off on non-essentials until next month.' },
     ]);
 
-    console.log('✓ User 5 seeded: miguel.rios@zenda.app / Demo1234!');
+    console.log('✓ User 5 seeded: miguel.rios@zenda.app / Demo1234!Zenda');
   }
 
-  console.log('\n📋 All pilot users ready (password for all: Demo1234!)');
+  console.log('\n📋 All pilot users ready (password for all: Demo1234!Zenda)');
   console.log('  demo@zenda.app       — balanced mid-literacy student');
   console.log('  ana.garcia@zenda.app — responsible saver, HIGH literacy, pre+post survey done');
   console.log('  carlos.mendoza@zenda.app — overspender, budgets exceeded, LOW literacy');

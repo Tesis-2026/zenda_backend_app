@@ -45,10 +45,10 @@ async function hash(plain: string): Promise<string> {
 // ─────────────────────────────────────────────────────────────────
 
 /**
- * All demo accounts share the password:  Demo1234!
+ * All demo accounts share the password:  Demo1234!Zenda
  * Emails use the @zenda.demo domain so they are clearly non-production.
  */
-const DEMO_PASSWORD = 'Demo1234!';
+const DEMO_PASSWORD = 'Demo1234!Zenda';
 
 interface DemoUserDef {
   email: string;
@@ -1067,7 +1067,7 @@ async function main(): Promise<void> {
   await seedMaria(categoryMap);
 
   console.log('\n── Demo seed complete ──────────────────────────────────');
-  console.log('Demo credentials (all share password: Demo1234!)');
+  console.log('Demo credentials (all share password: Demo1234!Zenda)');
   console.log('  ana.garcia@zenda.demo     — balanced spender, MEDIUM literacy');
   console.log('  carlos.mendoza@zenda.demo — overspender on wants, LOW literacy');
   console.log('  lucia.torres@zenda.demo   — disciplined saver, HIGH literacy');
