@@ -106,6 +106,7 @@ export class BudgetsController {
       percentageUsed: entity.percentageUsed,
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
+      deletedAt: entity.deletedAt?.toISOString() ?? null,
     };
   }
 }

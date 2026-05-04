@@ -27,4 +27,7 @@ export class GoalResponseDto {
 
   @ApiProperty({ example: '2026-03-03T10:30:10.000Z' })
   updatedAt!: string;
+
+  @ApiPropertyOptional({ example: null, nullable: true })
+  deletedAt?: string | null;
 }
