@@ -6,15 +6,15 @@ import { PrismaUserProfileRepository } from './infrastructure/persistence/prisma
 import { GetProfileUseCase } from './application/use-cases/get-profile.use-case';
 import { UpdateProfileUseCase } from './application/use-cases/update-profile.use-case';
 import { UsersController } from './interface/users.controller';
+import { NotificationsController } from './interface/notifications.controller';
 
 @Module({
   imports: [PrismaModule, AuthModule],
-  controllers: [UsersController],
+  controllers: [UsersController, NotificationsController],
   providers: [
     { provide: IUserProfileRepository, useClass: PrismaUserProfileRepository },
     GetProfileUseCase,
     UpdateProfileUseCase,
-    // PrismaService is available via PrismaModule (global)
   ],
 })
 export class UsersModule {}

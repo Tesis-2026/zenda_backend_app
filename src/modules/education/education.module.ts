@@ -11,10 +11,12 @@ import { GetQuizUseCase } from './application/use-cases/get-quiz.use-case';
 import { SubmitQuizUseCase } from './application/use-cases/submit-quiz.use-case';
 import { GetPersonalizedQuizUseCase } from './application/use-cases/get-personalized-quiz.use-case';
 import { EducationController, PersonalizedQuizController } from './interface/education.controller';
+import { FeedbackController } from './interface/feedback.controller';
+import { SurveysController } from './interface/surveys.controller';
 
 @Module({
   imports: [PrismaModule, AiModule, BadgesModule],
-  controllers: [EducationController, PersonalizedQuizController],
+  controllers: [EducationController, PersonalizedQuizController, FeedbackController, SurveysController],
   providers: [
     { provide: IEducationRepository, useClass: PrismaEducationRepository },
     ListTopicsUseCase,

@@ -1,10 +1,10 @@
 import { Body, Controller, Inject, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/infrastructure/jwt-auth.guard';
-import { UserId } from '../auth/interface/decorators/user-id.decorator';
-import { AI_PROVIDER } from '../../infra/ai/ai.module';
-import { AiProvider, UserProfile } from '../../infra/ai/AiProvider';
-import { PrismaService } from '../../infra/prisma/prisma.service';
+import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
+import { UserId } from '../../auth/interface/decorators/user-id.decorator';
+import { AI_PROVIDER } from '../../../infra/ai/ai.module';
+import { AiProvider, UserProfile } from '../../../infra/ai/AiProvider';
+import { PrismaService } from '../../../infra/prisma/prisma.service';
 import { ChatRequestDto, ChatResponseDto } from './dto/chat.dto';
 
 @ApiTags('AI Chat')

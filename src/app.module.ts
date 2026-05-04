@@ -18,14 +18,8 @@ import { InsightsModule } from './modules/insights/insights.module';
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { EducationModule } from './modules/education/education.module';
-import { ChallengesModule } from './modules/challenges/challenges.module';
-import { BadgesModule } from './modules/badges/badges.module';
-import { FeedbackModule } from './modules/feedback/feedback.module';
-import { SurveysModule } from './modules/surveys/surveys.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
-import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -52,12 +46,6 @@ import { ChatModule } from './modules/chat/chat.module';
     PredictionsModule,
     RecommendationsModule,
     EducationModule,
-    ChallengesModule,
-    BadgesModule,
-    FeedbackModule,
-    SurveysModule,
-    NotificationsModule,
-    ChatModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -6,10 +6,11 @@ import { PrismaRecommendationRepository } from './infrastructure/persistence/pri
 import { GetRecommendationsUseCase } from './application/use-cases/get-recommendations.use-case';
 import { SubmitFeedbackUseCase } from './application/use-cases/submit-feedback.use-case';
 import { RecommendationsController } from './interface/recommendations.controller';
+import { ChatController } from './interface/chat.controller';
 
 @Module({
   imports: [PrismaModule, AiModule],
-  controllers: [RecommendationsController],
+  controllers: [RecommendationsController, ChatController],
   providers: [
     { provide: IRecommendationRepository, useClass: PrismaRecommendationRepository },
     GetRecommendationsUseCase,
