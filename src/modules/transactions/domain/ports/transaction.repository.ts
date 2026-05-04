@@ -31,6 +31,7 @@ export interface TransactionFilters {
 
 export interface UpdateTransactionParams {
   categoryId?: string;
+  type?: TransactionType;
   amount?: number;
   currency?: string;
   description?: string;

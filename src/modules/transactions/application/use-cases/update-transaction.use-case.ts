@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
+import { TransactionType } from '../../domain/transaction-type.enum';
 import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
 
 export interface UpdateTransactionCommand {
@@ -7,6 +8,7 @@ export interface UpdateTransactionCommand {
   userId: string;
   categoryId?: string;
   newCategoryName?: string;
+  type?: TransactionType;
   amount?: number;
   currency?: string;
   description?: string;
@@ -44,6 +46,7 @@ export class UpdateTransactionUseCase {
 
     return this.repo.update(cmd.id, cmd.userId, {
       categoryId,
+      type: cmd.type,
       amount: cmd.amount,
       currency: cmd.currency,
       description: cmd.description,

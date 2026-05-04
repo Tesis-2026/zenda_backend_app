@@ -1,8 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsISO8601, IsNumber, IsOptional, IsString, IsUUID, Length, MaxLength, Min } from 'class-validator';
+import { IsEnum, IsISO8601, IsNumber, IsOptional, IsString, IsUUID, Length, MaxLength, Min } from 'class-validator';
+import { TransactionType } from '../../domain/transaction-type.enum';
 
 export class UpdateTransactionDto {
+  @ApiPropertyOptional({ enum: TransactionType, example: TransactionType.EXPENSE })
+  @IsOptional()
+  @IsEnum(TransactionType)
+  type?: TransactionType;
+
   @ApiPropertyOptional({ example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8' })
   @IsOptional()
   @IsUUID('4')
