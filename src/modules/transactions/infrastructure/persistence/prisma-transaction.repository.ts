@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { TransactionType as PrismaTransactionType } from '@prisma/client';
+import {
+  CategorySource as PrismaCategorySource,
+  TransactionType as PrismaTransactionType,
+} from '@prisma/client';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import {
   ITransactionRepository,
@@ -7,6 +10,7 @@ import {
   TransactionWithCategory,
   UpdateTransactionParams,
 } from '../../domain/ports/transaction.repository';
+import { CategorySource } from '../../domain/category-source.enum';
 import { TransactionEntity } from '../../domain/transaction.entity';
 import { TransactionType } from '../../domain/transaction-type.enum';
 
@@ -27,6 +31,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
+      suggestedCategoryId: row.suggestedCategoryId ?? null,
+      aiConfidence: row.aiConfidence ? row.aiConfidence.toNumber() : null,
+      categorySource: row.categorySource as CategorySource,
     });
   }
 
@@ -44,6 +51,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
       category: row.category ?? null,
+      suggestedCategoryId: row.suggestedCategoryId ?? null,
+      aiConfidence: row.aiConfidence ? row.aiConfidence.toNumber() : null,
+      categorySource: row.categorySource as CategorySource,
     };
   }
 
@@ -55,6 +65,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
     currency: string;
     description?: string;
     occurredAt: Date;
+    suggestedCategoryId?: string | null;
+    aiConfidence?: number | null;
+    categorySource: CategorySource;
   }): Promise<TransactionWithCategory> {
     const row = await this.prisma.transaction.create({
       data: {
@@ -65,6 +78,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         currency: params.currency,
         description: params.description ?? '',
         occurredAt: params.occurredAt,
+        suggestedCategoryId: params.suggestedCategoryId ?? null,
+        aiConfidence: params.aiConfidence ?? null,
+        categorySource: params.categorySource as PrismaCategorySource,
       },
       include: { category: { select: { id: true, name: true } } },
     });
@@ -139,6 +155,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         ...(params.currency !== undefined && { currency: params.currency }),
         ...(params.description !== undefined && { description: params.description }),
         ...(params.occurredAt !== undefined && { occurredAt: params.occurredAt }),
+        ...(params.categorySource !== undefined && {
+          categorySource: params.categorySource as PrismaCategorySource,
+        }),
       },
       include: { category: { select: { id: true, name: true } } },
     });

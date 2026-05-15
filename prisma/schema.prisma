@@ -73,6 +73,26 @@ enum FeedbackType {
   GENERAL
 }
 
+enum AiConversationStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+}
+
+// Source of a transaction's category assignment.
+// AI            = AI suggested and the user accepted as-is
+// AI_OVERRIDDEN = AI suggested but the user picked a different category
+// USER          = user picked the category manually (no AI suggestion)
+enum CategorySource {
+  AI
+  AI_OVERRIDDEN
+  USER
+}
+
 // ─────────────────────────────────────────────────────────────────
 // CORE MODELS
 // ─────────────────────────────────────────────────────────────────
@@ -118,6 +138,7 @@ model User {
   passwordResetTokens     PasswordResetToken[]
   passwordResetOtps       PasswordResetOtp[]
   refreshTokens           RefreshToken[]
+  aiConversations         AiConversation[]
 
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
@@ -134,7 +155,8 @@ model Category {
   transactionType TransactionType?
   userId          String?          @db.Uuid
   user            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions    Transaction[]
+  transactions             Transaction[] @relation("TransactionCategory")
+  suggestedForTransactions Transaction[] @relation("TransactionSuggestedCategory")
   budgets         Budget[]
 
   createdAt       DateTime         @default(now())
@@ -154,8 +176,18 @@ model Transaction {
   amount      Decimal         @db.Decimal(12, 2)
   description String
   occurredAt  DateTime        @default(now())
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category    Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // AI classification provenance (Esquema de Datos #5)
+  // suggestedCategoryId: what the AI proposed at create time (preserved even if the user overrides)
+  // aiConfidence: 0.00–1.00 from the AI provider
+  // categorySource: derived from (suggestedCategoryId, categoryId) at create/update time
+  suggestedCategoryId String?         @db.Uuid
+  aiConfidence        Decimal?        @db.Decimal(3, 2)
+  categorySource      CategorySource  @default(USER)
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category          Category? @relation("TransactionCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  suggestedCategory Category? @relation("TransactionSuggestedCategory", fields: [suggestedCategoryId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
@@ -164,6 +196,7 @@ model Transaction {
   @@index([userId, occurredAt])
   @@index([userId, categoryId])
   @@index([userId, type, occurredAt])
+  @@index([userId, categorySource])
 }
 
 model SavingsGoal {
@@ -518,4 +551,37 @@ model Feedback {
 
   @@index([userId])
   @@index([type])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// AI CHAT — CONVERSATIONAL ASSISTANT
+// ─────────────────────────────────────────────────────────────────
+
+model AiConversation {
+  id        String               @id @default(uuid()) @db.Uuid
+  userId    String               @db.Uuid
+  status    AiConversationStatus @default(ACTIVE)
+  startedAt DateTime             @default(now())
+  endedAt   DateTime?            // set when the conversation is closed (e.g. on logout)
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AiMessage[]
+
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  // At most one ACTIVE conversation per user — enforced in the service layer
+  // (Prisma cannot express a partial unique index in the schema).
+  @@index([userId, status])
+}
+
+model AiMessage {
+  id             String         @id @default(uuid()) @db.Uuid
+  conversationId String         @db.Uuid
+  role           AiMessageRole
+  content        String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
 }

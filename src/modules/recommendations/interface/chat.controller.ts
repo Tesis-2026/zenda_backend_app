@@ -1,38 +1,44 @@
-import { Body, Controller, Inject, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
-import { AI_PROVIDER } from '../../../infra/ai/ai.module';
-import { AiProvider, UserProfile } from '../../../infra/ai/AiProvider';
-import { PrismaService } from '../../../infra/prisma/prisma.service';
-import { ChatRequestDto, ChatResponseDto } from './dto/chat.dto';
+import { GetActiveConversationUseCase } from '../application/use-cases/get-active-conversation.use-case';
+import { SendChatMessageUseCase } from '../application/use-cases/send-chat-message.use-case';
+import { CloseActiveConversationUseCase } from '../application/use-cases/close-active-conversation.use-case';
+import {
+  ActiveConversationResponseDto,
+  ChatReplyResponseDto,
+  SendChatMessageDto,
+} from './dto/chat.dto';
 
 @ApiTags('AI Chat')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('ai')
+@Controller('ai/chat')
 export class ChatController {
   constructor(
-    @Inject(AI_PROVIDER) private readonly ai: AiProvider,
-    private readonly prisma: PrismaService,
+    private readonly getActiveConversation: GetActiveConversationUseCase,
+    private readonly sendChatMessage: SendChatMessageUseCase,
+    private readonly closeActiveConversation: CloseActiveConversationUseCase,
   ) {}
 
-  @Post('chat')
-  @ApiOperation({ summary: 'Send a message to Zenda AI assistant (US-0037)' })
-  async chat(@UserId() userId: string, @Body() dto: ChatRequestDto): Promise<ChatResponseDto> {
-    const userRow = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { financialLiteracyLevel: true, age: true, university: true, incomeType: true, averageMonthlyIncome: true },
-    });
-    const userProfile: UserProfile = {
-      financialLiteracyLevel: (userRow?.financialLiteracyLevel as UserProfile['financialLiteracyLevel']) ?? null,
-      age: userRow?.age ?? null,
-      university: userRow?.university ?? null,
-      incomeType: userRow?.incomeType ?? null,
-      averageMonthlyIncome: userRow?.averageMonthlyIncome?.toNumber() ?? null,
-    };
+  @Get('active')
+  @ApiOperation({ summary: 'Get the active AI chat conversation with its message history' })
+  async active(@UserId() userId: string): Promise<ActiveConversationResponseDto> {
+    const conversation = await this.getActiveConversation.execute(userId);
+    return ActiveConversationResponseDto.from(conversation);
+  }
 
-    const reply = await this.ai.chat(dto.messages, userProfile);
-    return { reply };
+  @Post()
+  @ApiOperation({ summary: 'Send a message to the Zenda AI assistant — appends to the active conversation' })
+  send(@UserId() userId: string, @Body() dto: SendChatMessageDto): Promise<ChatReplyResponseDto> {
+    return this.sendChatMessage.execute(userId, dto.message);
+  }
+
+  @Post('close')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Close the active conversation (e.g. on logout) — messages are retained' })
+  async close(@UserId() userId: string): Promise<void> {
+    await this.closeActiveConversation.execute(userId);
   }
 }

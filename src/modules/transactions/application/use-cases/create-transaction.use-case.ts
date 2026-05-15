@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
 import { VerifyChallengesUseCase } from '../../../challenges/application/use-cases/verify-challenges.use-case';
+import { deriveCategorySource } from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
 import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
@@ -14,6 +15,9 @@ export interface CreateTransactionCommand {
   description?: string;
   type: TransactionType;
   occurredAt?: string;
+  // AI provenance — both must be sent together, or neither
+  suggestedCategoryId?: string;
+  aiConfidence?: number;
 }
 
 export type CreateTransactionResult = TransactionWithCategory & {
@@ -35,10 +39,27 @@ export class CreateTransactionUseCase {
       throw new BadRequestException('occurredAt cannot be in the future');
     }
 
+    // AI fields are paired: either both or neither.
+    const hasSuggestion = cmd.suggestedCategoryId !== undefined;
+    const hasConfidence = cmd.aiConfidence !== undefined;
+    if (hasSuggestion !== hasConfidence) {
+      throw new BadRequestException(
+        'suggestedCategoryId and aiConfidence must be sent together',
+      );
+    }
+    if (hasConfidence && (cmd.aiConfidence! < 0 || cmd.aiConfidence! > 1)) {
+      throw new BadRequestException('aiConfidence must be between 0 and 1');
+    }
+
     const category = await this.resolveCategory.execute({
       userId: cmd.userId,
       categoryId: cmd.categoryId,
       newCategoryName: cmd.newCategoryName,
+    });
+
+    const categorySource = deriveCategorySource({
+      suggestedCategoryId: cmd.suggestedCategoryId,
+      finalCategoryId: category.id,
     });
 
     const tx = await this.repo.create({
@@ -49,6 +70,9 @@ export class CreateTransactionUseCase {
       currency: cmd.currency ?? 'PEN',
       description: cmd.description,
       occurredAt,
+      suggestedCategoryId: cmd.suggestedCategoryId ?? null,
+      aiConfidence: cmd.aiConfidence ?? null,
+      categorySource,
     });
 
     await this.badgeRepo.awardIfNotEarned(cmd.userId, 'First Transaction');

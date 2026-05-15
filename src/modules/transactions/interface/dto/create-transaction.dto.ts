@@ -9,6 +9,7 @@ import {
   IsString,
   IsUUID,
   Length,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -61,4 +62,26 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsISO8601()
   occurredAt?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'UUID of the category that the AI suggested for this transaction. Must be sent together with aiConfidence; the server uses both to derive categorySource (AI vs AI_OVERRIDDEN).',
+    example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8',
+  })
+  @IsOptional()
+  @IsUUID('4')
+  suggestedCategoryId?: string;
+
+  @ApiPropertyOptional({
+    description: 'AI confidence score for the suggested category (0.00–1.00). Must be sent together with suggestedCategoryId.',
+    example: 0.87,
+    minimum: 0,
+    maximum: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(1)
+  aiConfidence?: number;
 }

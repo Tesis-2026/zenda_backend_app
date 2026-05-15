@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
+import { ITransactionRepository, TransactionWithCategory, UpdateTransactionParams } from '../../domain/ports/transaction.repository';
+import { CategorySource, deriveCategorySource } from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
 
@@ -44,13 +45,27 @@ export class UpdateTransactionUseCase {
       }
     }
 
-    return this.repo.update(cmd.id, cmd.userId, {
+    // If the category changes and the original was AI-derived, recompute the
+    // source against the preserved suggestion. This is what flips AI → AI_OVERRIDDEN
+    // when the user changes the category after-the-fact.
+    let categorySource: CategorySource | undefined;
+    if (categoryId !== undefined && existing.suggestedCategoryId) {
+      categorySource = deriveCategorySource({
+        suggestedCategoryId: existing.suggestedCategoryId,
+        finalCategoryId: categoryId,
+      });
+    }
+
+    const params: UpdateTransactionParams = {
       categoryId,
       type: cmd.type,
       amount: cmd.amount,
       currency: cmd.currency,
       description: cmd.description,
       occurredAt,
-    });
+      categorySource,
+    };
+
+    return this.repo.update(cmd.id, cmd.userId, params);
   }
 }

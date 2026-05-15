@@ -1,3 +1,4 @@
+import { CategorySource } from '../category-source.enum';
 import { TransactionType } from '../transaction-type.enum';
 import { TransactionEntity } from '../transaction.entity';
 
@@ -14,6 +15,9 @@ export interface TransactionWithCategory {
   updatedAt: Date;
   deletedAt: Date | null;
   category: { id: string; name: string } | null;
+  suggestedCategoryId: string | null;
+  aiConfidence: number | null;
+  categorySource: CategorySource;
 }
 
 export interface TransactionFilters {
@@ -36,6 +40,7 @@ export interface UpdateTransactionParams {
   currency?: string;
   description?: string;
   occurredAt?: Date;
+  categorySource?: CategorySource;
 }
 
 export abstract class ITransactionRepository {
@@ -47,6 +52,9 @@ export abstract class ITransactionRepository {
     currency: string;
     description?: string;
     occurredAt: Date;
+    suggestedCategoryId?: string | null;
+    aiConfidence?: number | null;
+    categorySource: CategorySource;
   }): Promise<TransactionWithCategory>;
 
   abstract findAll(

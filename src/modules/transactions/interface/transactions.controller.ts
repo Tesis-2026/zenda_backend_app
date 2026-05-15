@@ -143,6 +143,9 @@ export class TransactionsController {
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
       category: t.category,
+      suggestedCategoryId: t.suggestedCategoryId,
+      aiConfidence: t.aiConfidence,
+      categorySource: t.categorySource,
     };
   }
 }
