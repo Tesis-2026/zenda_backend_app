@@ -1,11 +1,12 @@
-import { Body, ConflictException, Controller, Get, HttpCode, HttpStatus, NotFoundException, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, ConflictException, Controller, Get, HttpCode, HttpStatus, NotFoundException, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { SurveyType } from '@prisma/client';
+import { FinancialLiteracyLevel, Survey, SurveyType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
 import { SubmitSurveyDto } from './dto/submit-survey.dto';
+import { parseSurveyQuestions, SurveyQuestionJson } from '../domain/survey-question.types';
 
 @ApiTags('Surveys')
 @ApiBearerAuth()
@@ -31,7 +32,10 @@ export class SurveysController {
   @ApiOperation({ summary: 'Submit pre-usage survey response (US-1201)' })
   async submitPre(@UserId() userId: string, @Body() dto: SubmitSurveyDto): Promise<{ score: number; level: string }> {
     const result = await this.submitResponse(userId, SurveyType.PRE, dto.answers);
-    void this.prisma.user.update({ where: { id: userId }, data: { financialLiteracyLevel: result.level as any, profileCompleted: true } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { financialLiteracyLevel: result.level as FinancialLiteracyLevel, profileCompleted: true },
+    });
     return result;
   }
 
@@ -41,7 +45,6 @@ export class SurveysController {
   async submitPost(@UserId() userId: string, @Body() dto: SubmitSurveyDto): Promise<{ score: number; improvement: number | null }> {
     const postResult = await this.submitResponse(userId, SurveyType.POST, dto.answers);
 
-    // Calculate improvement vs pre-survey
     const preSurvey = await this.prisma.survey.findFirst({ where: { type: SurveyType.PRE } });
     const preResponse = preSurvey
       ? await this.prisma.surveyResponse.findUnique({ where: { userId_surveyId: { userId, surveyId: preSurvey.id } } })
@@ -64,11 +67,8 @@ export class SurveysController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit SUS survey response and compute SUS score (US-035)' })
   async submitSus(@UserId() userId: string, @Body() dto: SubmitSurveyDto): Promise<{ susScore: number; grade: string }> {
-    const survey = await this.prisma.survey.findFirst({
-      where: { type: SurveyType.SUS },
-      include: { questions: { orderBy: { order: 'asc' } } },
-    });
-    if (!survey) throw new NotFoundException('SUS survey not configured');
+    const survey = await this.findSurveyOrThrow(SurveyType.SUS);
+    const questions = parseSurveyQuestions(survey.questionsJson);
 
     const existing = await this.prisma.surveyResponse.findUnique({
       where: { userId_surveyId: { userId, surveyId: survey.id } },
@@ -77,7 +77,7 @@ export class SurveysController {
 
     // Standard SUS scoring formula over 10 Likert items
     let contributionSum = 0;
-    for (const question of survey.questions) {
+    for (const question of questions) {
       const raw = parseInt(dto.answers[question.id] ?? '3', 10);
       const contribution = question.order % 2 !== 0 ? raw - 1 : 5 - raw;
       contributionSum += contribution;
@@ -117,16 +117,19 @@ export class SurveysController {
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
-  private async getSurveyByType(type: SurveyType): Promise<object> {
-    const survey = await this.prisma.survey.findFirst({
-      where: { type },
-      include: { questions: { orderBy: { order: 'asc' } } },
-    });
+  private async findSurveyOrThrow(type: SurveyType): Promise<Survey> {
+    const survey = await this.prisma.survey.findFirst({ where: { type } });
     if (!survey) throw new NotFoundException(`${type} survey not configured`);
+    return survey;
+  }
+
+  private async getSurveyByType(type: SurveyType): Promise<object> {
+    const survey = await this.findSurveyOrThrow(type);
+    const questions = parseSurveyQuestions(survey.questionsJson);
     return {
       id: survey.id,
       type: survey.type,
-      questions: survey.questions.map((q) => ({ id: q.id, order: q.order, text: q.text, options: q.options })),
+      questions: questions.map((q) => ({ id: q.id, order: q.order, text: q.text, options: q.options })),
     };
   }
 
@@ -135,24 +138,10 @@ export class SurveysController {
     type: SurveyType,
     answers: Record<string, string>,
   ): Promise<{ score: number; level: string }> {
-    const survey = await this.prisma.survey.findFirst({
-      where: { type },
-      include: { questions: true },
-    });
-    if (!survey) throw new NotFoundException(`${type} survey not configured`);
+    const survey = await this.findSurveyOrThrow(type);
+    const questions = parseSurveyQuestions(survey.questionsJson);
 
-    // Simple scoring: each correct answer = (100 / totalQuestions) points
-    // In the real app, correct answers are stored in the survey question options JSON
-    const total = survey.questions.length;
-    const gradeable = survey.questions.filter((q) => q.correctAnswer != null);
-    let score: number;
-    if (gradeable.length > 0) {
-      const correct = gradeable.filter((q) => answers[q.id] === q.correctAnswer).length;
-      score = Math.round((correct / gradeable.length) * 100);
-    } else {
-      // No correct answers defined yet: full score for completion
-      score = total > 0 && Object.keys(answers).length === total ? 100 : 50;
-    }
+    const score = this.scoreAnswers(questions, answers);
 
     const existing = await this.prisma.surveyResponse.findUnique({
       where: { userId_surveyId: { userId, surveyId: survey.id } },
@@ -167,5 +156,18 @@ export class SurveysController {
 
     const level = score >= 70 ? 'HIGH' : score >= 40 ? 'MEDIUM' : 'LOW';
     return { score, level };
+  }
+
+  private scoreAnswers(questions: SurveyQuestionJson[], answers: Record<string, string>): number {
+    const total = questions.length;
+    const gradeable = questions.filter((q) => q.correctAnswer !== null);
+
+    if (gradeable.length > 0) {
+      const correct = gradeable.filter((q) => answers[q.id] === q.correctAnswer).length;
+      return Math.round((correct / gradeable.length) * 100);
+    }
+
+    // No correct answers defined: full score on completion, partial on incomplete
+    return total > 0 && Object.keys(answers).length === total ? 100 : 50;
   }
 }

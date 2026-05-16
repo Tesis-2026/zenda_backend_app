@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { UserChallengeStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { IChallengeRepository } from '../../domain/ports/challenge.repository';
@@ -18,8 +17,9 @@ export class VerifyChallengesUseCase {
   ) {}
 
   async execute(userId: string): Promise<string[]> {
+    // ACTIVE = acceptedAt set but not yet completed (status derived from timestamps).
     const activeUserChallenges = await this.prisma.userChallenge.findMany({
-      where: { userId, status: UserChallengeStatus.ACTIVE },
+      where: { userId, acceptedAt: { not: null }, completedAt: null },
       include: { challenge: true },
     });
 

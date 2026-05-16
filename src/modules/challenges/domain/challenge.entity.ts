@@ -11,3 +11,14 @@ export class ChallengeEntity {
     public readonly completedAt: Date | null,
   ) {}
 }
+
+// Domain rule: status is derived from the timestamp pair, never persisted separately.
+// Kept here (domain layer) so every callsite uses the same single source of truth.
+export function deriveChallengeStatus(
+  timestamps: { acceptedAt: Date | null; completedAt: Date | null } | null | undefined,
+): ChallengeStatus {
+  if (!timestamps) return 'AVAILABLE';
+  if (timestamps.completedAt !== null) return 'COMPLETED';
+  if (timestamps.acceptedAt !== null) return 'ACTIVE';
+  return 'AVAILABLE';
+}

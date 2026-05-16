@@ -1,11 +1,24 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
 import { UpdatePreferenceDto } from './dto/update-preference.dto';
 import { NotificationPreferenceResponseDto } from './dto/notification-preference.response.dto';
+
+type PrefsMap = Partial<Record<NotificationType, boolean>>;
+
+function parsePrefs(raw: Prisma.JsonValue | null | undefined): PrefsMap {
+  if (raw === null || raw === undefined || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: PrefsMap = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof value === 'boolean' && (Object.values(NotificationType) as string[]).includes(key)) {
+      out[key as NotificationType] = value;
+    }
+  }
+  return out;
+}
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -17,12 +30,16 @@ export class NotificationsController {
   @Get('preferences')
   @ApiOperation({ summary: 'List notification preferences for the current user (US-1104)' })
   async getPreferences(@UserId() userId: string): Promise<NotificationPreferenceResponseDto[]> {
-    const existing = await this.prisma.notificationPreference.findMany({ where: { userId } });
-    const existingMap = new Map(existing.map((p) => [p.type, p.enabled]));
+    const row = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { notificationPrefs: true },
+    });
+    const prefs = parsePrefs(row.notificationPrefs);
 
+    // Missing keys default to enabled — opt-out behavior preserved from the previous table.
     return Object.values(NotificationType).map((type) => ({
       type,
-      enabled: existingMap.get(type) ?? true,
+      enabled: prefs[type] ?? true,
     }));
   }
 
@@ -35,10 +52,15 @@ export class NotificationsController {
     @Body() dto: UpdatePreferenceDto,
   ): Promise<void> {
     const notificationType = type as NotificationType;
-    await this.prisma.notificationPreference.upsert({
-      where: { userId_type: { userId, type: notificationType } },
-      create: { userId, type: notificationType, enabled: dto.enabled },
-      update: { enabled: dto.enabled },
+    const row = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { notificationPrefs: true },
+    });
+    const prefs = parsePrefs(row.notificationPrefs);
+    prefs[notificationType] = dto.enabled;
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { notificationPrefs: prefs as Prisma.InputJsonValue },
     });
   }
 }

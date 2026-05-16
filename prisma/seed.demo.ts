@@ -20,7 +20,6 @@ import {
   PrismaClient,
   RecommendationType,
   TransactionType,
-  UserChallengeStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -432,12 +431,11 @@ async function seedBudgets(
 
 /** Seed notification preferences for a user (all types enabled) */
 async function seedNotificationPreferences(userId: string): Promise<void> {
-  for (const type of Object.values(NotificationType)) {
-    const exists = await prisma.notificationPreference.findFirst({ where: { userId, type } });
-    if (!exists) {
-      await prisma.notificationPreference.create({ data: { userId, type, enabled: true } });
-    }
-  }
+  const prefs = Object.fromEntries(Object.values(NotificationType).map((type) => [type, true]));
+  await prisma.user.update({
+    where: { id: userId },
+    data: { notificationPrefs: prefs },
+  });
 }
 
 /** Seed educational topic progress */
@@ -461,10 +459,16 @@ async function seedTopicProgress(
   }
 }
 
-/** Seed challenge assignments for a user */
+/**
+ * Seed challenge assignments for a user.
+ * Status (AVAILABLE / ACTIVE / COMPLETED) is derived from (acceptedAt, completedAt):
+ *   no timestamps        → AVAILABLE
+ *   acceptedAt only      → ACTIVE
+ *   acceptedAt + completedAt → COMPLETED
+ */
 async function seedChallenges(
   userId: string,
-  assignments: Array<{ title: string; status: UserChallengeStatus; acceptedAt?: Date; completedAt?: Date }>,
+  assignments: Array<{ title: string; acceptedAt?: Date; completedAt?: Date }>,
 ): Promise<void> {
   for (const a of assignments) {
     const challenge = await prisma.challenge.findFirst({ where: { title: a.title } });
@@ -475,7 +479,6 @@ async function seedChallenges(
         data: {
           userId,
           challengeId: challenge.id,
-          status: a.status,
           acceptedAt: a.acceptedAt ?? null,
           completedAt: a.completedAt ?? null,
         },
@@ -611,10 +614,10 @@ async function seedAna(categoryMap: Map<string, string>): Promise<void> {
   ]);
 
   await seedChallenges(userId, [
-    { title: 'Record expenses for 7 consecutive days', status: UserChallengeStatus.COMPLETED, acceptedAt: d(2026, 1, 10), completedAt: d(2026, 1, 17) },
-    { title: 'Save S/20 this week', status: UserChallengeStatus.COMPLETED, acceptedAt: d(2026, 2, 1), completedAt: d(2026, 2, 7) },
-    { title: 'No delivery spending for 3 days', status: UserChallengeStatus.ACTIVE, acceptedAt: d(2026, 4, 8) },
-    { title: 'Reduce entertainment spending by 10%', status: UserChallengeStatus.AVAILABLE },
+    { title: 'Record expenses for 7 consecutive days', acceptedAt: d(2026, 1, 10), completedAt: d(2026, 1, 17) },
+    { title: 'Save S/20 this week', acceptedAt: d(2026, 2, 1), completedAt: d(2026, 2, 7) },
+    { title: 'No delivery spending for 3 days', acceptedAt: d(2026, 4, 8) },
+    { title: 'Reduce entertainment spending by 10%' },
   ]);
 
   await seedBadges(userId, ['First Transaction', 'Consistency']);
@@ -722,8 +725,8 @@ async function seedCarlos(categoryMap: Map<string, string>): Promise<void> {
   await seedTopicProgress(userId, ['Personal Budget']);
 
   await seedChallenges(userId, [
-    { title: 'Record expenses for 7 consecutive days', status: UserChallengeStatus.ACTIVE, acceptedAt: d(2026, 4, 6) },
-    { title: 'Reduce entertainment spending by 10%', status: UserChallengeStatus.AVAILABLE },
+    { title: 'Record expenses for 7 consecutive days', acceptedAt: d(2026, 4, 6) },
+    { title: 'Reduce entertainment spending by 10%' },
   ]);
 
   await seedBadges(userId, ['First Transaction']);
@@ -831,10 +834,10 @@ async function seedLucia(categoryMap: Map<string, string>): Promise<void> {
   ]);
 
   await seedChallenges(userId, [
-    { title: 'Record expenses for 7 consecutive days', status: UserChallengeStatus.COMPLETED, acceptedAt: d(2026, 1, 5), completedAt: d(2026, 1, 12) },
-    { title: 'Save S/20 this week', status: UserChallengeStatus.COMPLETED, acceptedAt: d(2026, 1, 1), completedAt: d(2026, 1, 7) },
-    { title: 'No delivery spending for 3 days', status: UserChallengeStatus.COMPLETED, acceptedAt: d(2026, 2, 10), completedAt: d(2026, 2, 13) },
-    { title: 'Reduce entertainment spending by 10%', status: UserChallengeStatus.COMPLETED, acceptedAt: d(2026, 2, 20), completedAt: d(2026, 3, 20) },
+    { title: 'Record expenses for 7 consecutive days', acceptedAt: d(2026, 1, 5), completedAt: d(2026, 1, 12) },
+    { title: 'Save S/20 this week', acceptedAt: d(2026, 1, 1), completedAt: d(2026, 1, 7) },
+    { title: 'No delivery spending for 3 days', acceptedAt: d(2026, 2, 10), completedAt: d(2026, 2, 13) },
+    { title: 'Reduce entertainment spending by 10%', acceptedAt: d(2026, 2, 20), completedAt: d(2026, 3, 20) },
   ]);
 
   await seedBadges(userId, ['First Transaction', 'Consistency', 'Challenger']);

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import {
   CategoryType,
@@ -8,7 +9,6 @@ import {
   SurveyType,
   TopicDifficulty,
   TransactionType,
-  UserChallengeStatus,
 } from '@prisma/client';
 
 type QuizDifficulty = TopicDifficulty;
@@ -619,34 +619,37 @@ async function seedEducationalTopics(): Promise<void> {
 async function seedSurveys(): Promise<void> {
   for (const survey of SURVEYS) {
     let record = await prisma.survey.findFirst({ where: { type: survey.type } });
+
+    // Build the embedded questions array. We keep stable UUIDs across re-runs by
+    // reusing the existing record's questionsJson when an entry already matches by order.
+    const existingQuestions = parseEmbeddedQuestions(record?.questionsJson);
+    const existingByOrder = new Map(existingQuestions.map((q) => [q.order, q.id]));
+
+    const questions = SURVEY_QUESTIONS
+      .filter((q) => q.surveyType === survey.type)
+      .map((q) => ({
+        id: existingByOrder.get(q.order) ?? randomUUID(),
+        order: q.order,
+        text: q.text,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+      }));
+
     if (!record) {
-      record = await prisma.survey.create({ data: survey });
-    }
-    const questions = SURVEY_QUESTIONS.filter((q) => q.surveyType === survey.type);
-    for (const q of questions) {
-      const existingQ = await prisma.surveyQuestion.findFirst({
-        where: { surveyId: record.id, order: q.order },
-        select: { id: true },
-      });
-      if (!existingQ) {
-        await prisma.surveyQuestion.create({
-          data: {
-            surveyId: record.id,
-            order: q.order,
-            text: q.text,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
-          },
-        });
-      } else {
-        await prisma.surveyQuestion.update({
-          where: { id: existingQ.id },
-          data: { correctAnswer: q.correctAnswer },
-        });
-      }
+      record = await prisma.survey.create({ data: { type: survey.type, questionsJson: questions } });
+    } else {
+      await prisma.survey.update({ where: { id: record.id }, data: { questionsJson: questions } });
     }
   }
   console.log('✓ Surveys and questions seeded');
+}
+
+function parseEmbeddedQuestions(raw: unknown): Array<{ id: string; order: number }> {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((q): q is { id: string; order: number } =>
+      typeof q === 'object' && q !== null && typeof (q as { id: unknown }).id === 'string' && typeof (q as { order: unknown }).order === 'number')
+    .map((q) => ({ id: q.id, order: q.order }));
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -744,16 +747,18 @@ async function seedPilotUsers(): Promise<void> {
   }
 
   // ─── Helper: award challenges idempotently ───────────────────────
+  // Status (AVAILABLE / ACTIVE / COMPLETED) is derived from (acceptedAt, completedAt) — see
+  // deriveChallengeStatus() in src/modules/challenges/domain/challenge.entity.ts.
   async function awardChallenges(
     userId: string,
-    entries: Array<{ title: string; status: UserChallengeStatus; completedAt?: Date }>,
+    entries: Array<{ title: string; completedAt?: Date }>,
   ): Promise<void> {
     for (const e of entries) {
       const challengeId = challengeByTitle.get(e.title);
       if (!challengeId) continue;
       await prisma.userChallenge.upsert({
         where: { userId_challengeId: { userId, challengeId } },
-        create: { userId, challengeId, status: e.status, acceptedAt: daysBack(10), completedAt: e.completedAt },
+        create: { userId, challengeId, acceptedAt: daysBack(10), completedAt: e.completedAt },
         update: {},
       });
     }
@@ -868,8 +873,8 @@ async function seedPilotUsers(): Promise<void> {
     }
 
     await awardChallenges(user.id, [
-      { title: 'Record expenses for 7 consecutive days', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(5) },
-      { title: 'Save S/20 this week', status: UserChallengeStatus.ACTIVE },
+      { title: 'Record expenses for 7 consecutive days', completedAt: daysBack(5) },
+      { title: 'Save S/20 this week' },
     ]);
     await awardBadges(user.id, ['First Transaction', 'Goal Achieved']);
     await completeTopics(user.id, ['Personal Budget', 'Savings Habits', 'Inflation']);
@@ -941,10 +946,10 @@ async function seedPilotUsers(): Promise<void> {
     }
 
     await awardChallenges(user.id, [
-      { title: 'No delivery spending for 3 days', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(20) },
-      { title: 'Record expenses for 7 consecutive days', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(15) },
-      { title: 'Save S/20 this week', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(8) },
-      { title: 'Reduce entertainment spending by 10%', status: UserChallengeStatus.ACTIVE },
+      { title: 'No delivery spending for 3 days', completedAt: daysBack(20) },
+      { title: 'Record expenses for 7 consecutive days', completedAt: daysBack(15) },
+      { title: 'Save S/20 this week', completedAt: daysBack(8) },
+      { title: 'Reduce entertainment spending by 10%' },
     ]);
     await awardBadges(user.id, ['First Transaction', 'Consistency', 'Goal Achieved', 'Challenger']);
     await completeTopics(user.id, ['Personal Budget', 'Savings Habits', 'Credit and Debt', 'Inflation', 'Interest Rates']);
@@ -1171,7 +1176,6 @@ async function seedPilotUsers(): Promise<void> {
     // All challenges completed
     await awardChallenges(user.id, allChallenges.map((c) => ({
       title: c.title,
-      status: UserChallengeStatus.COMPLETED,
       completedAt: daysBack(Math.floor(Math.random() * 60) + 5),
     })));
 

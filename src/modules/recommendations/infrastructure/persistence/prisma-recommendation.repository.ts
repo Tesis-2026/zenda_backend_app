@@ -13,11 +13,10 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
   async listActive(userId: string): Promise<RecommendationEntity[]> {
     const rows = await this.prisma.recommendation.findMany({
       where: { userId, isActive: true },
-      include: { feedback: true },
       orderBy: { createdAt: 'desc' },
     });
     return rows.map((r) =>
-      new RecommendationEntity(r.id, r.userId, r.type as RecommendationEntity['type'], r.message, r.suggestedAction, r.isActive, r.feedback?.accepted ?? null, r.createdAt),
+      new RecommendationEntity(r.id, r.userId, r.type as RecommendationEntity['type'], r.message, r.suggestedAction, r.isActive, r.feedbackAccepted, r.createdAt),
     );
   }
 
@@ -37,31 +36,27 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
             suggestedAction: r.suggestedAction,
             isActive: true,
           },
-          include: { feedback: true },
         }),
       ),
     );
-    return created.map((r) => new RecommendationEntity(r.id, r.userId, r.type as RecommendationEntity['type'], r.message, r.suggestedAction, r.isActive, r.feedback?.accepted ?? null, r.createdAt));
+    return created.map((r) => new RecommendationEntity(r.id, r.userId, r.type as RecommendationEntity['type'], r.message, r.suggestedAction, r.isActive, r.feedbackAccepted, r.createdAt));
   }
 
   async submitFeedback(id: string, userId: string, accepted: boolean): Promise<void> {
-    const rec = await this.prisma.recommendation.findFirst({ where: { id, userId } });
-    if (!rec) throw new NotFoundException('Recommendation not found');
-    await this.prisma.recommendationFeedback.upsert({
-      where: { recommendationId: id },
-      create: { recommendationId: id, accepted },
-      update: { accepted },
+    const updated = await this.prisma.recommendation.updateMany({
+      where: { id, userId },
+      data: { feedbackAccepted: accepted, feedbackAt: new Date() },
     });
+    if (updated.count === 0) throw new NotFoundException('Recommendation not found');
   }
 
   async getStats(userId: string): Promise<{ total: number; accepted: number; acceptanceRate: number }> {
     const recs = await this.prisma.recommendation.findMany({
-      where: { userId },
-      include: { feedback: true },
+      where: { userId, feedbackAccepted: { not: null } },
+      select: { feedbackAccepted: true },
     });
-    const withFeedback = recs.filter((r) => r.feedback !== null);
-    const accepted = withFeedback.filter((r) => r.feedback?.accepted === true).length;
-    const total = withFeedback.length;
+    const total = recs.length;
+    const accepted = recs.filter((r) => r.feedbackAccepted === true).length;
     const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) / 100 : 0;
     return { total, accepted, acceptanceRate };
   }

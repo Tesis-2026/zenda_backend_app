@@ -40,12 +40,6 @@ enum TopicDifficulty {
   ADVANCED
 }
 
-enum UserChallengeStatus {
-  AVAILABLE
-  ACTIVE
-  COMPLETED
-}
-
 enum RecommendationType {
   SAVINGS
   BUDGET
@@ -93,15 +87,25 @@ enum CategorySource {
   USER
 }
 
+enum AuditStatus {
+  SUCCESS
+  FAILURE
+}
+
+enum AuthChallengeKind {
+  RESET_TOKEN
+  OTP
+}
+
 // ─────────────────────────────────────────────────────────────────
 // CORE MODELS
 // ─────────────────────────────────────────────────────────────────
 
 model User {
-  id                     String                  @id @default(uuid()) @db.Uuid
-  email                  String                  @unique
-  passwordHash           String
-  fullName               String
+  id           String @id @default(uuid()) @db.Uuid
+  email        String @unique
+  passwordHash String
+  fullName     String
 
   // Profile fields collected during onboarding (US-0105)
   age                    Int?
@@ -113,36 +117,41 @@ model User {
   currency               String                  @default("PEN")
 
   // Law 29733 consent (US-1303)
-  consentGiven           Boolean                 @default(false)
-  consentAt              DateTime?
+  consentGiven Boolean   @default(false)
+  consentAt    DateTime?
 
   // Login lockout (US-0102)
-  failedLoginAttempts    Int                     @default(0)
-  lockedUntil            DateTime?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
+  // Notification preferences inlined as JSON (was NotificationPreference table).
+  // Shape: { BUDGET_ALERT: boolean, ANOMALY_ALERT: boolean, PREDICTION_READY: boolean,
+  //          CHALLENGE_REMINDER: boolean, DAILY_REMINDER: boolean, BADGE_EARNED: boolean }
+  // Missing keys default to true (opt-out behavior).
+  notificationPrefs Json @default("{}")
 
   // Relations
-  categories              Category[]
-  transactions            Transaction[]
-  savingsGoals            SavingsGoal[]
-  budgets                 Budget[]
-  notificationPreferences NotificationPreference[]
-  userTopicProgress       UserTopicProgress[]
-  userChallenges          UserChallenge[]
-  userBadges              UserBadge[]
-  predictions             Prediction[]
-  recommendations         Recommendation[]
-  surveyResponses         SurveyResponse[]
-  analyticsEvents         AnalyticsEvent[]
-  auditLogs               AuditLog[]
-  feedbacks               Feedback[]
-  passwordResetTokens     PasswordResetToken[]
-  passwordResetOtps       PasswordResetOtp[]
-  refreshTokens           RefreshToken[]
-  aiConversations         AiConversation[]
+  categories        Category[]
+  transactions      Transaction[]
+  savingsGoals      SavingsGoal[]
+  budgets           Budget[]
+  userTopicProgress UserTopicProgress[]
+  quizAttempts      QuizAttempt[]
+  userChallenges    UserChallenge[]
+  userBadges        UserBadge[]
+  predictions       Prediction[]
+  recommendations   Recommendation[]
+  surveyResponses   SurveyResponse[]
+  analyticsEvents   AnalyticsEvent[]
+  auditLogs         AuditLog[]
+  feedbacks         Feedback[]
+  authChallenges    AuthChallenge[]
+  refreshTokens     RefreshToken[]
+  aiConversations   AiConversation[]
 
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
-  deletedAt              DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([email])
 }
@@ -159,9 +168,9 @@ model Category {
   suggestedForTransactions Transaction[] @relation("TransactionSuggestedCategory")
   budgets         Budget[]
 
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  deletedAt       DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([type, userId, deletedAt])
   @@index([name])
@@ -189,9 +198,9 @@ model Transaction {
   category          Category? @relation("TransactionCategory", fields: [categoryId], references: [id], onDelete: SetNull)
   suggestedCategory Category? @relation("TransactionSuggestedCategory", fields: [suggestedCategoryId], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  deletedAt   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([userId, occurredAt])
   @@index([userId, categoryId])
@@ -204,13 +213,13 @@ model SavingsGoal {
   userId        String    @db.Uuid
   name          String
   targetAmount  Decimal   @db.Decimal(12, 2)
-  currentAmount Decimal   @db.Decimal(12, 2) @default(0)
+  currentAmount Decimal   @default(0) @db.Decimal(12, 2)
   dueDate       DateTime?
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   contributions GoalContribution[]
 
@@ -241,9 +250,9 @@ model Budget {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // categoryId null = global budget; unique per user/category/period
   @@unique([userId, categoryId, month, year])
@@ -252,21 +261,8 @@ model Budget {
 
 // ─────────────────────────────────────────────────────────────────
 // NOTIFICATIONS (Phase 11)
+// Preferences live as JSON on User.notificationPrefs — see User model.
 // ─────────────────────────────────────────────────────────────────
-
-model NotificationPreference {
-  id        String           @id @default(uuid()) @db.Uuid
-  userId    String           @db.Uuid
-  type      NotificationType
-  enabled   Boolean          @default(true)
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-
-  @@unique([userId, type])
-  @@index([userId])
-}
 
 // ─────────────────────────────────────────────────────────────────
 // EDUCATION & GAMIFICATION (Phase 10)
@@ -280,9 +276,10 @@ model EducationalTopic {
   order         Int                 @default(0)
   userProgress  UserTopicProgress[]
   quizQuestions QuizQuestion[]
+  quizAttempts  QuizAttempt[]
 
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -293,35 +290,60 @@ model EducationalTopic {
 // ─────────────────────────────────────────────────────────────────
 
 model QuizQuestion {
-  id               String           @id @default(uuid()) @db.Uuid
-  topicId          String?          @db.Uuid
-  questionGroupKey String           // groups EN + ES variants of the same question
-  language         String           // 'en' or 'es'
+  id               String            @id @default(uuid()) @db.Uuid
+  topicId          String?           @db.Uuid
+  questionGroupKey String // groups EN + ES variants of the same question
+  language         String // 'en' or 'es'
   difficulty       TopicDifficulty
   text             String
-  options          Json             // String[]
+  options          Json // String[]
   correctAnswer    String
   topic            EducationalTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  attempts         QuizAttempt[]
 
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([topicId, difficulty, language])
   @@index([questionGroupKey])
 }
 
 model UserTopicProgress {
-  id          String           @id @default(uuid()) @db.Uuid
-  userId      String           @db.Uuid
-  topicId     String           @db.Uuid
-  completedAt DateTime?
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  topic       EducationalTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  id            String           @id @default(uuid()) @db.Uuid
+  userId        String           @db.Uuid
+  topicId       String           @db.Uuid
+  completedAt   DateTime?
+  score         Decimal?         @db.Decimal(5, 2) // 0–100, latest quiz score for this topic
+  attemptsCount Int              @default(0)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic         EducationalTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime         @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, topicId])
   @@index([userId])
+}
+
+// Persisted per-attempt history for quizzes (US-1004).
+// Enables tracking financial-literacy progress and the >=20% improvement KPI.
+model QuizAttempt {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  questionId     String   @db.Uuid
+  topicId        String?  @db.Uuid
+  selectedAnswer String
+  isCorrect      Boolean
+  attemptedAt    DateTime @default(now())
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question QuizQuestion      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  topic    EducationalTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, topicId, attemptedAt])
+  @@index([userId, attemptedAt])
+  @@index([questionId])
 }
 
 model Challenge {
@@ -332,25 +354,27 @@ model Challenge {
   reward         String?
   userChallenges UserChallenge[]
 
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
+// Status (AVAILABLE / ACTIVE / COMPLETED) is derived from (acceptedAt, completedAt) — never stored.
+// Domain rule: acceptedAt = null → AVAILABLE · acceptedAt set + completedAt null → ACTIVE · completedAt set → COMPLETED.
 model UserChallenge {
-  id          String              @id @default(uuid()) @db.Uuid
-  userId      String              @db.Uuid
-  challengeId String              @db.Uuid
-  status      UserChallengeStatus @default(AVAILABLE)
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  challengeId String    @db.Uuid
   acceptedAt  DateTime?
   completedAt DateTime?
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  challenge   Challenge           @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, challengeId])
-  @@index([userId, status])
+  @@index([userId, completedAt])
+  @@index([userId, acceptedAt])
 }
 
 model Badge {
@@ -361,8 +385,8 @@ model Badge {
   iconUrl     String?
   userBadges  UserBadge[]
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model UserBadge {
@@ -384,79 +408,73 @@ model UserBadge {
 model Prediction {
   id                  String          @id @default(uuid()) @db.Uuid
   userId              String          @db.Uuid
-  period              String          // Format: "YYYY-MM", e.g. "2026-04"
+  period              String // Format: "YYYY-MM", e.g. "2026-04"
   type                TransactionType
   predictedTotal      Decimal         @db.Decimal(12, 2)
-  predictedByCategory Json?           // Array of { categoryId, categoryName, amount }
-  confidenceInterval  Json?           // { lower: number, upper: number }
+  predictedByCategory Json? // Array of { categoryId, categoryName, amount }
+  confidenceInterval  Json? // { lower: number, upper: number }
   modelVersion        String?
   actualTotal         Decimal?        @db.Decimal(12, 2) // filled after period ends
-  accuracy            Decimal?        @db.Decimal(5, 2)  // retrospective accuracy %
+  accuracy            Decimal?        @db.Decimal(5, 2) // retrospective accuracy %
   user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, period, type])
   @@index([userId, period])
 }
 
 model Recommendation {
-  id              String                  @id @default(uuid()) @db.Uuid
-  userId          String                  @db.Uuid
-  type            RecommendationType
-  message         String
-  suggestedAction String?
-  isActive        Boolean                 @default(true)
-  feedback        RecommendationFeedback?
-  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String             @id @default(uuid()) @db.Uuid
+  userId           String             @db.Uuid
+  type             RecommendationType
+  message          String
+  suggestedAction  String?
+  isActive         Boolean            @default(true)
+  // Traceability for the AI-history KPI (>=80% prediction accuracy support)
+  modelVersion     String? // e.g. "rules-v1" | "azure-foundry-gpt-4o-2024-08-06"
+  source           String? // e.g. "local-rules" | "azure-foundry"
+  inputContextJson Json? // snapshot of inputs used to generate (period totals, budgets…)
+  // Lifecycle history
+  viewedAt         DateTime?
+  dismissedAt      DateTime?
+  expiresAt        DateTime?
+  // Inlined feedback (was previously RecommendationFeedback 1:1 table)
+  feedbackAccepted Boolean?
+  feedbackAt       DateTime?
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, isActive])
-}
-
-model RecommendationFeedback {
-  id               String         @id @default(uuid()) @db.Uuid
-  recommendationId String         @unique @db.Uuid
-  accepted         Boolean
-  recommendation   Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
-
-  createdAt        DateTime       @default(now())
+  @@index([userId, createdAt])
+  @@index([userId, dismissedAt])
 }
 
 // ─────────────────────────────────────────────────────────────────
 // IMPACT EVALUATION — PRE/POST SURVEYS (Phase 12)
 // ─────────────────────────────────────────────────────────────────
 
+// Surveys embed their questions as JSON (was a separate SurveyQuestion table).
+// questionsJson shape: SurveyQuestionJson[] (see src/modules/education/domain/survey-question.types.ts).
+// Question keys are UUIDs preserved across migrations so SurveyResponse.answersJson references stay valid.
 model Survey {
-  id        String           @id @default(uuid()) @db.Uuid
-  type      SurveyType
-  questions SurveyQuestion[]
-  responses SurveyResponse[]
+  id            String           @id @default(uuid()) @db.Uuid
+  type          SurveyType
+  questionsJson Json             @default("[]")
+  responses     SurveyResponse[]
 
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-}
-
-model SurveyQuestion {
-  id            String  @id @default(uuid()) @db.Uuid
-  surveyId      String  @db.Uuid
-  order         Int
-  text          String
-  options       Json    // String[] of answer options
-  correctAnswer String? // The correct option string; null for open-ended questions
-  survey        Survey  @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-
-  @@index([surveyId, order])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model SurveyResponse {
   id          String   @id @default(uuid()) @db.Uuid
   userId      String   @db.Uuid
   surveyId    String   @db.Uuid
-  answersJson Json     // Map of questionId → selectedOption
+  answersJson Json // Map of questionId → selectedOption
   score       Decimal? @db.Decimal(5, 2) // 0–100
   completedAt DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -471,11 +489,11 @@ model SurveyResponse {
 // ─────────────────────────────────────────────────────────────────
 
 model AnalyticsEvent {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  eventType String   // e.g. "record_transaction", "view_prediction"
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  eventType String // e.g. "record_transaction", "view_prediction"
   metadata  Json?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -484,46 +502,48 @@ model AnalyticsEvent {
 }
 
 model AuditLog {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String?  @db.Uuid
-  action    String   // e.g. "DELETE_ACCOUNT", "RESET_PASSWORD"
-  resource  String   // e.g. "User", "Transaction"
-  metadata  Json?
-  ipAddress String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String?     @db.Uuid // actor — who performed the action; null = system/cron
+  action     String // e.g. "DELETE_ACCOUNT", "RESET_PASSWORD"
+  resource   String // e.g. "User", "Transaction"
+  resourceId String?     @db.Uuid // UUID of the specific resource affected
+  status     AuditStatus @default(SUCCESS)
+  requestId  String? // correlation id across logs in the same request
+  httpMethod String? // GET, POST, PUT, DELETE…
+  httpPath   String? // e.g. /api/transactions/:id
+  ipAddress  String?
+  userAgent  String?
+  beforeJson Json? // state before the change
+  afterJson  Json? // state after the change
+  metadata   Json?
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
-  @@index([userId])
+  @@index([userId, createdAt])
   @@index([action, resource])
+  @@index([resource, resourceId])
+  @@index([requestId])
   @@index([createdAt])
 }
 
-model PasswordResetToken {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @db.Uuid
-  token     String    @unique
+// Unified auth challenges (was PasswordResetToken + PasswordResetOtp).
+// secret stores the hashed token (RESET_TOKEN) or hashed OTP code (OTP).
+// email is only used for OTP lookup by email; null for RESET_TOKEN.
+model AuthChallenge {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @db.Uuid
+  kind      AuthChallengeKind
+  secret    String // sha256 hash of the raw token or code
+  email     String? // only set for OTP — enables findByEmail+code
   expiresAt DateTime
   usedAt    DateTime?
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime  @default(now())
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
 
-  @@index([token])
-  @@index([userId])
-}
-
-model PasswordResetOtp {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @db.Uuid
-  email     String
-  code      String
-  expiresAt DateTime
-  usedAt    DateTime?
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime  @default(now())
-
-  @@index([email])
-  @@index([userId])
+  @@unique([kind, secret])
+  @@index([userId, kind])
+  @@index([email, kind])
 }
 
 model RefreshToken {
@@ -544,10 +564,10 @@ model Feedback {
   type       FeedbackType @default(GENERAL)
   message    String
   screenName String?
-  rating     Int?         // 1–5
+  rating     Int? // 1–5
   user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([type])
