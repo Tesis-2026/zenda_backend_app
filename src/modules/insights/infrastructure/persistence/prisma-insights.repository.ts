@@ -113,7 +113,7 @@ export class PrismaInsightsRepository implements IInsightsRepository {
       .map((e) => e.categoryId)
       .filter((id): id is string => id !== null);
     const categories = await this.prisma.category.findMany({
-      where: { id: { in: categoryIds } },
+      where: { id: { in: categoryIds }, deletedAt: null },
       select: { id: true, name: true },
     });
     const categoryMap = new Map(categories.map((c) => [c.id, c.name]));
