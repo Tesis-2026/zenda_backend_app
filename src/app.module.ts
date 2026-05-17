@@ -18,6 +18,7 @@ import { InsightsModule } from './modules/insights/insights.module';
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { EducationModule } from './modules/education/education.module';
+import { FinancialProgressModule } from './modules/financial-progress/financial-progress.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -46,6 +47,7 @@ import { UsersModule } from './modules/users/users.module';
     PredictionsModule,
     RecommendationsModule,
     EducationModule,
+    FinancialProgressModule,
   ],
   controllers: [HealthController],
   providers: [
