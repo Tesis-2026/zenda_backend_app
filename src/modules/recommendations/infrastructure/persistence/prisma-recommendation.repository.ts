@@ -92,7 +92,7 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
       ]);
 
       const catIds = byCategory.map((c) => c.categoryId).filter((id): id is string => id !== null);
-      const cats = await this.prisma.category.findMany({ where: { id: { in: catIds } }, select: { id: true, name: true } });
+      const cats = await this.prisma.category.findMany({ where: { id: { in: catIds }, deletedAt: null }, select: { id: true, name: true } });
       const catMap = new Map(cats.map((c) => [c.id, c.name]));
 
       months.push({
