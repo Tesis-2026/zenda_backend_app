@@ -5,7 +5,6 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { IUserRepository } from '../../domain/ports/user.repository';
 import { IRefreshTokenRepository } from '../../domain/ports/refresh-token.repository';
-import { AnalyticsService } from '../../../../infra/analytics/analytics.service';
 
 const MAX_FAILED_ATTEMPTS = 3;
 const LOCKOUT_MINUTES = 15;
@@ -15,6 +14,12 @@ export interface LoginCommand {
   password: string;
 }
 
+export interface LoginResult {
+  userId: string;
+  accessToken: string;
+  refreshToken: string;
+}
+
 @Injectable()
 export class LoginUseCase {
   constructor(
@@ -22,10 +27,9 @@ export class LoginUseCase {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly refreshTokenRepository: IRefreshTokenRepository,
-    private readonly analytics: AnalyticsService,
   ) {}
 
-  async execute(cmd: LoginCommand): Promise<{ accessToken: string; refreshToken: string }> {
+  async execute(cmd: LoginCommand): Promise<LoginResult> {
     const user = await this.userRepository.findByEmail(cmd.email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -60,9 +64,7 @@ export class LoginUseCase {
     const accessToken = this.jwtService.sign({ sub: user.id, email: user.email });
     const refreshToken = await this._issueRefreshToken(user.id);
 
-    this.analytics.track(user.id, 'login');
-
-    return { accessToken, refreshToken };
+    return { userId: user.id, accessToken, refreshToken };
   }
 
   private async _issueRefreshToken(userId: string): Promise<string> {
