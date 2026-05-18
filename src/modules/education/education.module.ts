@@ -3,7 +3,9 @@ import { AiModule } from '../../infra/ai/ai.module';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
 import { BadgesModule } from '../badges/badges.module';
 import { IEducationRepository } from './domain/ports/education.repository';
+import { IPersonalizedQuizContextPort } from './domain/ports/personalized-quiz-context.port';
 import { PrismaEducationRepository } from './infrastructure/persistence/prisma-education.repository';
+import { PrismaPersonalizedQuizContextRepository } from './infrastructure/persistence/prisma-personalized-quiz-context.repository';
 import { ListTopicsUseCase } from './application/use-cases/list-topics.use-case';
 import { GetTopicUseCase } from './application/use-cases/get-topic.use-case';
 import { CompleteTopicUseCase } from './application/use-cases/complete-topic.use-case';
@@ -19,6 +21,10 @@ import { SurveysController } from './interface/surveys.controller';
   controllers: [EducationController, PersonalizedQuizController, FeedbackController, SurveysController],
   providers: [
     { provide: IEducationRepository, useClass: PrismaEducationRepository },
+    {
+      provide: IPersonalizedQuizContextPort,
+      useClass: PrismaPersonalizedQuizContextRepository,
+    },
     ListTopicsUseCase,
     GetTopicUseCase,
     CompleteTopicUseCase,
