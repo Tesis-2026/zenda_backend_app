@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { AiProvider, SpendingContext } from '../../../../infra/ai/AiProvider';
 import { AI_PROVIDER } from '../../../../infra/ai/ai.module';
-import { AnalyticsService } from '../../../../infra/analytics/analytics.service';
 import { IEducationRepository } from '../../domain/ports/education.repository';
 import { IPersonalizedQuizContextPort } from '../../domain/ports/personalized-quiz-context.port';
 import { QuizQuestion } from './get-quiz.use-case';
@@ -24,7 +23,6 @@ export class GetPersonalizedQuizUseCase {
   constructor(
     private readonly repo: IEducationRepository,
     @Inject(AI_PROVIDER) private readonly ai: AiProvider,
-    private readonly analytics: AnalyticsService,
     private readonly context: IPersonalizedQuizContextPort,
   ) {}
 
@@ -54,8 +52,6 @@ export class GetPersonalizedQuizUseCase {
     }
 
     const savedQuestions = await this.repo.savePersonalizedQuestions(result.questions, lang);
-
-    this.analytics.track(cmd.userId, 'quiz_personalized', { language: lang });
 
     return {
       questions: savedQuestions.map((q) => ({

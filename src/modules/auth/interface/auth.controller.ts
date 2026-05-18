@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { RegisterUseCase } from '../application/use-cases/register.use-case';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
 import { ForgotPasswordUseCase } from '../application/use-cases/forgot-password.use-case';
@@ -39,20 +40,27 @@ export class AuthController {
     private readonly logoutUseCase: LogoutUseCase,
     private readonly sendOtpUseCase: SendOtpUseCase,
     private readonly verifyOtpUseCase: VerifyOtpUseCase,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @Post('register')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Register a new user — returns access + refresh tokens' })
-  register(@Body() dto: RegisterDto): Promise<AuthTokenResponseDto> {
-    return this.registerUseCase.execute(dto);
+  async register(@Body() dto: RegisterDto): Promise<AuthTokenResponseDto> {
+    const { userId, accessToken, refreshToken } =
+      await this.registerUseCase.execute(dto);
+    this.analytics.track(userId, 'register');
+    return { accessToken, refreshToken };
   }
 
   @Post('login')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Login — returns access + refresh tokens (locks after 3 failures)' })
-  login(@Body() dto: LoginDto): Promise<AuthTokenResponseDto> {
-    return this.loginUseCase.execute(dto);
+  async login(@Body() dto: LoginDto): Promise<AuthTokenResponseDto> {
+    const { userId, accessToken, refreshToken } =
+      await this.loginUseCase.execute(dto);
+    this.analytics.track(userId, 'login');
+    return { accessToken, refreshToken };
   }
 
   @Post('refresh')

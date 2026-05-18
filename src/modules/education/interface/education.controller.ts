@@ -96,7 +96,10 @@ export class PersonalizedQuizController {
     @UserId() userId: string,
     @Query('language') language = 'es',
   ) {
-    return this.getPersonalizedQuiz.execute({ userId, language });
+    const lang = language === 'es' ? 'es' : 'en';
+    const result = await this.getPersonalizedQuiz.execute({ userId, language });
+    this.analytics.track(userId, 'quiz_personalized', { language: lang });
+    return result;
   }
 
   @Post('personalized/submit')
