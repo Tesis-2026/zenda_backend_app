@@ -3,6 +3,8 @@ import { PrismaModule } from '../../infra/prisma/prisma.module';
 import { BadgesModule } from '../badges/badges.module';
 import { ChallengesModule } from '../challenges/challenges.module';
 import { ISavingsGoalRepository } from './domain/ports/savings-goal.repository';
+import { IGoalsProgressFacade } from './domain/ports/goals-progress.facade';
+import { GoalsProgressFacade } from './application/goals-progress.facade';
 import { PrismaGoalsRepository } from './infrastructure/persistence/prisma-goals.repository';
 import { CreateGoalUseCase } from './application/use-cases/create-goal.use-case';
 import { ListGoalsUseCase } from './application/use-cases/list-goals.use-case';
@@ -17,6 +19,7 @@ import { GoalsController } from './interface/goals.controller';
   controllers: [GoalsController],
   providers: [
     { provide: ISavingsGoalRepository, useClass: PrismaGoalsRepository },
+    { provide: IGoalsProgressFacade, useClass: GoalsProgressFacade },
     CreateGoalUseCase,
     ListGoalsUseCase,
     ContributeToGoalUseCase,
@@ -24,5 +27,6 @@ import { GoalsController } from './interface/goals.controller';
     DeleteGoalUseCase,
     ListGoalContributionsUseCase,
   ],
+  exports: [IGoalsProgressFacade],
 })
 export class GoalsModule {}
