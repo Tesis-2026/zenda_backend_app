@@ -154,6 +154,7 @@ model User {
   refreshTokens     RefreshToken[]
   aiConversations   AiConversation[]
   financialProgress UserFinancialProgress[]
+  idempotencyKeys   IdempotencyKey[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -639,4 +640,34 @@ model AiMessage {
   createdAt      DateTime       @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// IDEMPOTENCY KEYS — B28
+// Lets clients safely retry POST/PUT/PATCH after network failures
+// without creating duplicate records.
+//
+// Lifecycle:
+//   - Created on the first request with a given (key, userId).
+//   - Looked up on every subsequent request with the same pair:
+//       * matching requestHash       → return the cached response
+//       * mismatched requestHash     → 409 (key reused for a different payload)
+//   - Periodically pruned by a background job (TTL ~24h is the convention).
+// ─────────────────────────────────────────────────────────────────
+
+model IdempotencyKey {
+  id           String   @id @default(uuid()) @db.Uuid
+  key          String
+  userId       String   @db.Uuid
+  // sha256 of `${method} ${path}\n${normalized-body}` so the same key
+  // cannot be reused for a different request shape.
+  requestHash  String
+  statusCode   Int
+  responseBody Json
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([key, userId])
+  @@index([createdAt])
 }
