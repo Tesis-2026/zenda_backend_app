@@ -15,6 +15,14 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import {
+  ApiAuthErrors,
+  ApiCreated,
+  ApiNoContent,
+  ApiNotFoundError,
+  ApiOk,
+  ApiValidationError,
+} from '../../../shared/swagger/api-responses.decorator';
 import { AI_PROVIDER } from '../../../infra/ai/ai.module';
 import { AiProvider } from '../../../infra/ai/AiProvider';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
@@ -54,6 +62,9 @@ export class TransactionsController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'AI-classify a transaction description (US-0702)' })
+  @ApiOk(TransactionResponseDto, 'Classification result with suggested category and confidence')
+  @ApiValidationError()
+  @ApiAuthErrors()
   async classify(
     @UserId() userId: string,
     @Body() dto: ClassifyTransactionDto,
@@ -65,6 +76,9 @@ export class TransactionsController {
   @Post()
   @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: 'Create a transaction' })
+  @ApiCreated(TransactionResponseDto, 'Transaction recorded')
+  @ApiValidationError()
+  @ApiAuthErrors()
   async create(
     @UserId() userId: string,
     @Body() dto: CreateTransactionDto,
@@ -93,6 +107,8 @@ export class TransactionsController {
 
   @Get()
   @ApiOperation({ summary: 'List transactions with optional filters' })
+  @ApiOk(TransactionResponseDto, 'List of transactions matching the filters')
+  @ApiAuthErrors()
   async findAll(
     @UserId() userId: string,
     @Query() query: ListTransactionsDto,
@@ -103,6 +119,9 @@ export class TransactionsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a transaction by id' })
+  @ApiOk(TransactionResponseDto, 'Transaction details')
+  @ApiNotFoundError('Transaction not found or not owned by caller')
+  @ApiAuthErrors()
   async findOne(
     @UserId() userId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -113,6 +132,10 @@ export class TransactionsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a transaction' })
+  @ApiOk(TransactionResponseDto, 'Transaction updated')
+  @ApiValidationError()
+  @ApiNotFoundError('Transaction not found or not owned by caller')
+  @ApiAuthErrors()
   async update(
     @UserId() userId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -125,6 +148,9 @@ export class TransactionsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft delete a transaction' })
+  @ApiNoContent('Transaction soft-deleted')
+  @ApiNotFoundError('Transaction not found or not owned by caller')
+  @ApiAuthErrors()
   async remove(
     @UserId() userId: string,
     @Param('id', ParseUUIDPipe) id: string,
