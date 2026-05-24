@@ -14,6 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AI_PROVIDER } from '../../../infra/ai/ai.module';
 import { AiProvider } from '../../../infra/ai/AiProvider';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
@@ -51,6 +52,7 @@ export class TransactionsController {
 
   @Post('classify')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'AI-classify a transaction description (US-0702)' })
   async classify(
     @UserId() userId: string,
@@ -61,6 +63,7 @@ export class TransactionsController {
   }
 
   @Post()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: 'Create a transaction' })
   async create(
     @UserId() userId: string,

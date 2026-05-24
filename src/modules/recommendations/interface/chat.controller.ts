@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { GetActiveConversationUseCase } from '../application/use-cases/get-active-conversation.use-case';
@@ -30,6 +31,7 @@ export class ChatController {
   }
 
   @Post()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Send a message to the Zenda AI assistant — appends to the active conversation' })
   send(@UserId() userId: string, @Body() dto: SendChatMessageDto): Promise<ChatReplyResponseDto> {
     return this.sendChatMessage.execute(userId, dto.message);
@@ -37,6 +39,7 @@ export class ChatController {
 
   @Post('close')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Close the active conversation (e.g. on logout) — messages are retained' })
   async close(@UserId() userId: string): Promise<void> {
     await this.closeActiveConversation.execute(userId);
