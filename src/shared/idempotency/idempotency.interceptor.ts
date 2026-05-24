@@ -31,6 +31,30 @@ type RequestWithUser = Request & {
  *     so two users can't poison each other's keyspace.
  *   - The cached body and status are replayed on a hash match. On a
  *     mismatch (same key, different body) the service throws 409.
+ *
+ * ## Known limitation — concurrent duplicate requests
+ *
+ * This is "idempotency-by-response", same pattern Stripe/Twilio/AWS use.
+ * Two truly-concurrent requests with the same Idempotency-Key both miss
+ * the lookup, both execute the handler, then both try to persist the
+ * cache row — the @@unique([key, userId]) constraint stops the second
+ * insert, but the side effect (e.g. duplicate transaction) has already
+ * occurred twice.
+ *
+ * Mitigations available but NOT implemented:
+ *   - Insert-first-then-execute with a "pending" row + distributed lock.
+ *     Adds complexity (stuck pending rows on handler crash) without
+ *     fully solving the problem.
+ *   - Application-level dedup keys (e.g. a UNIQUE constraint on the
+ *     business object itself).
+ *
+ * Accepted for this codebase because:
+ *   - Mobile retries happen seconds apart, not microseconds → race
+ *     window is small in practice.
+ *   - Single-in-flight-per-key in well-behaved clients.
+ *   - The duplicate side-effect risk is the same risk that exists
+ *     without idempotency at all — this interceptor strictly reduces
+ *     it, never amplifies it.
  */
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
