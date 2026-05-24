@@ -11,7 +11,16 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiAuthErrors,
+  ApiConflictError,
+  ApiCreated,
+  ApiNoContent,
+  ApiNotFoundError,
+  ApiOk,
+  ApiValidationError,
+} from '../../../shared/swagger/api-responses.decorator';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { CreateCategoryUseCase } from '../application/use-cases/create-category.use-case';
@@ -24,6 +33,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseDto } from './dto/category.response.dto';
 
 @ApiTags('Categories')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('categories')
 export class CategoriesController {
@@ -36,6 +46,10 @@ export class CategoriesController {
 
   @Post()
   @ApiOperation({ summary: 'Create a custom category' })
+  @ApiCreated(CategoryResponseDto, 'Category created')
+  @ApiValidationError()
+  @ApiConflictError('A category with the same name already exists')
+  @ApiAuthErrors()
   async create(
     @UserId() userId: string,
     @Body() dto: CreateCategoryDto,
@@ -46,6 +60,8 @@ export class CategoriesController {
 
   @Get()
   @ApiOperation({ summary: 'List all accessible categories' })
+  @ApiOk(CategoryResponseDto, 'List of categories')
+  @ApiAuthErrors()
   async findAll(@UserId() userId: string): Promise<CategoryResponseDto[]> {
     const entities = await this.listCategories.execute(userId);
     return entities.map((e) => this.toResponse(e));
@@ -53,6 +69,10 @@ export class CategoriesController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Rename a custom category' })
+  @ApiOk(CategoryResponseDto, 'Category updated')
+  @ApiValidationError()
+  @ApiNotFoundError('Category not found or not owned by caller')
+  @ApiAuthErrors()
   async update(
     @UserId() userId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -65,6 +85,10 @@ export class CategoriesController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a custom category' })
+  @ApiNoContent('Category deleted')
+  @ApiNotFoundError('Category not found or not owned by caller')
+  @ApiConflictError('Category still has active transactions')
+  @ApiAuthErrors()
   remove(
     @UserId() userId: string,
     @Param('id', ParseUUIDPipe) id: string,
