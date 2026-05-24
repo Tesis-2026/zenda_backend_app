@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { CreateBudgetUseCase } from '../application/use-cases/create-budget.use-case';
@@ -39,6 +40,7 @@ export class BudgetsController {
   ) {}
 
   @Post()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Create a budget for a category and period' })
   async create(
     @UserId() userId: string,
@@ -106,7 +108,6 @@ export class BudgetsController {
       percentageUsed: entity.percentageUsed,
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
-      deletedAt: entity.deletedAt?.toISOString() ?? null,
     };
   }
 }

@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { CreateGoalUseCase } from '../application/use-cases/create-goal.use-case';
@@ -42,6 +43,7 @@ export class GoalsController {
   ) {}
 
   @Post()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Create a savings goal' })
   async create(
     @UserId() userId: string,
@@ -70,6 +72,7 @@ export class GoalsController {
   }
 
   @Post(':id/contribute')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: 'Add contribution to a savings goal' })
   async contribute(
     @UserId() userId: string,
@@ -83,6 +86,7 @@ export class GoalsController {
 
   @Post(':id/complete')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Mark a savings goal as complete (US-0505)' })
   async complete(
     @UserId() userId: string,
@@ -114,7 +118,6 @@ export class GoalsController {
       dueDate: entity.dueDate?.toISOString() ?? null,
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
-      deletedAt: entity.deletedAt?.toISOString() ?? null,
     };
   }
 
