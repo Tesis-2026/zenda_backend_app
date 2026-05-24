@@ -61,7 +61,12 @@ export class LoginUseCase {
 
     await this.userRepository.clearFailedLogin(user.id);
 
-    const accessToken = this.jwtService.sign({ sub: user.id, email: user.email });
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+      consentGiven: user.consentGiven,
+    });
     const refreshToken = await this._issueRefreshToken(user.id);
 
     return { userId: user.id, accessToken, refreshToken };
