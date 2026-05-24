@@ -36,6 +36,11 @@ export class ResetPasswordUseCase {
     const passwordHash = await bcrypt.hash(cmd.newPassword, rounds);
 
     await this.userRepository.updatePasswordHash(record.userId, passwordHash);
+    // Invalidate every JWT issued before this reset by bumping the user's
+    // token version (B25 / ARCH-24). Refresh tokens are also revoked below
+    // (S-07) but already-issued access tokens would otherwise stay valid
+    // until expiry — the strategy now rejects them on next request.
+    await this.userRepository.bumpTokenVersion(record.userId);
     await this.tokenRepository.markUsed(record.id);
     await this.refreshTokenRepository.deleteByUserId(record.userId);
   }

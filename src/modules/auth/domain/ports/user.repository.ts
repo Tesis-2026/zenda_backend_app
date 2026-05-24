@@ -12,4 +12,6 @@ export abstract class IUserRepository {
   abstract incrementFailedLogin(userId: string): Promise<number>;
   abstract clearFailedLogin(userId: string): Promise<void>;
   abstract lockAccount(userId: string, until: Date): Promise<void>;
+  /** Atomically increment `tokenVersion`; returns the new value. */
+  abstract bumpTokenVersion(userId: string): Promise<number>;
 }

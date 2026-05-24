@@ -34,7 +34,12 @@ export class RefreshAccessTokenUseCase {
     // Rotate: delete old token before issuing new one
     await this.refreshTokenRepository.deleteByToken(incomingToken);
 
-    const accessToken = this.jwtService.sign({ sub: user.id, email: user.email });
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+      consentGiven: user.consentGiven,
+    });
 
     const newRawToken = randomBytes(40).toString('hex');
     const days = this.config.get<number>('auth.refreshTokenExpiresDays') ?? 7;

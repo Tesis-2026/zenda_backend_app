@@ -124,6 +124,11 @@ model User {
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
 
+  // Monotonic counter bumped on password reset / global revoke.
+  // Embedded as a claim in every issued JWT so the auth guard can
+  // reject tokens minted before the latest version (B21/B25).
+  tokenVersion Int @default(0)
+
   // Notification preferences inlined as JSON (was NotificationPreference table).
   // Shape: { BUDGET_ALERT: boolean, ANOMALY_ALERT: boolean, PREDICTION_READY: boolean,
   //          CHALLENGE_REMINDER: boolean, DAILY_REMINDER: boolean, BADGE_EARNED: boolean }
