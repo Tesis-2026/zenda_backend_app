@@ -5,6 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { GlobalExceptionFilter } from './shared/exceptions/global-exception.filter';
 import { RequestLoggingInterceptor } from './shared/logger/request-logging.interceptor';
 import configuration from './shared/config/configuration';
+import { validateEnv } from './shared/config/env.validation';
 import { AppLogger } from './shared/logger/app-logger.service';
 import { HealthController } from './health/health.controller';
 import { AiModule } from './infra/ai/ai.module';
@@ -28,6 +29,7 @@ import { UsersModule } from './modules/users/users.module';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
+      validate: validateEnv,
     }),
     ThrottlerModule.forRoot([
       {
