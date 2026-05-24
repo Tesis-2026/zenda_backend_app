@@ -3,6 +3,8 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { GlobalExceptionFilter } from './shared/exceptions/global-exception.filter';
+import { IdempotencyInterceptor } from './shared/idempotency/idempotency.interceptor';
+import { IdempotencyModule } from './shared/idempotency/idempotency.module';
 import { RequestLoggingInterceptor } from './shared/logger/request-logging.interceptor';
 import configuration from './shared/config/configuration';
 import { validateEnv } from './shared/config/env.validation';
@@ -38,6 +40,7 @@ import { UsersModule } from './modules/users/users.module';
       },
     ]),
     PrismaModule,
+    IdempotencyModule,
     AiModule,
     AnalyticsModule,
     AuthModule,
@@ -63,6 +66,10 @@ import { UsersModule } from './modules/users/users.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestLoggingInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
     },
   ],
 })
