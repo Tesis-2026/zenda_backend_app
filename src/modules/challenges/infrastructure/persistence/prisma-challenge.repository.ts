@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
-import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
+import { BadgesFacade } from '../../../badges/application/facades/badges.facade';
 import { ChallengeEntity, deriveChallengeStatus } from '../../domain/challenge.entity';
 import { IChallengeRepository } from '../../domain/ports/challenge.repository';
 
@@ -8,7 +8,7 @@ import { IChallengeRepository } from '../../domain/ports/challenge.repository';
 export class PrismaChallengeRepository implements IChallengeRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly badgeRepo: IBadgeRepository,
+    private readonly badges: BadgesFacade,
   ) {}
 
   async list(userId: string): Promise<ChallengeEntity[]> {
@@ -61,7 +61,7 @@ export class PrismaChallengeRepository implements IChallengeRepository {
       where: { userId, completedAt: { not: null } },
     });
     if (completedCount >= 5) {
-      await this.badgeRepo.awardIfNotEarned(userId, 'Challenger');
+      await this.badges.awardIfNotEarned(userId, 'Challenger');
     }
 
     return new ChallengeEntity(

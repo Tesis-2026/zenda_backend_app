@@ -8,7 +8,7 @@ import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
-import { IBadgeRepository } from '../../badges/domain/ports/badge.repository';
+import { BadgesFacade } from '../../badges/application/facades/badges.facade';
 import { IPredictionRepository } from '../domain/ports/prediction.repository';
 import { GetExpensePredictionUseCase } from '../application/use-cases/get-expense-prediction.use-case';
 import { PredictionResponseDto } from './dto/prediction.response.dto';
@@ -33,7 +33,7 @@ export class PredictionsController {
   constructor(
     private readonly getExpensePrediction: GetExpensePredictionUseCase,
     private readonly analytics: AnalyticsService,
-    @Inject(IBadgeRepository) private readonly badgeRepository: IBadgeRepository,
+    private readonly badges: BadgesFacade,
     @Inject(IPredictionRepository) private readonly predictionRepository: IPredictionRepository,
     private readonly prisma: PrismaService,
   ) {}
@@ -45,7 +45,7 @@ export class PredictionsController {
   async expenses(@UserId() userId: string): Promise<PredictionResponseDto> {
     const entity = await this.getExpensePrediction.execute(userId);
     this.analytics.track(userId, 'view_prediction', { modelVersion: entity.modelVersion });
-    void this.badgeRepository.awardIfNotEarned(userId, 'Predictor');
+    void this.badges.awardIfNotEarned(userId, 'Predictor');
     return PredictionResponseDto.from(entity);
   }
 

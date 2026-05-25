@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
+import { BadgesFacade } from '../../../badges/application/facades/badges.facade';
 import { IBudgetRepository } from '../../domain/ports/budget.repository';
 import { BudgetEntity } from '../../domain/budget.entity';
 
@@ -13,7 +13,7 @@ export interface ListBudgetsQuery {
 export class ListBudgetsUseCase {
   constructor(
     private readonly repo: IBudgetRepository,
-    private readonly badgeRepo: IBadgeRepository,
+    private readonly badges: BadgesFacade,
   ) {}
 
   async execute(query: ListBudgetsQuery): Promise<BudgetEntity[]> {
@@ -36,7 +36,7 @@ export class ListBudgetsUseCase {
       budgets.length > 0 &&
       budgets.every((b) => b.percentageUsed <= 100)
     ) {
-      await this.badgeRepo.awardIfNotEarned(query.userId, 'Budgeter');
+      await this.badges.awardIfNotEarned(query.userId, 'Budgeter');
     }
 
     return budgets;

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
+import { BadgesFacade } from '../../../badges/application/facades/badges.facade';
 import { ISavingsGoalRepository } from '../../domain/ports/savings-goal.repository';
 import { SavingsGoalEntity } from '../../domain/savings-goal.entity';
 import { AuditLogService } from '../../../../shared/audit/audit-log.service';
@@ -8,7 +8,7 @@ import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 export class CompleteGoalUseCase {
   constructor(
     private readonly repo: ISavingsGoalRepository,
-    private readonly badgeRepo: IBadgeRepository,
+    private readonly badges: BadgesFacade,
     private readonly auditLog: AuditLogService,
   ) {}
 
@@ -17,7 +17,7 @@ export class CompleteGoalUseCase {
     if (!goal) throw new NotFoundException('Goal not found');
 
     const updated = await this.repo.complete(goalId);
-    await this.badgeRepo.awardIfNotEarned(userId, 'Goal Achieved');
+    await this.badges.awardIfNotEarned(userId, 'Goal Achieved');
 
     this.auditLog.record({
       action: 'COMPLETE_GOAL',

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
+import { BadgesFacade } from '../../../badges/application/facades/badges.facade';
 import { IEducationRepository } from '../../domain/ports/education.repository';
 
 @Injectable()
 export class CompleteTopicUseCase {
   constructor(
     private readonly repo: IEducationRepository,
-    private readonly badgeRepo: IBadgeRepository,
+    private readonly badges: BadgesFacade,
   ) {}
 
   async execute(topicId: string, userId: string): Promise<void> {
@@ -17,7 +17,7 @@ export class CompleteTopicUseCase {
       this.repo.countCompleted(userId),
     ]);
     if (total > 0 && completed >= total) {
-      await this.badgeRepo.awardIfNotEarned(userId, 'Financial Sage');
+      await this.badges.awardIfNotEarned(userId, 'Financial Sage');
     }
   }
 }
