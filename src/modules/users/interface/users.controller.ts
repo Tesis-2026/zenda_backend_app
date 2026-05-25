@@ -44,8 +44,12 @@ export class UsersController {
       req.socket.remoteAddress ??
       null;
 
+    // DELETE_ACCOUNT audit MUST be transactional with the User row deletion,
+    // because the FK cascade (`AuditLog.userId → User.id ON DELETE SetNull`)
+    // would null out the userId on the audit row if the writes were
+    // independent. AuditLogService is fire-and-forget by design (see B27
+    // notes) and can't make that guarantee, so this one case stays inline.
     await this.prisma.$transaction([
-      // Audit the deletion before cascades remove the user row
       this.prisma.auditLog.create({
         data: { userId, action: 'DELETE_ACCOUNT', resource: 'User', ipAddress },
       }),

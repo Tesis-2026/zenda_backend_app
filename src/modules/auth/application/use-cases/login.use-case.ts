@@ -1,10 +1,12 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
+import { AuditStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { IUserRepository } from '../../domain/ports/user.repository';
 import { IRefreshTokenRepository } from '../../domain/ports/refresh-token.repository';
+import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 const MAX_FAILED_ATTEMPTS = 3;
 const LOCKOUT_MINUTES = 15;
@@ -27,6 +29,7 @@ export class LoginUseCase {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly refreshTokenRepository: IRefreshTokenRepository,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(cmd: LoginCommand): Promise<LoginResult> {
@@ -48,10 +51,27 @@ export class LoginUseCase {
       if (attempts >= MAX_FAILED_ATTEMPTS) {
         const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000);
         await this.userRepository.lockAccount(user.id, lockUntil);
+        this.auditLog.record({
+          action: 'LOGIN_LOCKED',
+          resource: 'User',
+          resourceId: user.id,
+          userIdOverride: user.id,
+          status: AuditStatus.FAILURE,
+          metadata: { lockUntil: lockUntil.toISOString(), attempts },
+        });
         throw new UnauthorizedException(
           `Too many failed attempts. Account locked for ${LOCKOUT_MINUTES} minutes.`,
         );
       }
+
+      this.auditLog.record({
+        action: 'LOGIN_FAILED',
+        resource: 'User',
+        resourceId: user.id,
+        userIdOverride: user.id,
+        status: AuditStatus.FAILURE,
+        metadata: { attempts },
+      });
 
       const remaining = MAX_FAILED_ATTEMPTS - attempts;
       throw new UnauthorizedException(

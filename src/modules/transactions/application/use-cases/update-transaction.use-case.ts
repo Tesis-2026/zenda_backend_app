@@ -3,6 +3,7 @@ import { ITransactionRepository, TransactionWithCategory, UpdateTransactionParam
 import { CategorySource, deriveCategorySource } from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
+import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 export interface UpdateTransactionCommand {
   id: string;
@@ -21,6 +22,7 @@ export class UpdateTransactionUseCase {
   constructor(
     private readonly repo: ITransactionRepository,
     private readonly resolveCategory: ResolveCategoryUseCase,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(cmd: UpdateTransactionCommand): Promise<TransactionWithCategory> {
@@ -66,6 +68,29 @@ export class UpdateTransactionUseCase {
       categorySource,
     };
 
-    return this.repo.update(cmd.id, cmd.userId, params);
+    const updated = await this.repo.update(cmd.id, cmd.userId, params);
+
+    this.auditLog.record({
+      action: 'UPDATE_TRANSACTION',
+      resource: 'Transaction',
+      resourceId: cmd.id,
+      beforeJson: {
+        categoryId: existing.categoryId,
+        type: existing.type,
+        amount: existing.amount,
+        description: existing.description,
+        occurredAt: existing.occurredAt.toISOString(),
+      },
+      afterJson: {
+        categoryId: updated.categoryId,
+        type: updated.type,
+        amount: updated.amount,
+        description: updated.description,
+        occurredAt: updated.occurredAt.toISOString(),
+        categorySource: updated.categorySource,
+      },
+    });
+
+    return updated;
   }
 }
