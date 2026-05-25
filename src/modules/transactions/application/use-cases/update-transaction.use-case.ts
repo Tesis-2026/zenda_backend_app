@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ITransactionRepository, TransactionWithCategory, UpdateTransactionParams } from '../../domain/ports/transaction.repository';
 import { CategorySource, deriveCategorySource } from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
-import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
+import { CategoriesFacade } from '../../../categories/application/facades/categories.facade';
 import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 export interface UpdateTransactionCommand {
@@ -21,7 +21,7 @@ export interface UpdateTransactionCommand {
 export class UpdateTransactionUseCase {
   constructor(
     private readonly repo: ITransactionRepository,
-    private readonly resolveCategory: ResolveCategoryUseCase,
+    private readonly categories: CategoriesFacade,
     private readonly auditLog: AuditLogService,
   ) {}
 
@@ -31,7 +31,7 @@ export class UpdateTransactionUseCase {
 
     let categoryId: string | undefined;
     if (cmd.categoryId || cmd.newCategoryName) {
-      const resolved = await this.resolveCategory.execute({
+      const resolved = await this.categories.resolve({
         userId: cmd.userId,
         categoryId: cmd.categoryId,
         newCategoryName: cmd.newCategoryName,

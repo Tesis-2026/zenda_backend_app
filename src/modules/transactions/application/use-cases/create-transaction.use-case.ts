@@ -1,11 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
-import { VerifyChallengesUseCase } from '../../../challenges/application/use-cases/verify-challenges.use-case';
+import { BadgesFacade } from '../../../badges/application/facades/badges.facade';
+import { ChallengesFacade } from '../../../challenges/application/facades/challenges.facade';
+import { CategoriesFacade } from '../../../categories/application/facades/categories.facade';
 import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 import { deriveCategorySource } from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
-import { ResolveCategoryUseCase } from '../../../categories/application/use-cases/resolve-category.use-case';
 
 export interface CreateTransactionCommand {
   userId: string;
@@ -29,9 +29,9 @@ export type CreateTransactionResult = TransactionWithCategory & {
 export class CreateTransactionUseCase {
   constructor(
     private readonly repo: ITransactionRepository,
-    private readonly resolveCategory: ResolveCategoryUseCase,
-    private readonly badgeRepo: IBadgeRepository,
-    private readonly verifyChallenges: VerifyChallengesUseCase,
+    private readonly categories: CategoriesFacade,
+    private readonly badges: BadgesFacade,
+    private readonly challenges: ChallengesFacade,
     private readonly auditLog: AuditLogService,
   ) {}
 
@@ -53,7 +53,7 @@ export class CreateTransactionUseCase {
       throw new BadRequestException('aiConfidence must be between 0 and 1');
     }
 
-    const category = await this.resolveCategory.execute({
+    const category = await this.categories.resolve({
       userId: cmd.userId,
       categoryId: cmd.categoryId,
       newCategoryName: cmd.newCategoryName,
@@ -77,15 +77,15 @@ export class CreateTransactionUseCase {
       categorySource,
     });
 
-    await this.badgeRepo.awardIfNotEarned(cmd.userId, 'First Transaction');
+    await this.badges.awardIfNotEarned(cmd.userId, 'First Transaction');
 
     const hasStreak = await this.repo.hasConsecutiveDays(cmd.userId, 7);
     if (hasStreak) {
-      await this.badgeRepo.awardIfNotEarned(cmd.userId, 'Consistency');
+      await this.badges.awardIfNotEarned(cmd.userId, 'Consistency');
     }
 
-    const newlyCompletedChallenges = await this.verifyChallenges
-      .execute(cmd.userId)
+    const newlyCompletedChallenges = await this.challenges
+      .verifyForUser(cmd.userId)
       .catch(() => [] as string[]);
 
     this.auditLog.record({

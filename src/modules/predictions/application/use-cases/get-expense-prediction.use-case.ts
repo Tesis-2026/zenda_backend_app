@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { AI_PROVIDER } from '../../../../infra/ai/ai.module';
 import { AiProvider } from '../../../../infra/ai/AiProvider';
-import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
+import { BadgesFacade } from '../../../badges/application/facades/badges.facade';
 import { IPredictionRepository } from '../../domain/ports/prediction.repository';
 import { PredictionEntity, deriveConfidenceInterval } from '../../domain/prediction.entity';
 import { randomUUID } from 'crypto';
@@ -13,7 +13,7 @@ export class GetExpensePredictionUseCase {
   constructor(
     private readonly predictionRepo: IPredictionRepository,
     @Inject(AI_PROVIDER) private readonly ai: AiProvider,
-    private readonly badgeRepo: IBadgeRepository,
+    private readonly badges: BadgesFacade,
   ) {}
 
   async execute(userId: string): Promise<PredictionEntity> {
@@ -49,7 +49,7 @@ export class GetExpensePredictionUseCase {
 
     const viewCount = await this.predictionRepo.countByUser(userId);
     if (viewCount >= PREDICTOR_THRESHOLD) {
-      await this.badgeRepo.awardIfNotEarned(userId, 'Predictor');
+      await this.badges.awardIfNotEarned(userId, 'Predictor');
     }
 
     return prediction;

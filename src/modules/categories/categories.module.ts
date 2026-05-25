@@ -8,6 +8,7 @@ import { DeleteCategoryUseCase } from './application/use-cases/delete-category.u
 import { UpdateCategoryUseCase } from './application/use-cases/update-category.use-case';
 import { ResolveCategoryUseCase } from './application/use-cases/resolve-category.use-case';
 import { CategoriesController } from './interface/categories.controller';
+import { CategoriesFacade, CategoriesFacadeImpl } from './application/facades/categories.facade';
 
 @Module({
   imports: [PrismaModule],
@@ -19,7 +20,10 @@ import { CategoriesController } from './interface/categories.controller';
     DeleteCategoryUseCase,
     UpdateCategoryUseCase,
     ResolveCategoryUseCase,
+    { provide: CategoriesFacade, useClass: CategoriesFacadeImpl },
   ],
-  exports: [ResolveCategoryUseCase, ICategoryRepository],
+  // B19: only CategoriesFacade is exported. ResolveCategoryUseCase
+  // and ICategoryRepository are module-internal.
+  exports: [CategoriesFacade],
 })
 export class CategoriesModule {}
