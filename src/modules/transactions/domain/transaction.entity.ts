@@ -1,3 +1,4 @@
+import { CategorySource } from './category-source.enum';
 import { TransactionType } from './transaction-type.enum';
 
 export { TransactionType };
@@ -15,6 +16,9 @@ export class TransactionEntity {
     readonly createdAt: Date,
     readonly updatedAt: Date,
     readonly deletedAt: Date | null,
+    readonly suggestedCategoryId: string | null,
+    readonly aiConfidence: number | null,
+    readonly categorySource: CategorySource,
   ) {}
 
   /** Reconstitute from persistence — no creation invariants applied. */
@@ -30,6 +34,9 @@ export class TransactionEntity {
     createdAt: Date;
     updatedAt: Date;
     deletedAt: Date | null;
+    suggestedCategoryId: string | null;
+    aiConfidence: number | null;
+    categorySource: CategorySource;
   }): TransactionEntity {
     return new TransactionEntity(
       params.id,
@@ -43,6 +50,9 @@ export class TransactionEntity {
       params.createdAt,
       params.updatedAt,
       params.deletedAt,
+      params.suggestedCategoryId,
+      params.aiConfidence,
+      params.categorySource,
     );
   }
 

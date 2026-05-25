@@ -1,10 +1,30 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { RecommendationType as PrismaRecType, TransactionType } from '@prisma/client';
+import { Prisma, Recommendation, RecommendationType as PrismaRecType, TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { SpendingContext, UserProfile } from '../../../../infra/ai/AiProvider';
 import { RecommendationEntity } from '../../domain/recommendation.entity';
-import { IRecommendationRepository } from '../../domain/ports/recommendation.repository';
+import { IRecommendationRepository, RecommendationInput } from '../../domain/ports/recommendation.repository';
+
+function rowToEntity(r: Recommendation): RecommendationEntity {
+  return new RecommendationEntity({
+    id: r.id,
+    userId: r.userId,
+    type: r.type as RecommendationEntity['type'],
+    message: r.message,
+    suggestedAction: r.suggestedAction,
+    isActive: r.isActive,
+    modelVersion: r.modelVersion,
+    source: r.source,
+    inputContextJson: r.inputContextJson as unknown,
+    viewedAt: r.viewedAt,
+    dismissedAt: r.dismissedAt,
+    expiresAt: r.expiresAt,
+    feedbackAccepted: r.feedbackAccepted,
+    feedbackAt: r.feedbackAt,
+    createdAt: r.createdAt,
+  });
+}
 
 @Injectable()
 export class PrismaRecommendationRepository implements IRecommendationRepository {
@@ -13,17 +33,14 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
   async listActive(userId: string): Promise<RecommendationEntity[]> {
     const rows = await this.prisma.recommendation.findMany({
       where: { userId, isActive: true },
-      include: { feedback: true },
       orderBy: { createdAt: 'desc' },
     });
-    return rows.map((r) =>
-      new RecommendationEntity(r.id, r.userId, r.type as RecommendationEntity['type'], r.message, r.suggestedAction, r.isActive, r.feedback?.accepted ?? null, r.createdAt),
-    );
+    return rows.map(rowToEntity);
   }
 
   async replaceAll(
     userId: string,
-    recs: Omit<RecommendationEntity, 'id' | 'createdAt' | 'feedbackAccepted'>[],
+    recs: RecommendationInput[],
   ): Promise<RecommendationEntity[]> {
     // Deactivate old ones, then create fresh ones
     await this.prisma.recommendation.updateMany({ where: { userId, isActive: true }, data: { isActive: false } });
@@ -36,32 +53,37 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
             message: r.message,
             suggestedAction: r.suggestedAction,
             isActive: true,
+            // Preserve AI traceability fields if the caller provides them
+            // (the AI provider / use case should populate these on each run).
+            modelVersion: r.modelVersion ?? null,
+            source: r.source ?? null,
+            inputContextJson:
+              r.inputContextJson === null || r.inputContextJson === undefined
+                ? Prisma.JsonNull
+                : (r.inputContextJson as Prisma.InputJsonValue),
+            expiresAt: r.expiresAt ?? null,
           },
-          include: { feedback: true },
         }),
       ),
     );
-    return created.map((r) => new RecommendationEntity(r.id, r.userId, r.type as RecommendationEntity['type'], r.message, r.suggestedAction, r.isActive, r.feedback?.accepted ?? null, r.createdAt));
+    return created.map(rowToEntity);
   }
 
   async submitFeedback(id: string, userId: string, accepted: boolean): Promise<void> {
-    const rec = await this.prisma.recommendation.findFirst({ where: { id, userId } });
-    if (!rec) throw new NotFoundException('Recommendation not found');
-    await this.prisma.recommendationFeedback.upsert({
-      where: { recommendationId: id },
-      create: { recommendationId: id, accepted },
-      update: { accepted },
+    const updated = await this.prisma.recommendation.updateMany({
+      where: { id, userId },
+      data: { feedbackAccepted: accepted, feedbackAt: new Date() },
     });
+    if (updated.count === 0) throw new NotFoundException('Recommendation not found');
   }
 
   async getStats(userId: string): Promise<{ total: number; accepted: number; acceptanceRate: number }> {
     const recs = await this.prisma.recommendation.findMany({
-      where: { userId },
-      include: { feedback: true },
+      where: { userId, feedbackAccepted: { not: null } },
+      select: { feedbackAccepted: true },
     });
-    const withFeedback = recs.filter((r) => r.feedback !== null);
-    const accepted = withFeedback.filter((r) => r.feedback?.accepted === true).length;
-    const total = withFeedback.length;
+    const total = recs.length;
+    const accepted = recs.filter((r) => r.feedbackAccepted === true).length;
     const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) / 100 : 0;
     return { total, accepted, acceptanceRate };
   }
@@ -97,7 +119,7 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
       ]);
 
       const catIds = byCategory.map((c) => c.categoryId).filter((id): id is string => id !== null);
-      const cats = await this.prisma.category.findMany({ where: { id: { in: catIds } }, select: { id: true, name: true } });
+      const cats = await this.prisma.category.findMany({ where: { id: { in: catIds }, deletedAt: null }, select: { id: true, name: true } });
       const catMap = new Map(cats.map((c) => [c.id, c.name]));
 
       months.push({

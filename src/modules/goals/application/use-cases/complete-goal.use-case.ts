@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
 import { ISavingsGoalRepository } from '../../domain/ports/savings-goal.repository';
 import { SavingsGoalEntity } from '../../domain/savings-goal.entity';
+import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 @Injectable()
 export class CompleteGoalUseCase {
   constructor(
     private readonly repo: ISavingsGoalRepository,
     private readonly badgeRepo: IBadgeRepository,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(userId: string, goalId: string): Promise<SavingsGoalEntity> {
@@ -16,6 +18,14 @@ export class CompleteGoalUseCase {
 
     const updated = await this.repo.complete(goalId);
     await this.badgeRepo.awardIfNotEarned(userId, 'Goal Achieved');
+
+    this.auditLog.record({
+      action: 'COMPLETE_GOAL',
+      resource: 'SavingsGoal',
+      resourceId: goalId,
+      beforeJson: { currentAmount: goal.currentAmount, targetAmount: goal.targetAmount },
+      afterJson: { currentAmount: updated.currentAmount, targetAmount: updated.targetAmount },
+    });
     return updated;
   }
 }

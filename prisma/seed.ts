@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import {
   CategoryType,
@@ -8,7 +9,6 @@ import {
   SurveyType,
   TopicDifficulty,
   TransactionType,
-  UserChallengeStatus,
 } from '@prisma/client';
 
 type QuizDifficulty = TopicDifficulty;
@@ -619,39 +619,42 @@ async function seedEducationalTopics(): Promise<void> {
 async function seedSurveys(): Promise<void> {
   for (const survey of SURVEYS) {
     let record = await prisma.survey.findFirst({ where: { type: survey.type } });
+
+    // Build the embedded questions array. We keep stable UUIDs across re-runs by
+    // reusing the existing record's questionsJson when an entry already matches by order.
+    const existingQuestions = parseEmbeddedQuestions(record?.questionsJson);
+    const existingByOrder = new Map(existingQuestions.map((q) => [q.order, q.id]));
+
+    const questions = SURVEY_QUESTIONS
+      .filter((q) => q.surveyType === survey.type)
+      .map((q) => ({
+        id: existingByOrder.get(q.order) ?? randomUUID(),
+        order: q.order,
+        text: q.text,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+      }));
+
     if (!record) {
-      record = await prisma.survey.create({ data: survey });
-    }
-    const questions = SURVEY_QUESTIONS.filter((q) => q.surveyType === survey.type);
-    for (const q of questions) {
-      const existingQ = await prisma.surveyQuestion.findFirst({
-        where: { surveyId: record.id, order: q.order },
-        select: { id: true },
-      });
-      if (!existingQ) {
-        await prisma.surveyQuestion.create({
-          data: {
-            surveyId: record.id,
-            order: q.order,
-            text: q.text,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
-          },
-        });
-      } else {
-        await prisma.surveyQuestion.update({
-          where: { id: existingQ.id },
-          data: { correctAnswer: q.correctAnswer },
-        });
-      }
+      record = await prisma.survey.create({ data: { type: survey.type, questionsJson: questions } });
+    } else {
+      await prisma.survey.update({ where: { id: record.id }, data: { questionsJson: questions } });
     }
   }
   console.log('✓ Surveys and questions seeded');
 }
 
+function parseEmbeddedQuestions(raw: unknown): Array<{ id: string; order: number }> {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((q): q is { id: string; order: number } =>
+      typeof q === 'object' && q !== null && typeof (q as { id: unknown }).id === 'string' && typeof (q as { order: unknown }).order === 'number')
+    .map((q) => ({ id: q.id, order: q.order }));
+}
+
 // ─────────────────────────────────────────────────────────────────
 // PILOT USERS — 5 distinct profiles for thesis testing
-// All passwords: Demo1234!
+// All passwords: Demo1234!Zenda
 // ─────────────────────────────────────────────────────────────────
 
 async function seedPilotUsers(): Promise<void> {
@@ -672,7 +675,7 @@ async function seedPilotUsers(): Promise<void> {
   const preSurvey = await prisma.survey.findFirst({ where: { type: SurveyType.PRE } });
   const postSurvey = await prisma.survey.findFirst({ where: { type: SurveyType.POST } });
 
-  const passwordHash = await bcrypt.hash('Demo1234!', 12);
+  const passwordHash = await bcrypt.hash('Demo1234!Zenda', 12);
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
@@ -744,16 +747,18 @@ async function seedPilotUsers(): Promise<void> {
   }
 
   // ─── Helper: award challenges idempotently ───────────────────────
+  // Status (AVAILABLE / ACTIVE / COMPLETED) is derived from (acceptedAt, completedAt) — see
+  // deriveChallengeStatus() in src/modules/challenges/domain/challenge.entity.ts.
   async function awardChallenges(
     userId: string,
-    entries: Array<{ title: string; status: UserChallengeStatus; completedAt?: Date }>,
+    entries: Array<{ title: string; completedAt?: Date }>,
   ): Promise<void> {
     for (const e of entries) {
       const challengeId = challengeByTitle.get(e.title);
       if (!challengeId) continue;
       await prisma.userChallenge.upsert({
         where: { userId_challengeId: { userId, challengeId } },
-        create: { userId, challengeId, status: e.status, acceptedAt: daysBack(10), completedAt: e.completedAt },
+        create: { userId, challengeId, acceptedAt: daysBack(10), completedAt: e.completedAt },
         update: {},
       });
     }
@@ -868,8 +873,8 @@ async function seedPilotUsers(): Promise<void> {
     }
 
     await awardChallenges(user.id, [
-      { title: 'Record expenses for 7 consecutive days', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(5) },
-      { title: 'Save S/20 this week', status: UserChallengeStatus.ACTIVE },
+      { title: 'Record expenses for 7 consecutive days', completedAt: daysBack(5) },
+      { title: 'Save S/20 this week' },
     ]);
     await awardBadges(user.id, ['First Transaction', 'Goal Achieved']);
     await completeTopics(user.id, ['Personal Budget', 'Savings Habits', 'Inflation']);
@@ -879,7 +884,7 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.BUDGET, message: 'Your entertainment budget is at 78%. You have S/33 left this month.', suggestedAction: 'Limit entertainment outings to 2 this week.' },
     ]);
 
-    console.log('✓ User 1 seeded: demo@zenda.app / Demo1234!');
+    console.log('✓ User 1 seeded: demo@zenda.app / Demo1234!Zenda');
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -941,10 +946,10 @@ async function seedPilotUsers(): Promise<void> {
     }
 
     await awardChallenges(user.id, [
-      { title: 'No delivery spending for 3 days', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(20) },
-      { title: 'Record expenses for 7 consecutive days', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(15) },
-      { title: 'Save S/20 this week', status: UserChallengeStatus.COMPLETED, completedAt: daysBack(8) },
-      { title: 'Reduce entertainment spending by 10%', status: UserChallengeStatus.ACTIVE },
+      { title: 'No delivery spending for 3 days', completedAt: daysBack(20) },
+      { title: 'Record expenses for 7 consecutive days', completedAt: daysBack(15) },
+      { title: 'Save S/20 this week', completedAt: daysBack(8) },
+      { title: 'Reduce entertainment spending by 10%' },
     ]);
     await awardBadges(user.id, ['First Transaction', 'Consistency', 'Goal Achieved', 'Challenger']);
     await completeTopics(user.id, ['Personal Budget', 'Savings Habits', 'Credit and Debt', 'Inflation', 'Interest Rates']);
@@ -955,7 +960,7 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.SAVINGS, message: 'You consistently save over 20% each month. Consider opening a savings account to earn interest.', suggestedAction: 'Research high-yield savings options available to students in Peru.' },
     ]);
 
-    console.log('✓ User 2 seeded: ana.garcia@zenda.app / Demo1234!');
+    console.log('✓ User 2 seeded: ana.garcia@zenda.app / Demo1234!Zenda');
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1035,7 +1040,7 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.BUDGET, message: 'Entertainment spending is 180% of your monthly budget. Consider a no-spend weekend.', suggestedAction: 'Look for free events on campus this weekend.' },
     ]);
 
-    console.log('✓ User 3 seeded: carlos.mendoza@zenda.app / Demo1234!');
+    console.log('✓ User 3 seeded: carlos.mendoza@zenda.app / Demo1234!Zenda');
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1084,7 +1089,7 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.SAVINGS, message: 'Great start! You\'ve recorded 3 weeks of expenses. Try setting a savings goal to build your financial habits.', suggestedAction: 'Set aside S/50 this month for your textbooks goal.' },
     ]);
 
-    console.log('✓ User 4 seeded: lucia.torres@zenda.app / Demo1234!');
+    console.log('✓ User 4 seeded: lucia.torres@zenda.app / Demo1234!Zenda');
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1171,7 +1176,6 @@ async function seedPilotUsers(): Promise<void> {
     // All challenges completed
     await awardChallenges(user.id, allChallenges.map((c) => ({
       title: c.title,
-      status: UserChallengeStatus.COMPLETED,
       completedAt: daysBack(Math.floor(Math.random() * 60) + 5),
     })));
 
@@ -1197,10 +1201,10 @@ async function seedPilotUsers(): Promise<void> {
       { type: RecommendationType.BUDGET, message: 'Your Shopping category is at 68% this month with 10 days remaining. Good control.', suggestedAction: 'You have S/96 left in your shopping budget — hold off on non-essentials until next month.' },
     ]);
 
-    console.log('✓ User 5 seeded: miguel.rios@zenda.app / Demo1234!');
+    console.log('✓ User 5 seeded: miguel.rios@zenda.app / Demo1234!Zenda');
   }
 
-  console.log('\n📋 All pilot users ready (password for all: Demo1234!)');
+  console.log('\n📋 All pilot users ready (password for all: Demo1234!Zenda)');
   console.log('  demo@zenda.app       — balanced mid-literacy student');
   console.log('  ana.garcia@zenda.app — responsible saver, HIGH literacy, pre+post survey done');
   console.log('  carlos.mendoza@zenda.app — overspender, budgets exceeded, LOW literacy');

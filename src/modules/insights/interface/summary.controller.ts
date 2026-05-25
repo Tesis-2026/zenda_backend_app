@@ -1,5 +1,6 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiOk, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
@@ -17,6 +18,7 @@ import { ComparisonDto } from './dto/comparison.dto';
 import { MonthComparisonEntryDto } from './dto/comparison.response.dto';
 
 @ApiTags('Insights')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('summary')
 export class SummaryController {
@@ -30,6 +32,9 @@ export class SummaryController {
 
   @Get('month')
   @ApiOperation({ summary: 'Get income/expense summary for a given month' })
+  @ApiOk(MonthSummaryResponseDto, 'Aggregated income/expense + top categories for the month')
+  @ApiValidationError()
+  @ApiAuthErrors()
   getMonth(
     @UserId() userId: string,
     @Query() query: MonthSummaryDto,
@@ -39,6 +44,9 @@ export class SummaryController {
 
   @Get('week')
   @ApiOperation({ summary: 'Get income/expense summary for a given ISO week' })
+  @ApiOk(MonthSummaryResponseDto, 'Aggregated income/expense for the week')
+  @ApiValidationError()
+  @ApiAuthErrors()
   getWeek(
     @UserId() userId: string,
     @Query() query: WeekSummaryDto,
@@ -48,6 +56,9 @@ export class SummaryController {
 
   @Get('day')
   @ApiOperation({ summary: 'Get income/expense summary for a given day (YYYY-MM-DD)' })
+  @ApiOk(MonthSummaryResponseDto, 'Aggregated income/expense for the day')
+  @ApiValidationError()
+  @ApiAuthErrors()
   getDay(
     @UserId() userId: string,
     @Query() query: DaySummaryDto,
@@ -57,6 +68,9 @@ export class SummaryController {
 
   @Get('comparison')
   @ApiOperation({ summary: 'Get multi-month income/expense comparison' })
+  @ApiOk(MonthComparisonEntryDto, 'One entry per month, oldest first')
+  @ApiValidationError('months must be ≥ 2')
+  @ApiAuthErrors()
   getComparison(
     @UserId() userId: string,
     @Query() query: ComparisonDto,
@@ -66,6 +80,7 @@ export class SummaryController {
 
   @Get('progress')
   @ApiOperation({ summary: 'Get current vs previous month financial progress (US-0407)' })
+  @ApiAuthErrors()
   async getProgress(@UserId() userId: string): Promise<object> {
     const now = new Date();
     const [curFrom, curTo, prevFrom, prevTo] = [

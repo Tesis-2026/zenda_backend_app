@@ -7,10 +7,17 @@ export class UserEntity {
     readonly createdAt: Date,
     readonly failedLoginAttempts: number = 0,
     readonly lockedUntil: Date | null = null,
+    readonly tokenVersion: number = 0,
+    readonly consentGiven: boolean = false,
+    readonly deletedAt: Date | null = null,
   ) {}
 
   get isLocked(): boolean {
     return this.lockedUntil !== null && this.lockedUntil > new Date();
+  }
+
+  get isDeleted(): boolean {
+    return this.deletedAt !== null;
   }
 
   static create(params: {
@@ -21,6 +28,9 @@ export class UserEntity {
     createdAt: Date;
     failedLoginAttempts?: number;
     lockedUntil?: Date | null;
+    tokenVersion?: number;
+    consentGiven?: boolean;
+    deletedAt?: Date | null;
   }): UserEntity {
     return new UserEntity(
       params.id,
@@ -30,6 +40,9 @@ export class UserEntity {
       params.createdAt,
       params.failedLoginAttempts ?? 0,
       params.lockedUntil ?? null,
+      params.tokenVersion ?? 0,
+      params.consentGiven ?? false,
+      params.deletedAt ?? null,
     );
   }
 }

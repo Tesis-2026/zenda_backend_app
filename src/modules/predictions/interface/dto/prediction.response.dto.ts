@@ -7,6 +7,11 @@ class CategoryPredictionDto {
   @ApiProperty() amount!: number;
 }
 
+class ConfidenceIntervalDto {
+  @ApiProperty() lower!: number;
+  @ApiProperty() upper!: number;
+}
+
 export class PredictionResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() period!: string;
@@ -14,6 +19,13 @@ export class PredictionResponseDto {
   @ApiProperty() predictedTotal!: number;
   @ApiProperty({ type: [CategoryPredictionDto] }) predictedByCategory!: CategoryPredictionDto[];
   @ApiProperty({ enum: ['high', 'medium', 'low'] }) confidenceLevel!: string;
+  @ApiProperty({
+    type: ConfidenceIntervalDto,
+    description:
+      'Numerical band around predictedTotal, derived from confidenceLevel. ' +
+      'Lets the frontend draw the band without re-implementing the widths.',
+  })
+  confidenceInterval!: ConfidenceIntervalDto;
   @ApiProperty() narrative!: string;
   @ApiProperty() modelVersion!: string;
   @ApiProperty({ nullable: true }) actualTotal!: number | null;
@@ -28,6 +40,7 @@ export class PredictionResponseDto {
     dto.predictedTotal = entity.predictedTotal;
     dto.predictedByCategory = entity.predictedByCategory;
     dto.confidenceLevel = entity.confidenceLevel;
+    dto.confidenceInterval = entity.confidenceInterval;
     dto.narrative = entity.narrative;
     dto.modelVersion = entity.modelVersion;
     dto.actualTotal = entity.actualTotal;

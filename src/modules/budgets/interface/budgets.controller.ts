@@ -12,7 +12,17 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import {
+  ApiAuthErrors,
+  ApiConflictError,
+  ApiCreated,
+  ApiNoContent,
+  ApiNotFoundError,
+  ApiOk,
+  ApiValidationError,
+} from '../../../shared/swagger/api-responses.decorator';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { CreateBudgetUseCase } from '../application/use-cases/create-budget.use-case';
@@ -27,6 +37,7 @@ import { ListBudgetsDto } from './dto/list-budgets.dto';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 
 @ApiTags('Budgets')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('budgets')
 export class BudgetsController {
@@ -39,7 +50,12 @@ export class BudgetsController {
   ) {}
 
   @Post()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Create a budget for a category and period' })
+  @ApiCreated(BudgetResponseDto, 'Budget created')
+  @ApiValidationError()
+  @ApiConflictError('A budget for this category and period already exists')
+  @ApiAuthErrors()
   async create(
     @UserId() userId: string,
     @Body() dto: CreateBudgetDto,
@@ -56,6 +72,8 @@ export class BudgetsController {
 
   @Get()
   @ApiOperation({ summary: 'List budgets with current spending and percentage used' })
+  @ApiOk(BudgetResponseDto, 'List of budgets')
+  @ApiAuthErrors()
   async findAll(
     @UserId() userId: string,
     @Query() query: ListBudgetsDto,
@@ -70,6 +88,10 @@ export class BudgetsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a budget spending limit' })
+  @ApiOk(BudgetResponseDto, 'Budget updated')
+  @ApiValidationError()
+  @ApiNotFoundError('Budget not found or not owned by caller')
+  @ApiAuthErrors()
   async update(
     @UserId() userId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -86,6 +108,9 @@ export class BudgetsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a budget' })
+  @ApiNoContent('Budget deleted')
+  @ApiNotFoundError('Budget not found or not owned by caller')
+  @ApiAuthErrors()
   remove(
     @UserId() userId: string,
     @Param('id', ParseUUIDPipe) id: string,

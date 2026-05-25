@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiNoContent, ApiNotFoundError, ApiOk, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { ListTopicsUseCase } from '../application/use-cases/list-topics.use-case';
@@ -30,6 +31,8 @@ export class EducationController {
 
   @Get()
   @ApiOperation({ summary: 'List all educational topics with user progress (US-1001)' })
+  @ApiOk(TopicResponseDto, 'List of topics with per-user completion + score')
+  @ApiAuthErrors()
   async list(@UserId() userId: string): Promise<TopicResponseDto[]> {
     const topics = await this.listTopics.execute(userId);
     return topics.map(TopicResponseDto.from);
@@ -37,6 +40,9 @@ export class EducationController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get topic detail with full content (US-1001)' })
+  @ApiOk(TopicResponseDto, 'Topic details')
+  @ApiNotFoundError('Topic not found')
+  @ApiAuthErrors()
   async detail(@Param('id', ParseUUIDPipe) id: string, @UserId() userId: string): Promise<TopicResponseDto> {
     const topic = await this.getTopic.execute(id, userId);
     if (!topic) throw new NotFoundException('Topic not found');
@@ -47,6 +53,8 @@ export class EducationController {
   @Patch(':id/complete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Mark topic as completed (US-1001)' })
+  @ApiNoContent('Topic marked complete')
+  @ApiAuthErrors()
   async complete(@Param('id', ParseUUIDPipe) id: string, @UserId() userId: string): Promise<void> {
     await this.completeTopic.execute(id, userId);
     this.analytics.track(userId, 'complete_topic', { topicId: id });
@@ -55,6 +63,8 @@ export class EducationController {
   @Get(':id/quiz')
   @ApiOperation({ summary: 'Get a quiz question set for a topic (US-1004)' })
   @ApiQuery({ name: 'language', required: false, enum: ['en', 'es'], description: 'Language for questions (default: en)' })
+  @ApiOk(QuizResponseDto, 'Quiz question set for the topic + language')
+  @ApiAuthErrors()
   async quiz(
     @Param('id', ParseUUIDPipe) id: string,
     @Query('language') language = 'en',
@@ -65,6 +75,9 @@ export class EducationController {
   @Post(':id/quiz/submit')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Submit quiz answers and receive score (US-1004)' })
+  @ApiOk(QuizSubmitResponseDto, 'Score + per-question feedback')
+  @ApiValidationError('answers map exceeds bounds or contains invalid keys')
+  @ApiAuthErrors()
   async quizSubmit(
     @Param('id', ParseUUIDPipe) id: string,
     @UserId() userId: string,
@@ -92,16 +105,23 @@ export class PersonalizedQuizController {
   @Get('personalized')
   @ApiOperation({ summary: 'Generate AI-personalized quiz based on spending habits (US-1007), max 5/day' })
   @ApiQuery({ name: 'language', required: false, enum: ['en', 'es'] })
+  @ApiAuthErrors()
   async personalized(
     @UserId() userId: string,
     @Query('language') language = 'es',
   ) {
-    return this.getPersonalizedQuiz.execute({ userId, language });
+    const lang = language === 'es' ? 'es' : 'en';
+    const result = await this.getPersonalizedQuiz.execute({ userId, language });
+    this.analytics.track(userId, 'quiz_personalized', { language: lang });
+    return result;
   }
 
   @Post('personalized/submit')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Submit personalized quiz answers (US-1007)' })
+  @ApiOk(QuizSubmitResponseDto, 'Score + per-question feedback')
+  @ApiValidationError()
+  @ApiAuthErrors()
   async submitPersonalized(
     @UserId() userId: string,
     @Body() dto: SubmitQuizDto,

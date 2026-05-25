@@ -2,9 +2,14 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AuditModule } from './shared/audit/audit.module';
+import { RequestContextInterceptor } from './shared/audit/request-context.interceptor';
 import { GlobalExceptionFilter } from './shared/exceptions/global-exception.filter';
+import { IdempotencyInterceptor } from './shared/idempotency/idempotency.interceptor';
+import { IdempotencyModule } from './shared/idempotency/idempotency.module';
 import { RequestLoggingInterceptor } from './shared/logger/request-logging.interceptor';
 import configuration from './shared/config/configuration';
+import { validateEnv } from './shared/config/env.validation';
 import { AppLogger } from './shared/logger/app-logger.service';
 import { HealthController } from './health/health.controller';
 import { AiModule } from './infra/ai/ai.module';
@@ -18,20 +23,17 @@ import { InsightsModule } from './modules/insights/insights.module';
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { EducationModule } from './modules/education/education.module';
-import { ChallengesModule } from './modules/challenges/challenges.module';
-import { BadgesModule } from './modules/badges/badges.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
-import { SurveysModule } from './modules/surveys/surveys.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
+import { FinancialProgressModule } from './modules/financial-progress/financial-progress.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
-import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
+      validate: validateEnv,
     }),
     ThrottlerModule.forRoot([
       {
@@ -40,6 +42,8 @@ import { ChatModule } from './modules/chat/chat.module';
       },
     ]),
     PrismaModule,
+    AuditModule,
+    IdempotencyModule,
     AiModule,
     AnalyticsModule,
     AuthModule,
@@ -52,12 +56,8 @@ import { ChatModule } from './modules/chat/chat.module';
     PredictionsModule,
     RecommendationsModule,
     EducationModule,
-    ChallengesModule,
-    BadgesModule,
     FeedbackModule,
-    SurveysModule,
-    NotificationsModule,
-    ChatModule,
+    FinancialProgressModule,
   ],
   controllers: [HealthController],
   providers: [
@@ -67,8 +67,19 @@ import { ChatModule } from './modules/chat/chat.module';
       useClass: GlobalExceptionFilter,
     },
     {
+      // Runs FIRST (NestJS executes APP_INTERCEPTORs in reverse
+      // registration order). Populates the AsyncLocalStorage context
+      // that AuditLogService reads.
+      provide: APP_INTERCEPTOR,
+      useClass: RequestContextInterceptor,
+    },
+    {
       provide: APP_INTERCEPTOR,
       useClass: RequestLoggingInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
     },
   ],
 })

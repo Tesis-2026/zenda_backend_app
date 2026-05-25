@@ -5,12 +5,17 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { IUserRepository } from '../../domain/ports/user.repository';
 import { IRefreshTokenRepository } from '../../domain/ports/refresh-token.repository';
-import { AnalyticsService } from '../../../../infra/analytics/analytics.service';
 
 export interface RegisterCommand {
   email: string;
   password: string;
   fullName: string;
+}
+
+export interface RegisterResult {
+  userId: string;
+  accessToken: string;
+  refreshToken: string;
 }
 
 @Injectable()
@@ -20,10 +25,9 @@ export class RegisterUseCase {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly refreshTokenRepository: IRefreshTokenRepository,
-    private readonly analytics: AnalyticsService,
   ) {}
 
-  async execute(cmd: RegisterCommand): Promise<{ accessToken: string; refreshToken: string }> {
+  async execute(cmd: RegisterCommand): Promise<RegisterResult> {
     const existing = await this.userRepository.findByEmail(cmd.email);
     if (existing) {
       throw new ConflictException('Email already registered');
@@ -38,12 +42,15 @@ export class RegisterUseCase {
       fullName: cmd.fullName,
     });
 
-    const accessToken = this.jwtService.sign({ sub: user.id, email: user.email });
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+      consentGiven: user.consentGiven,
+    });
     const refreshToken = await this._issueRefreshToken(user.id);
 
-    this.analytics.track(user.id, 'register');
-
-    return { accessToken, refreshToken };
+    return { userId: user.id, accessToken, refreshToken };
   }
 
   private async _issueRefreshToken(userId: string): Promise<string> {

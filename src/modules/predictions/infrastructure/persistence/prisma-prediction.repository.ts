@@ -1,10 +1,32 @@
 import { Injectable } from '@nestjs/common';
-import { TransactionType } from '@prisma/client';
+import { Prisma, TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { SpendingContext, UserProfile } from '../../../../infra/ai/AiProvider';
-import { PredictionEntity, PredictionType } from '../../domain/prediction.entity';
+import {
+  ConfidenceInterval,
+  ConfidenceLevel,
+  PredictionEntity,
+  PredictionType,
+  deriveConfidenceInterval,
+} from '../../domain/prediction.entity';
 import { IPredictionRepository } from '../../domain/ports/prediction.repository';
+
+type PredictionRow = {
+  id: string;
+  userId: string;
+  period: string;
+  type: TransactionType;
+  predictedTotal: Decimal;
+  predictedByCategory: unknown;
+  confidenceInterval: unknown;
+  confidenceLevel: string | null;
+  narrative: string | null;
+  modelVersion: string | null;
+  actualTotal: Decimal | null;
+  accuracy: Decimal | null;
+  createdAt: Date;
+};
 
 @Injectable()
 export class PrismaPredictionRepository implements IPredictionRepository {
@@ -23,41 +45,24 @@ export class PrismaPredictionRepository implements IPredictionRepository {
   }
 
   async upsert(prediction: Omit<PredictionEntity, 'createdAt'>): Promise<PredictionEntity> {
-    const { id, userId, period, type, predictedTotal, predictedByCategory, confidenceLevel, narrative, modelVersion } =
-      prediction;
+    const data = this.toWriteData(prediction);
     const row = await this.prisma.prediction.upsert({
-      where: { userId_period_type: { userId, period, type: type as TransactionType } },
-      create: {
-        id,
-        userId,
-        period,
-        type: type as TransactionType,
-        predictedTotal: new Decimal(predictedTotal),
-        predictedByCategory: predictedByCategory as object[],
-        confidenceInterval: { lower: predictedTotal * 0.85, upper: predictedTotal * 1.15 },
-        modelVersion: `${modelVersion}|confidence:${confidenceLevel}|narrative:${narrative}`,
+      where: {
+        userId_period_type: {
+          userId: prediction.userId,
+          period: prediction.period,
+          type: prediction.type as TransactionType,
+        },
       },
-      update: {
-        predictedTotal: new Decimal(predictedTotal),
-        predictedByCategory: predictedByCategory as object[],
-        modelVersion: `${modelVersion}|confidence:${confidenceLevel}|narrative:${narrative}`,
-      },
+      create: { id: prediction.id, ...data },
+      update: data,
     });
     return this.toEntity(row);
   }
 
   async save(prediction: Omit<PredictionEntity, 'id' | 'createdAt'>): Promise<PredictionEntity> {
-    const { userId, period, type, predictedTotal, predictedByCategory, confidenceLevel, narrative, modelVersion } =
-      prediction;
     const row = await this.prisma.prediction.create({
-      data: {
-        userId,
-        period,
-        type: type as TransactionType,
-        predictedTotal: new Decimal(predictedTotal),
-        predictedByCategory: predictedByCategory as object[],
-        modelVersion: `${modelVersion}|confidence:${confidenceLevel}|narrative:${narrative}`,
-      },
+      data: this.toWriteData(prediction),
     });
     return this.toEntity(row);
   }
@@ -104,7 +109,7 @@ export class PrismaPredictionRepository implements IPredictionRepository {
       ]);
 
       const catIds = byCategory.map((c) => c.categoryId).filter((id): id is string => id !== null);
-      const cats = await this.prisma.category.findMany({ where: { id: { in: catIds } }, select: { id: true, name: true } });
+      const cats = await this.prisma.category.findMany({ where: { id: { in: catIds }, deletedAt: null }, select: { id: true, name: true } });
       const catMap = new Map(cats.map((c) => [c.id, c.name]));
 
       months.push({
@@ -127,37 +132,88 @@ export class PrismaPredictionRepository implements IPredictionRepository {
     return this.prisma.prediction.count({ where: { userId } });
   }
 
-  private toEntity(row: {
-    id: string;
-    userId: string;
-    period: string;
-    type: TransactionType;
-    predictedTotal: Decimal;
-    predictedByCategory: unknown;
-    modelVersion: string | null;
-    actualTotal: Decimal | null;
-    accuracy: Decimal | null;
-    createdAt: Date;
-  }): PredictionEntity {
-    // modelVersion field encodes confidence+narrative: "version|confidence:X|narrative:Y"
-    const parts = row.modelVersion?.split('|') ?? [];
-    const version = parts[0] ?? 'unknown';
-    const confidence = (parts[1]?.replace('confidence:', '') ?? 'low') as 'high' | 'medium' | 'low';
-    const narrative = parts[2]?.replace('narrative:', '') ?? '';
+  // ── Read mapping ─────────────────────────────────────────────────
+
+  private toEntity(row: PredictionRow): PredictionEntity {
+    const predictedTotal = row.predictedTotal.toNumber();
+
+    // Backward compatibility with the legacy ARCH-04 packed format
+    // (`<version>|confidence:<level>|narrative:<text>`). New writes
+    // populate the proper columns; the migration backfilled most old
+    // rows, but if anything slipped through we still parse it here.
+    const legacy = parseLegacyPackedModelVersion(row.modelVersion);
+    const confidenceLevel = (row.confidenceLevel ?? legacy.confidenceLevel ?? 'low') as ConfidenceLevel;
+    const narrative = row.narrative ?? legacy.narrative ?? '';
+    const modelVersion = legacy.version ?? row.modelVersion ?? 'unknown';
+
+    const intervalRaw = row.confidenceInterval as
+      | { lower?: unknown; upper?: unknown }
+      | null;
+    const interval: ConfidenceInterval =
+      intervalRaw && typeof intervalRaw.lower === 'number' && typeof intervalRaw.upper === 'number'
+        ? { lower: intervalRaw.lower, upper: intervalRaw.upper }
+        : deriveConfidenceInterval(predictedTotal, confidenceLevel);
 
     return new PredictionEntity(
       row.id,
       row.userId,
       row.period,
       row.type as PredictionType,
-      row.predictedTotal.toNumber(),
+      predictedTotal,
       (row.predictedByCategory as Array<{ categoryId: string; categoryName: string; amount: number }>) ?? [],
-      confidence,
+      confidenceLevel,
+      interval,
       narrative,
-      version,
+      modelVersion,
       row.actualTotal?.toNumber() ?? null,
       row.accuracy?.toNumber() ?? null,
       row.createdAt,
     );
   }
+
+  // ── Write mapping ────────────────────────────────────────────────
+
+  private toWriteData(prediction: Omit<PredictionEntity, 'createdAt' | 'id'> | Omit<PredictionEntity, 'createdAt'>) {
+    return {
+      userId: prediction.userId,
+      period: prediction.period,
+      type: prediction.type as TransactionType,
+      predictedTotal: new Decimal(prediction.predictedTotal),
+      predictedByCategory: (prediction.predictedByCategory as unknown) as Prisma.InputJsonValue,
+      confidenceInterval: prediction.confidenceInterval as unknown as Prisma.InputJsonValue,
+      confidenceLevel: prediction.confidenceLevel,
+      narrative: prediction.narrative,
+      modelVersion: prediction.modelVersion,
+    };
+  }
+}
+
+/**
+ * Parses the pre-B17 packed `modelVersion` string:
+ *   `"<version>|confidence:<level>|narrative:<text>"`
+ *
+ * Returns `{ version: null }` when the input isn't in that format, so
+ * the caller can fall back to the proper column instead.
+ */
+function parseLegacyPackedModelVersion(raw: string | null): {
+  version: string | null;
+  confidenceLevel: ConfidenceLevel | null;
+  narrative: string | null;
+} {
+  if (!raw || !raw.includes('|')) {
+    return { version: raw, confidenceLevel: null, narrative: null };
+  }
+  const parts = raw.split('|');
+  const version = parts[0] ?? null;
+  let confidenceLevel: ConfidenceLevel | null = null;
+  let narrative: string | null = null;
+  for (const part of parts.slice(1)) {
+    if (part.startsWith('confidence:')) {
+      const v = part.slice('confidence:'.length);
+      if (v === 'high' || v === 'medium' || v === 'low') confidenceLevel = v;
+    } else if (part.startsWith('narrative:')) {
+      narrative = part.slice('narrative:'.length);
+    }
+  }
+  return { version, confidenceLevel, narrative };
 }

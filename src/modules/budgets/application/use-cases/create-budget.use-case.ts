@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { IBudgetRepository } from '../../domain/ports/budget.repository';
 import { BudgetEntity } from '../../domain/budget.entity';
+import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 export interface CreateBudgetCommand {
   userId: string;
@@ -12,7 +13,10 @@ export interface CreateBudgetCommand {
 
 @Injectable()
 export class CreateBudgetUseCase {
-  constructor(private readonly repo: IBudgetRepository) {}
+  constructor(
+    private readonly repo: IBudgetRepository,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   async execute(cmd: CreateBudgetCommand): Promise<BudgetEntity> {
     // PostgreSQL unique constraints treat NULL as distinct (NULL != NULL), so the
@@ -32,13 +36,25 @@ export class CreateBudgetUseCase {
     }
 
     try {
-      return await this.repo.create({
+      const created = await this.repo.create({
         userId: cmd.userId,
         categoryId: cmd.categoryId,
         amountLimit: cmd.amountLimit,
         month: cmd.month,
         year: cmd.year,
       });
+      this.auditLog.record({
+        action: 'CREATE_BUDGET',
+        resource: 'Budget',
+        resourceId: created.id,
+        afterJson: {
+          categoryId: created.categoryId,
+          amountLimit: created.amountLimit,
+          month: created.month,
+          year: created.year,
+        },
+      });
+      return created;
     } catch (err: unknown) {
       // Prisma P2002 = unique constraint violation (duplicate category-specific budget)
       if (

@@ -10,6 +10,9 @@ export class CategoryResponseDto {
   @ApiProperty({ enum: ['SYSTEM', 'CUSTOM'], example: 'SYSTEM' })
   type!: 'SYSTEM' | 'CUSTOM';
 
+  @ApiPropertyOptional({ enum: ['INCOME', 'EXPENSE'], example: 'EXPENSE', nullable: true, description: 'null = applies to both income and expense' })
+  transactionType?: 'INCOME' | 'EXPENSE' | null;
+
   @ApiPropertyOptional({ example: '73ae7668-1c5f-4b7a-a16d-420a6a6a5b90', nullable: true })
   userId?: string | null;
 

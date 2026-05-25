@@ -42,6 +42,27 @@ export class TransactionResponseDto {
   @ApiPropertyOptional({ type: () => TransactionCategoryDto })
   category?: TransactionCategoryDto | null;
 
+  @ApiPropertyOptional({
+    description: 'UUID of the category the AI proposed at create time; null if no AI suggestion was made',
+    example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8',
+    nullable: true,
+  })
+  suggestedCategoryId?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'AI confidence score (0.00–1.00); null if no AI suggestion was made',
+    example: 0.87,
+    nullable: true,
+  })
+  aiConfidence?: number | null;
+
+  @ApiProperty({
+    enum: ['AI', 'AI_OVERRIDDEN', 'USER'],
+    example: 'AI',
+    description: 'Source of the final category: AI accepted, AI overridden by user, or user-chosen with no AI involvement',
+  })
+  categorySource!: 'AI' | 'AI_OVERRIDDEN' | 'USER';
+
   @ApiPropertyOptional({ type: [String], example: ['Daily Habit Challenge'] })
   newlyCompletedChallenges?: string[];
 

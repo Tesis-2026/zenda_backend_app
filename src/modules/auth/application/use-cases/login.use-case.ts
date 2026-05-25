@@ -1,11 +1,12 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
+import { AuditStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { IUserRepository } from '../../domain/ports/user.repository';
 import { IRefreshTokenRepository } from '../../domain/ports/refresh-token.repository';
-import { AnalyticsService } from '../../../../infra/analytics/analytics.service';
+import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 const MAX_FAILED_ATTEMPTS = 3;
 const LOCKOUT_MINUTES = 15;
@@ -15,6 +16,12 @@ export interface LoginCommand {
   password: string;
 }
 
+export interface LoginResult {
+  userId: string;
+  accessToken: string;
+  refreshToken: string;
+}
+
 @Injectable()
 export class LoginUseCase {
   constructor(
@@ -22,19 +29,25 @@ export class LoginUseCase {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly refreshTokenRepository: IRefreshTokenRepository,
-    private readonly analytics: AnalyticsService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
-  async execute(cmd: LoginCommand): Promise<{ accessToken: string; refreshToken: string }> {
+  async execute(cmd: LoginCommand): Promise<LoginResult> {
     const user = await this.userRepository.findByEmail(cmd.email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (user.isLocked) {
-      throw new UnauthorizedException(
-        `Account temporarily locked. Try again in ${LOCKOUT_MINUTES} minutes.`,
-      );
+      // Account is already locked — surface the unlock time so the
+      // frontend can render a server-authoritative countdown (B14).
+      throw new UnauthorizedException({
+        message: `Account temporarily locked. Try again later.`,
+        error: 'Unauthorized',
+        failedAttempts: null, // intentionally hidden once locked
+        attemptsRemaining: 0,
+        lockedUntil: user.lockedUntil!.toISOString(),
+      });
     }
 
     const valid = await bcrypt.compare(cmd.password, user.passwordHash);
@@ -44,25 +57,53 @@ export class LoginUseCase {
       if (attempts >= MAX_FAILED_ATTEMPTS) {
         const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000);
         await this.userRepository.lockAccount(user.id, lockUntil);
-        throw new UnauthorizedException(
-          `Too many failed attempts. Account locked for ${LOCKOUT_MINUTES} minutes.`,
-        );
+        this.auditLog.record({
+          action: 'LOGIN_LOCKED',
+          resource: 'User',
+          resourceId: user.id,
+          userIdOverride: user.id,
+          status: AuditStatus.FAILURE,
+          metadata: { lockUntil: lockUntil.toISOString(), attempts },
+        });
+        throw new UnauthorizedException({
+          message: `Too many failed attempts. Account locked for ${LOCKOUT_MINUTES} minutes.`,
+          error: 'Unauthorized',
+          failedAttempts: attempts,
+          attemptsRemaining: 0,
+          lockedUntil: lockUntil.toISOString(),
+        });
       }
 
+      this.auditLog.record({
+        action: 'LOGIN_FAILED',
+        resource: 'User',
+        resourceId: user.id,
+        userIdOverride: user.id,
+        status: AuditStatus.FAILURE,
+        metadata: { attempts },
+      });
+
       const remaining = MAX_FAILED_ATTEMPTS - attempts;
-      throw new UnauthorizedException(
-        `Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining before lockout.`,
-      );
+      throw new UnauthorizedException({
+        message: `Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining before lockout.`,
+        error: 'Unauthorized',
+        failedAttempts: attempts,
+        attemptsRemaining: remaining,
+        lockedUntil: null,
+      });
     }
 
     await this.userRepository.clearFailedLogin(user.id);
 
-    const accessToken = this.jwtService.sign({ sub: user.id, email: user.email });
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+      consentGiven: user.consentGiven,
+    });
     const refreshToken = await this._issueRefreshToken(user.id);
 
-    this.analytics.track(user.id, 'login');
-
-    return { accessToken, refreshToken };
+    return { userId: user.id, accessToken, refreshToken };
   }
 
   private async _issueRefreshToken(userId: string): Promise<string> {

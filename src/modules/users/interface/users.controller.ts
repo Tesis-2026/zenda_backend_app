@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiNoContent, ApiOk, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
@@ -22,12 +23,17 @@ export class UsersController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
+  @ApiOk(UserProfileResponseDto, 'Authenticated user profile')
+  @ApiAuthErrors()
   async getMe(@UserId() userId: string): Promise<UserProfileResponseDto> {
     return this.getProfileUseCase.execute(userId);
   }
 
   @Put('me')
   @ApiOperation({ summary: 'Update current user profile' })
+  @ApiOk(UserProfileResponseDto, 'Updated profile')
+  @ApiValidationError()
+  @ApiAuthErrors()
   async updateMe(
     @UserId() userId: string,
     @Body() dto: UpdateProfileDto,
@@ -38,14 +44,20 @@ export class UsersController {
   @Delete('me')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete own account and all associated data (US-1306)' })
+  @ApiNoContent('Account hard-deleted; FK cascades clean up all owned data')
+  @ApiAuthErrors()
   async deleteMe(@UserId() userId: string, @Req() req: Request): Promise<void> {
     const ipAddress =
       (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
       req.socket.remoteAddress ??
       null;
 
+    // DELETE_ACCOUNT audit MUST be transactional with the User row deletion,
+    // because the FK cascade (`AuditLog.userId → User.id ON DELETE SetNull`)
+    // would null out the userId on the audit row if the writes were
+    // independent. AuditLogService is fire-and-forget by design (see B27
+    // notes) and can't make that guarantee, so this one case stays inline.
     await this.prisma.$transaction([
-      // Audit the deletion before cascades remove the user row
       this.prisma.auditLog.create({
         data: { userId, action: 'DELETE_ACCOUNT', resource: 'User', ipAddress },
       }),
