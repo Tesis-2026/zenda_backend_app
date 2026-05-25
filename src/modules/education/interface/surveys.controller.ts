@@ -1,5 +1,6 @@
 import { Body, ConflictException, Controller, Get, HttpCode, HttpStatus, NotFoundException, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiConflictError, ApiNotFoundError, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { FinancialLiteracyLevel, Survey, SurveyType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
@@ -17,12 +18,18 @@ export class SurveysController {
 
   @Get('pre')
   @ApiOperation({ summary: 'Get pre-usage survey questions (US-1201)' })
+  @ApiResponse({ status: 200, description: 'Pre-survey definition with embedded questions' })
+  @ApiNotFoundError('Pre-survey is not seeded')
+  @ApiAuthErrors()
   async getPreSurvey(): Promise<object> {
     return this.getSurveyByType(SurveyType.PRE);
   }
 
   @Get('post')
   @ApiOperation({ summary: 'Get post-usage survey questions (US-1202)' })
+  @ApiResponse({ status: 200, description: 'Post-survey definition with embedded questions' })
+  @ApiNotFoundError('Post-survey is not seeded')
+  @ApiAuthErrors()
   async getPostSurvey(): Promise<object> {
     return this.getSurveyByType(SurveyType.POST);
   }
@@ -30,6 +37,10 @@ export class SurveysController {
   @Post('pre/response')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit pre-usage survey response (US-1201)' })
+  @ApiResponse({ status: 201, description: 'Response recorded; user financialLiteracyLevel updated' })
+  @ApiValidationError()
+  @ApiConflictError('Pre-survey already submitted by this user')
+  @ApiAuthErrors()
   async submitPre(@UserId() userId: string, @Body() dto: SubmitSurveyDto): Promise<{ score: number; level: string }> {
     const result = await this.submitResponse(userId, SurveyType.PRE, dto.answers);
     await this.prisma.user.update({
@@ -42,6 +53,10 @@ export class SurveysController {
   @Post('post/response')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit post-usage survey response (US-1202)' })
+  @ApiResponse({ status: 201, description: 'Response recorded; returns score + improvement vs pre' })
+  @ApiValidationError()
+  @ApiConflictError('Post-survey already submitted by this user')
+  @ApiAuthErrors()
   async submitPost(@UserId() userId: string, @Body() dto: SubmitSurveyDto): Promise<{ score: number; improvement: number | null }> {
     const postResult = await this.submitResponse(userId, SurveyType.POST, dto.answers);
 
@@ -59,6 +74,9 @@ export class SurveysController {
 
   @Get('sus')
   @ApiOperation({ summary: 'Get SUS usability questionnaire (US-035)' })
+  @ApiResponse({ status: 200, description: 'SUS questionnaire with 10 standard items' })
+  @ApiNotFoundError('SUS survey is not seeded')
+  @ApiAuthErrors()
   async getSusSurvey(): Promise<object> {
     return this.getSurveyByType(SurveyType.SUS);
   }
@@ -66,6 +84,10 @@ export class SurveysController {
   @Post('sus/response')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit SUS survey response and compute SUS score (US-035)' })
+  @ApiResponse({ status: 201, description: 'SUS score (0-100) + grade (Excelente/Bueno/Regular/Bajo)' })
+  @ApiValidationError()
+  @ApiConflictError('SUS survey already submitted')
+  @ApiAuthErrors()
   async submitSus(@UserId() userId: string, @Body() dto: SubmitSurveyDto): Promise<{ susScore: number; grade: string }> {
     const survey = await this.findSurveyOrThrow(SurveyType.SUS);
     const questions = parseSurveyQuestions(survey.questionsJson);

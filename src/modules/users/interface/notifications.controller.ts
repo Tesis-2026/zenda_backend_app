@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiNoContent, ApiOk, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { NotificationType, Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
@@ -29,6 +30,8 @@ export class NotificationsController {
 
   @Get('preferences')
   @ApiOperation({ summary: 'List notification preferences for the current user (US-1104)' })
+  @ApiOk(NotificationPreferenceResponseDto, 'Per-type opt-in/out (missing keys default to true)')
+  @ApiAuthErrors()
   async getPreferences(@UserId() userId: string): Promise<NotificationPreferenceResponseDto[]> {
     const row = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
@@ -46,6 +49,9 @@ export class NotificationsController {
   @Patch('preferences/:type')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Enable or disable a notification type (US-1104)' })
+  @ApiNoContent('Preference updated')
+  @ApiValidationError()
+  @ApiAuthErrors()
   async updatePreference(
     @UserId() userId: string,
     @Param('type') type: string,
