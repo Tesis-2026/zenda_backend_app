@@ -16,6 +16,7 @@ import { WeekSummaryDto } from './dto/week-summary.dto';
 import { DaySummaryDto } from './dto/day-summary.dto';
 import { ComparisonDto } from './dto/comparison.dto';
 import { MonthComparisonEntryDto } from './dto/comparison.response.dto';
+import { ProgressResponseDto } from './dto/progress.response.dto';
 
 @ApiTags('Insights')
 @ApiBearerAuth()
@@ -80,8 +81,9 @@ export class SummaryController {
 
   @Get('progress')
   @ApiOperation({ summary: 'Get current vs previous month financial progress (US-0407)' })
+  @ApiOk(ProgressResponseDto, 'Totals for the current + previous month with month-over-month percent changes')
   @ApiAuthErrors()
-  async getProgress(@UserId() userId: string): Promise<object> {
+  async getProgress(@UserId() userId: string): Promise<ProgressResponseDto> {
     const now = new Date();
     const [curFrom, curTo, prevFrom, prevTo] = [
       new Date(now.getFullYear(), now.getMonth(), 1),

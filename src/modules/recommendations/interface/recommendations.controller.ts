@@ -7,6 +7,7 @@ import { IRecommendationRepository } from '../domain/ports/recommendation.reposi
 import { GetRecommendationsUseCase } from '../application/use-cases/get-recommendations.use-case';
 import { SubmitFeedbackUseCase } from '../application/use-cases/submit-feedback.use-case';
 import { RecommendationResponseDto } from './dto/recommendation.response.dto';
+import { RecommendationStatsResponseDto } from './dto/recommendation-stats.response.dto';
 import { FeedbackDto } from './dto/feedback.dto';
 
 @ApiTags('Recommendations')
@@ -31,8 +32,9 @@ export class RecommendationsController {
 
   @Get('stats')
   @ApiOperation({ summary: 'Get recommendation acceptance rate stats (US-0902)' })
+  @ApiOk(RecommendationStatsResponseDto, 'Acceptance counts and ratio for the authenticated user')
   @ApiAuthErrors()
-  async stats(@UserId() userId: string): Promise<{ total: number; accepted: number; acceptanceRate: number }> {
+  async stats(@UserId() userId: string): Promise<RecommendationStatsResponseDto> {
     return this.recommendationRepository.getStats(userId);
   }
 

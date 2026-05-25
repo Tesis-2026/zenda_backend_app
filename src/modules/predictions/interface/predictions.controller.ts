@@ -12,6 +12,7 @@ import { BadgesFacade } from '../../badges/application/facades/badges.facade';
 import { IPredictionRepository } from '../domain/ports/prediction.repository';
 import { GetExpensePredictionUseCase } from '../application/use-cases/get-expense-prediction.use-case';
 import { PredictionResponseDto } from './dto/prediction.response.dto';
+import { PredictionAccuracyResponseDto } from './dto/prediction-accuracy.response.dto';
 
 class AccuracyCheckDto {
   @IsInt()
@@ -52,13 +53,14 @@ export class PredictionsController {
   @Post('accuracy-check')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Compare stored prediction against actual expenses for a past month (US-0801)' })
+  @ApiOk(PredictionAccuracyResponseDto, 'Predicted vs actual totals and accuracy percentage')
   @ApiValidationError()
   @ApiNotFoundError('No stored prediction for the given period')
   @ApiAuthErrors()
   async accuracyCheck(
     @UserId() userId: string,
     @Body() dto: AccuracyCheckDto,
-  ): Promise<{ period: string; predictedTotal: number; actualTotal: number; accuracyPct: number | null }> {
+  ): Promise<PredictionAccuracyResponseDto> {
     const { year, month } = dto;
     const period = `${year}-${String(month).padStart(2, '0')}`;
 
