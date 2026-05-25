@@ -39,9 +39,15 @@ export class LoginUseCase {
     }
 
     if (user.isLocked) {
-      throw new UnauthorizedException(
-        `Account temporarily locked. Try again in ${LOCKOUT_MINUTES} minutes.`,
-      );
+      // Account is already locked — surface the unlock time so the
+      // frontend can render a server-authoritative countdown (B14).
+      throw new UnauthorizedException({
+        message: `Account temporarily locked. Try again later.`,
+        error: 'Unauthorized',
+        failedAttempts: null, // intentionally hidden once locked
+        attemptsRemaining: 0,
+        lockedUntil: user.lockedUntil!.toISOString(),
+      });
     }
 
     const valid = await bcrypt.compare(cmd.password, user.passwordHash);
@@ -59,9 +65,13 @@ export class LoginUseCase {
           status: AuditStatus.FAILURE,
           metadata: { lockUntil: lockUntil.toISOString(), attempts },
         });
-        throw new UnauthorizedException(
-          `Too many failed attempts. Account locked for ${LOCKOUT_MINUTES} minutes.`,
-        );
+        throw new UnauthorizedException({
+          message: `Too many failed attempts. Account locked for ${LOCKOUT_MINUTES} minutes.`,
+          error: 'Unauthorized',
+          failedAttempts: attempts,
+          attemptsRemaining: 0,
+          lockedUntil: lockUntil.toISOString(),
+        });
       }
 
       this.auditLog.record({
@@ -74,9 +84,13 @@ export class LoginUseCase {
       });
 
       const remaining = MAX_FAILED_ATTEMPTS - attempts;
-      throw new UnauthorizedException(
-        `Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining before lockout.`,
-      );
+      throw new UnauthorizedException({
+        message: `Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining before lockout.`,
+        error: 'Unauthorized',
+        failedAttempts: attempts,
+        attemptsRemaining: remaining,
+        lockedUntil: null,
+      });
     }
 
     await this.userRepository.clearFailedLogin(user.id);

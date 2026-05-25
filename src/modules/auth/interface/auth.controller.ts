@@ -38,6 +38,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { AuthTokenResponseDto } from './dto/auth-token.response.dto';
+import { LoginErrorResponseDto } from './dto/login-error.response.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -73,7 +74,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Login — returns access + refresh tokens (locks after 3 failures)' })
   @ApiCreated(AuthTokenResponseDto, 'Signed in')
   @ApiValidationError()
-  @ApiResponse({ status: 401, description: 'Invalid credentials or account locked', type: ApiErrorResponseDto })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Invalid credentials or account locked. Body carries `failedAttempts`, `attemptsRemaining`, `lockedUntil` so the client can render a server-authoritative lockout countdown (B14).',
+    type: LoginErrorResponseDto,
+  })
   @ApiResponse({ status: 429, description: 'Too Many Requests', type: ApiErrorResponseDto })
   async login(@Body() dto: LoginDto): Promise<AuthTokenResponseDto> {
     const { userId, accessToken, refreshToken } =

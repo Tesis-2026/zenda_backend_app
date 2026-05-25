@@ -13,6 +13,14 @@ type NormalizedError = {
   statusCode: number;
   message: string | string[];
   error: string;
+  /**
+   * Extra fields preserved from an `HttpException` body object so that
+   * endpoints can attach contextual data to their responses (e.g. the
+   * login lockout exposes `failedAttempts` / `attemptsRemaining` /
+   * `lockedUntil` on 401). Standard fields (statusCode/message/error/
+   * path/timestamp) always win on key collision.
+   */
+  extras?: Record<string, unknown>;
 };
 
 @Catch()
@@ -34,6 +42,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     response.status(normalized.statusCode).json({
+      // Spread first so the standard fields below win on any key collision.
+      ...(normalized.extras ?? {}),
       statusCode: normalized.statusCode,
       message: normalized.message,
       error: normalized.error,
@@ -50,11 +60,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       if (typeof body === 'string') {
         return { statusCode: status, message: body, error: this.errorNameForStatus(status) };
       }
-      const obj = body as { message?: string | string[]; error?: string };
+      const { message: bodyMessage, error: bodyError, ...rest } = body as {
+        message?: string | string[];
+        error?: string;
+        [key: string]: unknown;
+      };
       return {
         statusCode: status,
-        message: obj.message ?? exception.message,
-        error: obj.error ?? this.errorNameForStatus(status),
+        message: bodyMessage ?? exception.message,
+        error: bodyError ?? this.errorNameForStatus(status),
+        extras: Object.keys(rest).length > 0 ? rest : undefined,
       };
     }
 
