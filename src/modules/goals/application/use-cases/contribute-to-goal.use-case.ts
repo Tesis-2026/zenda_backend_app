@@ -3,6 +3,7 @@ import { BadgesFacade } from '../../../badges/application/facades/badges.facade'
 import { ChallengesFacade } from '../../../challenges/application/facades/challenges.facade';
 import { ISavingsGoalRepository } from '../../domain/ports/savings-goal.repository';
 import { SavingsGoalEntity } from '../../domain/savings-goal.entity';
+import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 export interface ContributeToGoalCommand {
   userId: string;
@@ -18,6 +19,7 @@ export class ContributeToGoalUseCase {
     private readonly repo: ISavingsGoalRepository,
     private readonly badges: BadgesFacade,
     private readonly challenges: ChallengesFacade,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(cmd: ContributeToGoalCommand): Promise<SavingsGoalEntity> {
@@ -36,6 +38,14 @@ export class ContributeToGoalUseCase {
 
     this.challenges.verifyForUser(cmd.userId).catch((err: unknown) => {
       this.logger.warn('Challenge verification failed after goal contribution', err);
+    });
+
+    this.auditLog.record({
+      action: 'CONTRIBUTE_TO_GOAL',
+      resource: 'SavingsGoal',
+      resourceId: cmd.goalId,
+      beforeJson: { currentAmount: goal.currentAmount },
+      afterJson: { currentAmount: updated.currentAmount, contribution: cmd.amount },
     });
 
     return updated;
