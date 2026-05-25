@@ -24,6 +24,13 @@ export class UserProfileEntity {
     readonly profileCompleted: boolean,
     readonly currency: string,
     readonly createdAt: Date,
+    // Security + consent (exposed so the UI can render the privacy
+    // panel required by Law 29733 and surface lockout state outside
+    // of the login flow's 401 body).
+    readonly consentGiven: boolean,
+    readonly consentAt: Date | null,
+    readonly failedLoginAttempts: number,
+    readonly lockedUntil: Date | null,
   ) {}
 
   static create(params: {
@@ -38,6 +45,10 @@ export class UserProfileEntity {
     profileCompleted: boolean;
     currency: string;
     createdAt: Date;
+    consentGiven: boolean;
+    consentAt: Date | null;
+    failedLoginAttempts: number;
+    lockedUntil: Date | null;
   }): UserProfileEntity {
     return new UserProfileEntity(
       params.id,
@@ -51,6 +62,10 @@ export class UserProfileEntity {
       params.profileCompleted,
       params.currency,
       params.createdAt,
+      params.consentGiven,
+      params.consentAt,
+      params.failedLoginAttempts,
+      params.lockedUntil,
     );
   }
 }

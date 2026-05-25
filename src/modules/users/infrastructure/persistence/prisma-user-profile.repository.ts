@@ -62,6 +62,10 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
     profileCompleted: boolean;
     currency: string;
     createdAt: Date;
+    consentGiven: boolean;
+    consentAt: Date | null;
+    failedLoginAttempts: number;
+    lockedUntil: Date | null;
   }): UserProfileEntity {
     return UserProfileEntity.create({
       id: row.id,
@@ -77,6 +81,10 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
       profileCompleted: row.profileCompleted,
       currency: row.currency,
       createdAt: row.createdAt,
+      consentGiven: row.consentGiven,
+      consentAt: row.consentAt,
+      failedLoginAttempts: row.failedLoginAttempts,
+      lockedUntil: row.lockedUntil,
     });
   }
 }
