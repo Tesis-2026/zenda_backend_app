@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { IUserRepository } from '../../domain/ports/user.repository';
 import { IRefreshTokenRepository } from '../../domain/ports/refresh-token.repository';
+import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 export interface RegisterCommand {
   email: string;
@@ -25,6 +26,7 @@ export class RegisterUseCase {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly refreshTokenRepository: IRefreshTokenRepository,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(cmd: RegisterCommand): Promise<RegisterResult> {
@@ -49,6 +51,16 @@ export class RegisterUseCase {
       consentGiven: user.consentGiven,
     });
     const refreshToken = await this._issueRefreshToken(user.id);
+
+    // Request context's userId isn't populated for register (JWT guard
+    // hasn't run yet), so we pass it explicitly via userIdOverride.
+    this.auditLog.record({
+      action: 'REGISTER',
+      resource: 'User',
+      resourceId: user.id,
+      userIdOverride: user.id,
+      afterJson: { email: user.email, fullName: user.fullName },
+    });
 
     return { userId: user.id, accessToken, refreshToken };
   }
