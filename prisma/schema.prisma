@@ -419,8 +419,14 @@ model Prediction {
   type                TransactionType
   predictedTotal      Decimal         @db.Decimal(12, 2)
   predictedByCategory Json? // Array of { categoryId, categoryName, amount }
-  confidenceInterval  Json? // { lower: number, upper: number }
-  modelVersion        String?
+  confidenceInterval  Json? // { lower: number, upper: number } — derived from confidenceLevel + predictedTotal
+  // Confidence + narrative used to be packed into `modelVersion` as
+  // `"<version>|confidence:<level>|narrative:<text>"` (ARCH-04). B17
+  // promoted them to proper columns so the API can return them cleanly
+  // and so confidenceInterval can be derived without string parsing.
+  confidenceLevel     String? // 'high' | 'medium' | 'low'
+  narrative           String?
+  modelVersion        String? // version identifier only — no longer packed
   actualTotal         Decimal?        @db.Decimal(12, 2) // filled after period ends
   accuracy            Decimal?        @db.Decimal(5, 2) // retrospective accuracy %
   user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)

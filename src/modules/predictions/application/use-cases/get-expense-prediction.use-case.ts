@@ -3,7 +3,7 @@ import { AI_PROVIDER } from '../../../../infra/ai/ai.module';
 import { AiProvider } from '../../../../infra/ai/AiProvider';
 import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
 import { IPredictionRepository } from '../../domain/ports/prediction.repository';
-import { PredictionEntity } from '../../domain/prediction.entity';
+import { PredictionEntity, deriveConfidenceInterval } from '../../domain/prediction.entity';
 import { randomUUID } from 'crypto';
 
 const PREDICTOR_THRESHOLD = 3;
@@ -40,6 +40,7 @@ export class GetExpensePredictionUseCase {
       predictedTotal: result.predictedTotal,
       predictedByCategory: result.predictedByCategory,
       confidenceLevel: result.confidenceLevel,
+      confidenceInterval: deriveConfidenceInterval(result.predictedTotal, result.confidenceLevel),
       narrative: result.narrative,
       modelVersion: result.modelVersion,
       actualTotal: null,
