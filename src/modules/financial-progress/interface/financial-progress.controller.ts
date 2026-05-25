@@ -1,5 +1,6 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiNotFoundError, ApiOk } from '../../../shared/swagger/api-responses.decorator';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { GetCurrentPeriodProgressUseCase } from '../application/use-cases/get-current-period-progress.use-case';
@@ -9,6 +10,7 @@ import { FinancialProgressResponseDto } from './dto/financial-progress.response.
 import { ListProgressDto } from './dto/list-progress.dto';
 
 @ApiTags('Financial Progress')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('financial-progress')
 export class FinancialProgressController {
@@ -19,6 +21,8 @@ export class FinancialProgressController {
 
   @Get()
   @ApiOperation({ summary: 'List monthly financial-progress snapshots for the authenticated user' })
+  @ApiOk(FinancialProgressResponseDto, 'Monthly snapshots filtered by from/to (YYYY-MM)')
+  @ApiAuthErrors()
   async findAll(
     @UserId() userId: string,
     @Query() query: ListProgressDto,
@@ -33,6 +37,9 @@ export class FinancialProgressController {
 
   @Get('current')
   @ApiOperation({ summary: 'Get the snapshot for the current month, if one has been generated' })
+  @ApiOk(FinancialProgressResponseDto, 'Current-month snapshot')
+  @ApiNotFoundError('No snapshot generated for the current month yet')
+  @ApiAuthErrors()
   async findCurrent(@UserId() userId: string): Promise<FinancialProgressResponseDto> {
     const snapshot = await this.getCurrent.execute(userId);
     return this.toResponse(snapshot);

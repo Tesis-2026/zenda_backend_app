@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
@@ -20,6 +21,9 @@ export class FeedbackController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit app feedback (US-1501)' })
+  @ApiResponse({ status: 201, description: 'Feedback recorded; returns the new id' })
+  @ApiValidationError()
+  @ApiAuthErrors()
   async create(
     @UserId() userId: string,
     @Body() dto: CreateFeedbackDto,

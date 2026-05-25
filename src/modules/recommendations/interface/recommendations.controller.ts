@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiNoContent, ApiNotFoundError, ApiOk, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { IRecommendationRepository } from '../domain/ports/recommendation.repository';
@@ -21,6 +22,8 @@ export class RecommendationsController {
 
   @Get()
   @ApiOperation({ summary: 'Get personalized recommendations (US-0901)' })
+  @ApiOk(RecommendationResponseDto, 'Active recommendations for the authenticated user')
+  @ApiAuthErrors()
   async list(@UserId() userId: string): Promise<RecommendationResponseDto[]> {
     const recs = await this.getRecommendations.execute(userId);
     return recs.map(RecommendationResponseDto.from);
@@ -28,6 +31,7 @@ export class RecommendationsController {
 
   @Get('stats')
   @ApiOperation({ summary: 'Get recommendation acceptance rate stats (US-0902)' })
+  @ApiAuthErrors()
   async stats(@UserId() userId: string): Promise<{ total: number; accepted: number; acceptanceRate: number }> {
     return this.recommendationRepository.getStats(userId);
   }
@@ -35,6 +39,10 @@ export class RecommendationsController {
   @Post(':id/feedback')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Submit feedback for a recommendation (US-0902)' })
+  @ApiNoContent('Feedback recorded')
+  @ApiValidationError()
+  @ApiNotFoundError('Recommendation not found or not owned by caller')
+  @ApiAuthErrors()
   async feedback(
     @Param('id', ParseUUIDPipe) id: string,
     @UserId() userId: string,

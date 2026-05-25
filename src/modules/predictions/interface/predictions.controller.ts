@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Inject, NotFoundException, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiNotFoundError, ApiOk, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { IsInt, Max, Min } from 'class-validator';
 import { TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -39,6 +40,8 @@ export class PredictionsController {
 
   @Get('expenses')
   @ApiOperation({ summary: 'Get expense prediction for next month (US-0801)' })
+  @ApiOk(PredictionResponseDto, 'Predicted total + by-category breakdown + confidence + narrative')
+  @ApiAuthErrors()
   async expenses(@UserId() userId: string): Promise<PredictionResponseDto> {
     const entity = await this.getExpensePrediction.execute(userId);
     this.analytics.track(userId, 'view_prediction', { modelVersion: entity.modelVersion });
@@ -49,6 +52,9 @@ export class PredictionsController {
   @Post('accuracy-check')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Compare stored prediction against actual expenses for a past month (US-0801)' })
+  @ApiValidationError()
+  @ApiNotFoundError('No stored prediction for the given period')
+  @ApiAuthErrors()
   async accuracyCheck(
     @UserId() userId: string,
     @Body() dto: AccuracyCheckDto,
