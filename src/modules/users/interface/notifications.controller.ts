@@ -1,49 +1,47 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ApiAuthErrors, ApiNoContent, ApiOk, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
-import { NotificationType, Prisma } from '@prisma/client';
+import { NotificationType } from '@prisma/client';
+import {
+  ApiAuthErrors,
+  ApiNoContent,
+  ApiOk,
+  ApiValidationError,
+} from '../../../shared/swagger/api-responses.decorator';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
-import { PrismaService } from '../../../infra/prisma/prisma.service';
+import { GetNotificationPreferencesUseCase } from '../application/use-cases/get-notification-preferences.use-case';
+import { UpdateNotificationPreferenceUseCase } from '../application/use-cases/update-notification-preference.use-case';
+import { isNotificationType } from '../domain/notification-preference';
 import { UpdatePreferenceDto } from './dto/update-preference.dto';
 import { NotificationPreferenceResponseDto } from './dto/notification-preference.response.dto';
-
-type PrefsMap = Partial<Record<NotificationType, boolean>>;
-
-function parsePrefs(raw: Prisma.JsonValue | null | undefined): PrefsMap {
-  if (raw === null || raw === undefined || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  const out: PrefsMap = {};
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (typeof value === 'boolean' && (Object.values(NotificationType) as string[]).includes(key)) {
-      out[key as NotificationType] = value;
-    }
-  }
-  return out;
-}
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly getPreferences: GetNotificationPreferencesUseCase,
+    private readonly updatePreferenceUseCase: UpdateNotificationPreferenceUseCase,
+  ) {}
 
   @Get('preferences')
   @ApiOperation({ summary: 'List notification preferences for the current user (US-1104)' })
   @ApiOk(NotificationPreferenceResponseDto, 'Per-type opt-in/out (missing keys default to true)')
   @ApiAuthErrors()
-  async getPreferences(@UserId() userId: string): Promise<NotificationPreferenceResponseDto[]> {
-    const row = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { notificationPrefs: true },
-    });
-    const prefs = parsePrefs(row.notificationPrefs);
-
-    // Missing keys default to enabled — opt-out behavior preserved from the previous table.
-    return Object.values(NotificationType).map((type) => ({
-      type,
-      enabled: prefs[type] ?? true,
-    }));
+  async list(@UserId() userId: string): Promise<NotificationPreferenceResponseDto[]> {
+    const prefs = await this.getPreferences.execute(userId);
+    return prefs.map((p) => ({ type: p.type, enabled: p.enabled }));
   }
 
   @Patch('preferences/:type')
@@ -52,21 +50,17 @@ export class NotificationsController {
   @ApiNoContent('Preference updated')
   @ApiValidationError()
   @ApiAuthErrors()
-  async updatePreference(
+  async update(
     @UserId() userId: string,
     @Param('type') type: string,
     @Body() dto: UpdatePreferenceDto,
   ): Promise<void> {
-    const notificationType = type as NotificationType;
-    const row = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { notificationPrefs: true },
-    });
-    const prefs = parsePrefs(row.notificationPrefs);
-    prefs[notificationType] = dto.enabled;
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { notificationPrefs: prefs as Prisma.InputJsonValue },
-    });
+    // Validated here (and not in a DTO) because `type` is a path param —
+    // class-validator wouldn't run unless we reshape it into a DTO. Cheap
+    // guard avoids leaking an unknown key into the JSON blob.
+    if (!isNotificationType(type)) {
+      throw new BadRequestException(`Unknown notification type: ${type}`);
+    }
+    await this.updatePreferenceUseCase.execute(userId, type as NotificationType, dto.enabled);
   }
 }
