@@ -1,12 +1,13 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ApiAuthErrors, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiAuthErrors, ApiCreated, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { SubmitFeedbackUseCase } from '../application/use-cases/submit-feedback.use-case';
 import { FeedbackKind } from '../domain/feedback.entity';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
+import { FeedbackCreatedResponseDto } from './dto/feedback-created.response.dto';
 
 @ApiTags('Feedback')
 @ApiBearerAuth()
@@ -21,13 +22,13 @@ export class FeedbackController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit app feedback (US-1501)' })
-  @ApiResponse({ status: 201, description: 'Feedback recorded; returns the new id' })
+  @ApiCreated(FeedbackCreatedResponseDto, 'Feedback recorded; returns the new id')
   @ApiValidationError()
   @ApiAuthErrors()
   async create(
     @UserId() userId: string,
     @Body() dto: CreateFeedbackDto,
-  ): Promise<{ id: string }> {
+  ): Promise<FeedbackCreatedResponseDto> {
     const feedback = await this.submitFeedback.execute({
       userId,
       type: dto.type as FeedbackKind | undefined,
