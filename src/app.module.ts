@@ -22,7 +22,9 @@ import { GoalsModule } from './modules/goals/goals.module';
 import { InsightsModule } from './modules/insights/insights.module';
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { ConversationsModule } from './modules/conversations/conversations.module';
 import { EducationModule } from './modules/education/education.module';
+import { SurveysModule } from './modules/surveys/surveys.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { FinancialProgressModule } from './modules/financial-progress/financial-progress.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
@@ -55,7 +57,9 @@ import { UsersModule } from './modules/users/users.module';
     InsightsModule,
     PredictionsModule,
     RecommendationsModule,
+    ConversationsModule,
     EducationModule,
+    SurveysModule,
     FeedbackModule,
     FinancialProgressModule,
   ],
