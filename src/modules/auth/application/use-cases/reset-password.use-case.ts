@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { IPasswordResetTokenRepository } from '../../domain/ports/password-reset-token.repository';
 import { IRefreshTokenRepository } from '../../domain/ports/refresh-token.repository';
 import { IUserRepository } from '../../domain/ports/user.repository';
+import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 export interface ResetPasswordCommand {
   token: string;
@@ -17,6 +18,7 @@ export class ResetPasswordUseCase {
     private readonly userRepository: IUserRepository,
     private readonly refreshTokenRepository: IRefreshTokenRepository,
     private readonly config: ConfigService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(cmd: ResetPasswordCommand): Promise<void> {
@@ -43,5 +45,12 @@ export class ResetPasswordUseCase {
     await this.userRepository.bumpTokenVersion(record.userId);
     await this.tokenRepository.markUsed(record.id);
     await this.refreshTokenRepository.deleteByUserId(record.userId);
+    this.auditLog.record({
+      action: 'RESET_PASSWORD',
+      resource: 'User',
+      resourceId: record.userId,
+      userIdOverride: record.userId,
+      metadata: { allSessionsRevoked: true },
+    });
   }
 }

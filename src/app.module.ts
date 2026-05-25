@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AuditModule } from './shared/audit/audit.module';
+import { RequestContextInterceptor } from './shared/audit/request-context.interceptor';
 import { GlobalExceptionFilter } from './shared/exceptions/global-exception.filter';
 import { IdempotencyInterceptor } from './shared/idempotency/idempotency.interceptor';
 import { IdempotencyModule } from './shared/idempotency/idempotency.module';
@@ -40,6 +42,7 @@ import { UsersModule } from './modules/users/users.module';
       },
     ]),
     PrismaModule,
+    AuditModule,
     IdempotencyModule,
     AiModule,
     AnalyticsModule,
@@ -62,6 +65,13 @@ import { UsersModule } from './modules/users/users.module';
     {
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
+    },
+    {
+      // Runs FIRST (NestJS executes APP_INTERCEPTORs in reverse
+      // registration order). Populates the AsyncLocalStorage context
+      // that AuditLogService reads.
+      provide: APP_INTERCEPTOR,
+      useClass: RequestContextInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,

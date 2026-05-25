@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { IBadgeRepository } from '../../../badges/domain/ports/badge.repository';
 import { VerifyChallengesUseCase } from '../../../challenges/application/use-cases/verify-challenges.use-case';
+import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 import { deriveCategorySource } from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
@@ -31,6 +32,7 @@ export class CreateTransactionUseCase {
     private readonly resolveCategory: ResolveCategoryUseCase,
     private readonly badgeRepo: IBadgeRepository,
     private readonly verifyChallenges: VerifyChallengesUseCase,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async execute(cmd: CreateTransactionCommand): Promise<CreateTransactionResult> {
@@ -85,6 +87,20 @@ export class CreateTransactionUseCase {
     const newlyCompletedChallenges = await this.verifyChallenges
       .execute(cmd.userId)
       .catch(() => [] as string[]);
+
+    this.auditLog.record({
+      action: 'CREATE_TRANSACTION',
+      resource: 'Transaction',
+      resourceId: tx.id,
+      afterJson: {
+        type: tx.type,
+        amount: tx.amount,
+        currency: tx.currency,
+        categoryId: tx.categoryId,
+        categorySource: tx.categorySource,
+        occurredAt: tx.occurredAt.toISOString(),
+      },
+    });
 
     return { ...tx, newlyCompletedChallenges };
   }
