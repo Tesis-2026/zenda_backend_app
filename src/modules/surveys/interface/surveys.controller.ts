@@ -6,6 +6,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
+import { AuditLogService } from '../../../shared/audit/audit-log.service';
 import { SubmitSurveyDto } from './dto/submit-survey.dto';
 import { parseSurveyQuestions, SurveyQuestionJson } from '../domain/survey-question.types';
 
@@ -14,7 +15,10 @@ import { parseSurveyQuestions, SurveyQuestionJson } from '../domain/survey-quest
 @UseGuards(JwtAuthGuard)
 @Controller('surveys')
 export class SurveysController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   @Get('pre')
   @ApiOperation({ summary: 'Get pre-usage survey questions (US-1201)' })
@@ -43,9 +47,31 @@ export class SurveysController {
   @ApiAuthErrors()
   async submitPre(@UserId() userId: string, @Body() dto: SubmitSurveyDto): Promise<{ score: number; level: string }> {
     const result = await this.submitResponse(userId, SurveyType.PRE, dto.answers);
+    const previousProfile = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { financialLiteracyLevel: true, profileCompleted: true },
+    });
     await this.prisma.user.update({
       where: { id: userId },
       data: { financialLiteracyLevel: result.level as FinancialLiteracyLevel, profileCompleted: true },
+    });
+    // Record the literacy-level change explicitly. `financialLiteracyLevel`
+    // is personal data under Law 29733, and the educational-improvement
+    // KPI (>=20% pre/post delta) is computed from these values — the
+    // audit trail backs both the compliance story and the thesis result.
+    this.auditLog.record({
+      action: 'SUBMIT_SURVEY_PRE',
+      resource: 'SurveyResponse',
+      resourceId: userId,
+      beforeJson: {
+        financialLiteracyLevel: previousProfile.financialLiteracyLevel,
+        profileCompleted: previousProfile.profileCompleted,
+      },
+      afterJson: {
+        score: result.score,
+        financialLiteracyLevel: result.level,
+        profileCompleted: true,
+      },
     });
     return result;
   }
@@ -68,6 +94,17 @@ export class SurveysController {
     const improvement = preResponse?.score
       ? Number((postResult.score - preResponse.score.toNumber()).toFixed(2))
       : null;
+
+    this.auditLog.record({
+      action: 'SUBMIT_SURVEY_POST',
+      resource: 'SurveyResponse',
+      resourceId: userId,
+      afterJson: {
+        score: postResult.score,
+        level: postResult.level,
+        improvementVsPre: improvement,
+      },
+    });
 
     return { ...postResult, improvement };
   }
@@ -111,6 +148,14 @@ export class SurveysController {
     });
 
     const grade = susScore >= 85 ? 'Excelente' : susScore >= 70 ? 'Bueno' : susScore >= 50 ? 'Regular' : 'Bajo';
+
+    this.auditLog.record({
+      action: 'SUBMIT_SURVEY_SUS',
+      resource: 'SurveyResponse',
+      resourceId: userId,
+      afterJson: { susScore, grade },
+    });
+
     return { susScore, grade };
   }
 
