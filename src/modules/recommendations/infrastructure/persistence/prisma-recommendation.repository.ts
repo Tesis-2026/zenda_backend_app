@@ -1,10 +1,30 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { RecommendationType as PrismaRecType, TransactionType } from '@prisma/client';
+import { Prisma, Recommendation, RecommendationType as PrismaRecType, TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { SpendingContext, UserProfile } from '../../../../infra/ai/AiProvider';
 import { RecommendationEntity } from '../../domain/recommendation.entity';
-import { IRecommendationRepository } from '../../domain/ports/recommendation.repository';
+import { IRecommendationRepository, RecommendationInput } from '../../domain/ports/recommendation.repository';
+
+function rowToEntity(r: Recommendation): RecommendationEntity {
+  return new RecommendationEntity({
+    id: r.id,
+    userId: r.userId,
+    type: r.type as RecommendationEntity['type'],
+    message: r.message,
+    suggestedAction: r.suggestedAction,
+    isActive: r.isActive,
+    modelVersion: r.modelVersion,
+    source: r.source,
+    inputContextJson: r.inputContextJson as unknown,
+    viewedAt: r.viewedAt,
+    dismissedAt: r.dismissedAt,
+    expiresAt: r.expiresAt,
+    feedbackAccepted: r.feedbackAccepted,
+    feedbackAt: r.feedbackAt,
+    createdAt: r.createdAt,
+  });
+}
 
 @Injectable()
 export class PrismaRecommendationRepository implements IRecommendationRepository {
@@ -15,14 +35,12 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
       where: { userId, isActive: true },
       orderBy: { createdAt: 'desc' },
     });
-    return rows.map((r) =>
-      new RecommendationEntity(r.id, r.userId, r.type as RecommendationEntity['type'], r.message, r.suggestedAction, r.isActive, r.feedbackAccepted, r.createdAt),
-    );
+    return rows.map(rowToEntity);
   }
 
   async replaceAll(
     userId: string,
-    recs: Omit<RecommendationEntity, 'id' | 'createdAt' | 'feedbackAccepted'>[],
+    recs: RecommendationInput[],
   ): Promise<RecommendationEntity[]> {
     // Deactivate old ones, then create fresh ones
     await this.prisma.recommendation.updateMany({ where: { userId, isActive: true }, data: { isActive: false } });
@@ -35,11 +53,20 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
             message: r.message,
             suggestedAction: r.suggestedAction,
             isActive: true,
+            // Preserve AI traceability fields if the caller provides them
+            // (the AI provider / use case should populate these on each run).
+            modelVersion: r.modelVersion ?? null,
+            source: r.source ?? null,
+            inputContextJson:
+              r.inputContextJson === null || r.inputContextJson === undefined
+                ? Prisma.JsonNull
+                : (r.inputContextJson as Prisma.InputJsonValue),
+            expiresAt: r.expiresAt ?? null,
           },
         }),
       ),
     );
-    return created.map((r) => new RecommendationEntity(r.id, r.userId, r.type as RecommendationEntity['type'], r.message, r.suggestedAction, r.isActive, r.feedbackAccepted, r.createdAt));
+    return created.map(rowToEntity);
   }
 
   async submitFeedback(id: string, userId: string, accepted: boolean): Promise<void> {
