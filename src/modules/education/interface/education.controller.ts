@@ -85,6 +85,14 @@ export class EducationController {
   ): Promise<QuizSubmitResponseDto> {
     const result = await this.submitQuiz.execute({ topicId: id, answers: dto.answers });
     this.analytics.track(userId, 'submit_quiz', { topicId: id, score: result.score });
+
+    // US-1004 / AC.5: a HIGH score completes the topic, which in turn
+    // triggers the "Financial Sage" badge once every topic is done.
+    // CompleteTopicUseCase is idempotent (upsert) so re-running is safe.
+    if (result.level === 'HIGH') {
+      await this.completeTopic.execute(id, userId);
+    }
+
     return result;
   }
 }
