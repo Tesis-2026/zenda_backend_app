@@ -50,49 +50,51 @@ const INCOME_CATEGORIES = [
 // CHALLENGES (US-1002)
 // ─────────────────────────────────────────────────────────────────
 
+// NOTE: `criteriaJson.categoryName` stays in English — it references system
+// category names (kept in English for the client's category resolution).
 const CHALLENGES = [
   {
-    title: 'No delivery spending for 3 days',
+    title: 'Sin delivery por 3 días',
     description:
-      'Avoid any delivery or takeout spending for 3 consecutive days.',
+      'Evita cualquier gasto en delivery o comida para llevar durante 3 días seguidos.',
     criteriaJson: {
       type: 'no_transactions_category',
       categoryName: 'Food',
       durationDays: 3,
     },
-    reward: 'Saving discipline badge',
+    reward: 'Insignia Disciplina de ahorro',
   },
   {
-    title: 'Record expenses for 7 consecutive days',
+    title: 'Registra tus gastos 7 días seguidos',
     description:
-      'Record at least one expense transaction every day for 7 days in a row.',
+      'Registra al menos un gasto cada día durante 7 días consecutivos.',
     criteriaJson: {
       type: 'daily_recording_streak',
       durationDays: 7,
     },
-    reward: 'Consistency badge',
+    reward: 'Insignia Constancia',
   },
   {
-    title: 'Save S/20 this week',
+    title: 'Ahorra S/20 esta semana',
     description:
-      'Contribute at least S/20 to any savings goal within the current week.',
+      'Aporta al menos S/20 a cualquier meta de ahorro durante la semana actual.',
     criteriaJson: {
       type: 'savings_goal_contribution',
       minimumAmount: 20,
       periodDays: 7,
     },
-    reward: 'Saver badge',
+    reward: 'Insignia Ahorrador',
   },
   {
-    title: 'Reduce entertainment spending by 10%',
+    title: 'Reduce tus gastos de ocio en 10%',
     description:
-      'Spend 10% less on entertainment this month compared to last month.',
+      'Gasta 10% menos en entretenimiento este mes en comparación con el mes pasado.',
     criteriaJson: {
       type: 'category_reduction_percentage',
       categoryName: 'Entertainment',
       reductionPercent: 10,
     },
-    reward: 'Smart spender badge',
+    reward: 'Insignia Consumo inteligente',
   },
 ];
 
@@ -100,42 +102,46 @@ const CHALLENGES = [
 // BADGES (US-1003)
 // ─────────────────────────────────────────────────────────────────
 
+// NOTE: badge `name` stays in English — it is the stable key used by
+// `awardIfNotEarned(userId, '<name>')` across the backend. The client maps it
+// to a Spanish label for display (CategoryUtils/badge labelEs). Only the
+// user-facing description + criteria are translated here.
 const BADGES = [
   {
     name: 'First Transaction',
-    description: 'Recorded your first transaction.',
-    criteria: 'Record your first income or expense transaction.',
+    description: 'Registraste tu primera transacción.',
+    criteria: 'Registra tu primer ingreso o gasto.',
   },
   {
     name: 'Consistency',
-    description: 'Recorded transactions for 7 consecutive days.',
-    criteria: 'Record at least one transaction per day for 7 days in a row.',
+    description: 'Registraste transacciones 7 días seguidos.',
+    criteria: 'Registra al menos una transacción por día durante 7 días seguidos.',
   },
   {
     name: 'Goal Achieved',
-    description: 'Completed your first savings goal.',
-    criteria: 'Reach 100% of the target amount on any savings goal.',
+    description: 'Completaste tu primera meta de ahorro.',
+    criteria: 'Alcanza el 100% del monto objetivo en cualquier meta de ahorro.',
   },
   {
     name: 'Challenger',
-    description: 'Completed 5 financial challenges.',
-    criteria: 'Complete any 5 challenges.',
+    description: 'Completaste 5 retos financieros.',
+    criteria: 'Completa 5 retos cualesquiera.',
   },
   {
     name: 'Financial Sage',
-    description: 'Completed all educational modules.',
-    criteria: 'Mark all educational topics as completed.',
+    description: 'Completaste todos los módulos educativos.',
+    criteria: 'Marca como completados todos los temas educativos.',
   },
   {
     name: 'Predictor',
-    description: 'Checked your spending predictions 3 times.',
-    criteria: 'View the predictions screen at least 3 times.',
+    description: 'Revisaste tus predicciones de gasto 3 veces.',
+    criteria: 'Abre la pantalla de predicciones al menos 3 veces.',
   },
   {
     name: 'Budgeter',
-    description: 'Created and respected a budget for a full month.',
+    description: 'Creaste y respetaste un presupuesto durante un mes completo.',
     criteria:
-      'Create a budget and finish the month without exceeding it.',
+      'Crea un presupuesto y termina el mes sin excederlo.',
   },
 ];
 
@@ -145,58 +151,58 @@ const BADGES = [
 
 const EDUCATIONAL_TOPICS = [
   {
-    title: 'Personal Budget',
+    title: 'Presupuesto personal',
     content:
-      'A personal budget is a plan that helps you control your income and expenses. The 50/30/20 rule divides your income into: 50% for needs (housing, food, transportation), 30% for wants (entertainment, dining out), and 20% for savings and debt payments. Start by recording all your income sources and fixed expenses, then identify areas where you can cut back.',
+      'Un presupuesto personal es un plan que te ayuda a controlar tus ingresos y gastos. La regla 50/30/20 divide tu ingreso en: 50% para necesidades (vivienda, comida, transporte), 30% para gustos (entretenimiento, salidas) y 20% para ahorro y pago de deudas. Empieza registrando todas tus fuentes de ingreso y tus gastos fijos, y luego identifica en qué puedes recortar.',
     difficulty: TopicDifficulty.BEGINNER,
     order: 1,
   },
   {
-    title: 'Savings Habits',
+    title: 'Hábitos de ahorro',
     content:
-      'Saving money consistently, even in small amounts, builds a financial safety net. The "pay yourself first" strategy means setting aside savings as soon as you receive income — before spending on anything else. Even saving S/10 a week adds up to S/520 per year. Digital piggy banks like savings goals in apps help make progress visible and motivating.',
+      'Ahorrar de forma constante, aunque sea en montos pequeños, construye un colchón financiero. La estrategia de "págate primero a ti mismo" consiste en apartar el ahorro apenas recibes un ingreso, antes de gastar en cualquier otra cosa. Ahorrar S/10 por semana suma S/520 al año. Las metas de ahorro en las apps hacen tu progreso visible y motivador.',
     difficulty: TopicDifficulty.BEGINNER,
     order: 2,
   },
   {
-    title: 'Credit and Debt',
+    title: 'Crédito y deudas',
     content:
-      'Credit allows you to access money you do not yet have, but it comes with a cost: interest. Credit cards in Peru typically charge 40–80% annual interest (TEA). Before using credit, ask: can I pay this back within one billing cycle? Good debt (education, productive investment) differs from bad debt (consumption on impulse). Always read the fine print on any financial product.',
+      'El crédito te permite acceder a dinero que aún no tienes, pero tiene un costo: los intereses. Las tarjetas de crédito en Perú suelen cobrar entre 40% y 80% de interés anual (TEA). Antes de usar crédito, pregúntate: ¿puedo pagarlo dentro de un mismo ciclo de facturación? La buena deuda (educación, inversión productiva) es distinta de la mala deuda (consumo por impulso). Lee siempre la letra chica de cualquier producto financiero.',
     difficulty: TopicDifficulty.INTERMEDIATE,
     order: 3,
   },
   {
-    title: 'Inflation',
+    title: 'Inflación',
     content:
-      "Inflation is the gradual increase in the price of goods and services over time. Peru's BCRP targets 2% annual inflation. In practice, this means S/100 today buys less than S/100 did last year. For students, inflation affects the real value of your savings: money left idle loses purchasing power. Understanding inflation helps you make better decisions about saving vs. spending.",
+      'La inflación es el aumento gradual del precio de los bienes y servicios con el tiempo. El BCRP del Perú tiene una meta de 2% de inflación anual. En la práctica, esto significa que S/100 hoy compran menos que hace un año. Para los estudiantes, la inflación afecta el valor real de sus ahorros: el dinero quieto pierde poder adquisitivo. Entender la inflación te ayuda a decidir mejor entre ahorrar y gastar.',
     difficulty: TopicDifficulty.INTERMEDIATE,
     order: 4,
   },
   {
-    title: 'Interest Rates',
+    title: 'Tasas de interés',
     content:
-      'An interest rate is the cost of borrowing money or the reward for saving it. TNA (nominal annual rate) and TEA (effective annual rate) measure this differently — TEA accounts for compounding and is the true cost. When comparing loans or savings accounts, always compare TEA. A savings account offering 5% TEA doubles your money in approximately 14 years (Rule of 72).',
+      'Una tasa de interés es el costo de pedir dinero prestado o la recompensa por ahorrarlo. La TNA (tasa nominal anual) y la TEA (tasa efectiva anual) lo miden distinto: la TEA considera la capitalización y es el costo real. Al comparar préstamos o cuentas de ahorro, compara siempre la TEA. Una cuenta que ofrece 5% TEA duplica tu dinero en aproximadamente 14 años (regla del 72).',
     difficulty: TopicDifficulty.INTERMEDIATE,
     order: 5,
   },
   {
-    title: 'Basic Investing',
+    title: 'Inversión básica',
     content:
-      'Investing means putting money to work so it grows over time. Common options in Peru: (1) Savings accounts — low risk, low return (~3% TEA). (2) Fondos Mutuos — pooled investment funds, moderate risk. (3) Acciones (stocks) — higher risk, higher potential return. For beginners, the key principle is diversification: do not put all your money in one place. Start small and learn by doing.',
+      'Invertir es poner tu dinero a trabajar para que crezca con el tiempo. Opciones comunes en Perú: (1) Cuentas de ahorro: bajo riesgo, bajo rendimiento (~3% TEA). (2) Fondos mutuos: inversión colectiva, riesgo moderado. (3) Acciones: mayor riesgo, mayor rendimiento potencial. Para principiantes, el principio clave es la diversificación: no pongas todo tu dinero en un solo lugar. Empieza de a pocos y aprende haciendo.',
     difficulty: TopicDifficulty.ADVANCED,
     order: 6,
   },
   {
-    title: 'Responsible Consumption',
+    title: 'Consumo responsable',
     content:
-      'Responsible consumption means buying only what you truly need and evaluating purchases before making them. The 24-hour rule: wait 24 hours before any non-essential purchase over S/50. Distinguish between needs (things necessary for health and function) and wants (things desirable but not essential). Tracking every expense makes impulse buying visible and helps you break the habit.',
+      'El consumo responsable significa comprar solo lo que realmente necesitas y evaluar cada compra antes de hacerla. La regla de las 24 horas: espera un día antes de cualquier compra no esencial mayor a S/50. Distingue entre necesidades (lo imprescindible para tu salud y funcionamiento) y gustos (lo deseable pero no esencial). Registrar cada gasto hace visibles las compras por impulso y te ayuda a romper el hábito.',
     difficulty: TopicDifficulty.BEGINNER,
     order: 7,
   },
   {
-    title: 'Digital Wallets in Peru',
+    title: 'Billeteras digitales en Perú',
     content:
-      "Peru's main digital wallets are Yape (BCP), Plin (BBVA/Interbank/Scotiabank), and Tunki (Interbank). These apps allow instant peer-to-peer transfers without fees. They are useful for splitting bills, paying small businesses, and receiving income. However, they are payments tools, not savings tools — the money sits in your bank account, not invested. Always enable two-factor authentication on any financial app.",
+      'Las principales billeteras digitales del Perú son Yape (BCP), Plin (BBVA/Interbank/Scotiabank) y Tunki (Interbank). Estas apps permiten transferencias instantáneas entre personas sin comisiones. Son útiles para dividir cuentas, pagar a pequeños negocios y recibir ingresos. Sin embargo, son herramientas de pago, no de ahorro: el dinero queda en tu cuenta bancaria, no invertido. Activa siempre la verificación en dos pasos en cualquier app financiera.',
     difficulty: TopicDifficulty.BEGINNER,
     order: 8,
   },
@@ -895,11 +901,11 @@ async function seedPilotUsers(): Promise<void> {
     }
 
     await awardChallenges(user.id, [
-      { title: 'Record expenses for 7 consecutive days', completedAt: daysBack(5) },
-      { title: 'Save S/20 this week' },
+      { title: 'Registra tus gastos 7 días seguidos', completedAt: daysBack(5) },
+      { title: 'Ahorra S/20 esta semana' },
     ]);
     await awardBadges(user.id, ['First Transaction', 'Goal Achieved']);
-    await completeTopics(user.id, ['Personal Budget', 'Savings Habits', 'Inflation']);
+    await completeTopics(user.id, ['Presupuesto personal', 'Hábitos de ahorro', 'Inflación']);
     if (preSurvey) await createSurveyResponse(user.id, preSurvey.id, 60);
     await createRecommendations(user.id, [
       { type: RecommendationType.SAVINGS, message: 'You\'re spending 42% on needs. Try allocating 8% more to savings to reach the 20% target.', suggestedAction: 'Set a savings goal of S/130 this month.' },
@@ -968,13 +974,13 @@ async function seedPilotUsers(): Promise<void> {
     }
 
     await awardChallenges(user.id, [
-      { title: 'No delivery spending for 3 days', completedAt: daysBack(20) },
-      { title: 'Record expenses for 7 consecutive days', completedAt: daysBack(15) },
-      { title: 'Save S/20 this week', completedAt: daysBack(8) },
-      { title: 'Reduce entertainment spending by 10%' },
+      { title: 'Sin delivery por 3 días', completedAt: daysBack(20) },
+      { title: 'Registra tus gastos 7 días seguidos', completedAt: daysBack(15) },
+      { title: 'Ahorra S/20 esta semana', completedAt: daysBack(8) },
+      { title: 'Reduce tus gastos de ocio en 10%' },
     ]);
     await awardBadges(user.id, ['First Transaction', 'Consistency', 'Goal Achieved', 'Challenger']);
-    await completeTopics(user.id, ['Personal Budget', 'Savings Habits', 'Credit and Debt', 'Inflation', 'Interest Rates']);
+    await completeTopics(user.id, ['Presupuesto personal', 'Hábitos de ahorro', 'Crédito y deudas', 'Inflación', 'Tasas de interés']);
     if (preSurvey) await createSurveyResponse(user.id, preSurvey.id, 80);
     if (postSurvey) await createSurveyResponse(user.id, postSurvey.id, 95);
     await createRecommendations(user.id, [
@@ -1251,7 +1257,7 @@ type QuizQuestionSeedEntry = {
 const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
   // ── Topic 1: Personal Budget ─────────────────────────────────────
   {
-    topicTitle: 'Personal Budget',
+    topicTitle: 'Presupuesto personal',
     questionGroupKey: 'budget_5030_20_pct',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1266,7 +1272,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Personal Budget',
+    topicTitle: 'Presupuesto personal',
     questionGroupKey: 'budget_savings_amount',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1281,7 +1287,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Personal Budget',
+    topicTitle: 'Presupuesto personal',
     questionGroupKey: 'budget_need_example',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1296,7 +1302,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Personal Budget',
+    topicTitle: 'Presupuesto personal',
     questionGroupKey: 'budget_irregular_income',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1321,7 +1327,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Personal Budget',
+    topicTitle: 'Presupuesto personal',
     questionGroupKey: 'budget_subscriptions_bucket',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1336,7 +1342,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Personal Budget',
+    topicTitle: 'Presupuesto personal',
     questionGroupKey: 'budget_overspend_needs',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1361,7 +1367,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Personal Budget',
+    topicTitle: 'Presupuesto personal',
     questionGroupKey: 'budget_real_purchasing_power',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1386,7 +1392,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Personal Budget',
+    topicTitle: 'Presupuesto personal',
     questionGroupKey: 'budget_zero_based',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1403,7 +1409,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
 
   // ── Topic 2: Savings Habits ──────────────────────────────────────
   {
-    topicTitle: 'Savings Habits',
+    topicTitle: 'Hábitos de ahorro',
     questionGroupKey: 'savings_pay_yourself_first',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1428,7 +1434,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Savings Habits',
+    topicTitle: 'Hábitos de ahorro',
     questionGroupKey: 'savings_weekly_annual',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1443,7 +1449,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Savings Habits',
+    topicTitle: 'Hábitos de ahorro',
     questionGroupKey: 'savings_emergency_fund',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1458,7 +1464,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Savings Habits',
+    topicTitle: 'Hábitos de ahorro',
     questionGroupKey: 'savings_rule_of_72',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1473,7 +1479,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Savings Habits',
+    topicTitle: 'Hábitos de ahorro',
     questionGroupKey: 'savings_compounding',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1498,7 +1504,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Savings Habits',
+    topicTitle: 'Hábitos de ahorro',
     questionGroupKey: 'savings_fsd_protection',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1513,7 +1519,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Savings Habits',
+    topicTitle: 'Hábitos de ahorro',
     questionGroupKey: 'savings_real_return',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1528,7 +1534,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Savings Habits',
+    topicTitle: 'Hábitos de ahorro',
     questionGroupKey: 'savings_coopac_risk',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1555,7 +1561,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
 
   // ── Topic 3: Credit and Debt ────────────────────────────────────
   {
-    topicTitle: 'Credit and Debt',
+    topicTitle: 'Crédito y deudas',
     questionGroupKey: 'credit_tea_definition',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1570,7 +1576,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Credit and Debt',
+    topicTitle: 'Crédito y deudas',
     questionGroupKey: 'credit_card_rates_peru',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1585,7 +1591,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Credit and Debt',
+    topicTitle: 'Crédito y deudas',
     questionGroupKey: 'credit_minimum_payment',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1600,7 +1606,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Credit and Debt',
+    topicTitle: 'Crédito y deudas',
     questionGroupKey: 'credit_tea_vs_tcea',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1625,7 +1631,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Credit and Debt',
+    topicTitle: 'Crédito y deudas',
     questionGroupKey: 'credit_good_vs_bad_debt',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1650,7 +1656,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Credit and Debt',
+    topicTitle: 'Crédito y deudas',
     questionGroupKey: 'credit_flat_rate_tea',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1665,7 +1671,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Credit and Debt',
+    topicTitle: 'Crédito y deudas',
     questionGroupKey: 'credit_sbs_publication',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1682,7 +1688,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
 
   // ── Topic 4: Inflation ──────────────────────────────────────────
   {
-    topicTitle: 'Inflation',
+    topicTitle: 'Inflación',
     questionGroupKey: 'inflation_definition',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1707,7 +1713,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Inflation',
+    topicTitle: 'Inflación',
     questionGroupKey: 'inflation_bcrp_controls',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1722,7 +1728,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Inflation',
+    topicTitle: 'Inflación',
     questionGroupKey: 'inflation_bcrp_target',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1737,7 +1743,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Inflation',
+    topicTitle: 'Inflación',
     questionGroupKey: 'inflation_2022_peak',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1752,7 +1758,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Inflation',
+    topicTitle: 'Inflación',
     questionGroupKey: 'inflation_savings_real_return',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1777,7 +1783,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Inflation',
+    topicTitle: 'Inflación',
     questionGroupKey: 'inflation_bcrp_reference_rate',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1792,7 +1798,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Inflation',
+    topicTitle: 'Inflación',
     questionGroupKey: 'inflation_purchasing_power_calc',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1807,7 +1813,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Inflation',
+    topicTitle: 'Inflación',
     questionGroupKey: 'inflation_rate_credit_effect',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1834,7 +1840,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
 
   // ── Topic 5: Interest Rates ─────────────────────────────────────
   {
-    topicTitle: 'Interest Rates',
+    topicTitle: 'Tasas de interés',
     questionGroupKey: 'interest_tea_stands_for',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1859,7 +1865,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Interest Rates',
+    topicTitle: 'Tasas de interés',
     questionGroupKey: 'interest_rule_72',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1874,7 +1880,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Interest Rates',
+    topicTitle: 'Tasas de interés',
     questionGroupKey: 'interest_tem_to_tea',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1889,7 +1895,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Interest Rates',
+    topicTitle: 'Tasas de interés',
     questionGroupKey: 'interest_trea_savings',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1904,7 +1910,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Interest Rates',
+    topicTitle: 'Tasas de interés',
     questionGroupKey: 'interest_rule72_at_6pct',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -1919,7 +1925,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Interest Rates',
+    topicTitle: 'Tasas de interés',
     questionGroupKey: 'interest_tna_to_tea_monthly',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1934,7 +1940,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Interest Rates',
+    topicTitle: 'Tasas de interés',
     questionGroupKey: 'interest_bcrp_rate_effect_deposits',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -1961,7 +1967,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
 
   // ── Topic 6: Basic Investing ────────────────────────────────────
   {
-    topicTitle: 'Basic Investing',
+    topicTitle: 'Inversión básica',
     questionGroupKey: 'invest_smv_regulates',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1976,7 +1982,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Basic Investing',
+    topicTitle: 'Inversión básica',
     questionGroupKey: 'invest_afp_young_fund',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -1991,7 +1997,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Basic Investing',
+    topicTitle: 'Inversión básica',
     questionGroupKey: 'invest_diversification',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -2016,7 +2022,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Basic Investing',
+    topicTitle: 'Inversión básica',
     questionGroupKey: 'invest_fondos_mutuos_minimum',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -2031,7 +2037,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Basic Investing',
+    topicTitle: 'Inversión básica',
     questionGroupKey: 'invest_fondos_mutuos_tax',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -2046,7 +2052,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Basic Investing',
+    topicTitle: 'Inversión básica',
     questionGroupKey: 'invest_sbs_vs_smv',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -2061,7 +2067,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Basic Investing',
+    topicTitle: 'Inversión básica',
     questionGroupKey: 'invest_nuam_exchange',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -2076,7 +2082,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Basic Investing',
+    topicTitle: 'Inversión básica',
     questionGroupKey: 'invest_afp_withdrawal_impact',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -2103,7 +2109,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
 
   // ── Topic 7: Responsible Consumption ────────────────────────────
   {
-    topicTitle: 'Responsible Consumption',
+    topicTitle: 'Consumo responsable',
     questionGroupKey: 'consume_24hr_rule',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -2128,7 +2134,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Responsible Consumption',
+    topicTitle: 'Consumo responsable',
     questionGroupKey: 'consume_want_example',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -2143,7 +2149,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Responsible Consumption',
+    topicTitle: 'Consumo responsable',
     questionGroupKey: 'consume_impulse_buying',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -2168,7 +2174,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Responsible Consumption',
+    topicTitle: 'Consumo responsable',
     questionGroupKey: 'consume_opportunity_cost',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -2193,7 +2199,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Responsible Consumption',
+    topicTitle: 'Consumo responsable',
     questionGroupKey: 'consume_delivery_apps',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -2218,7 +2224,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Responsible Consumption',
+    topicTitle: 'Consumo responsable',
     questionGroupKey: 'consume_delay_gratification',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -2243,7 +2249,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Responsible Consumption',
+    topicTitle: 'Consumo responsable',
     questionGroupKey: 'consume_40pct_wants_rebalance',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -2270,7 +2276,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
 
   // ── Topic 8: Digital Wallets in Peru ────────────────────────────
   {
-    topicTitle: 'Digital Wallets in Peru',
+    topicTitle: 'Billeteras digitales en Perú',
     questionGroupKey: 'wallet_yape_owner',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -2285,7 +2291,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Digital Wallets in Peru',
+    topicTitle: 'Billeteras digitales en Perú',
     questionGroupKey: 'wallet_plin_consortium',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -2310,7 +2316,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Digital Wallets in Peru',
+    topicTitle: 'Billeteras digitales en Perú',
     questionGroupKey: 'wallet_tunki_fate',
     difficulty: TopicDifficulty.BEGINNER,
     en: {
@@ -2335,7 +2341,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Digital Wallets in Peru',
+    topicTitle: 'Billeteras digitales en Perú',
     questionGroupKey: 'wallet_interoperability_2023',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -2360,7 +2366,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Digital Wallets in Peru',
+    topicTitle: 'Billeteras digitales en Perú',
     questionGroupKey: 'wallet_yape_limit',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -2375,7 +2381,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Digital Wallets in Peru',
+    topicTitle: 'Billeteras digitales en Perú',
     questionGroupKey: 'wallet_yape_prestamos',
     difficulty: TopicDifficulty.INTERMEDIATE,
     en: {
@@ -2390,7 +2396,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Digital Wallets in Peru',
+    topicTitle: 'Billeteras digitales en Perú',
     questionGroupKey: 'wallet_bcrp_mandated',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
@@ -2405,7 +2411,7 @@ const QUIZ_QUESTIONS: QuizQuestionSeedEntry[] = [
     },
   },
   {
-    topicTitle: 'Digital Wallets in Peru',
+    topicTitle: 'Billeteras digitales en Perú',
     questionGroupKey: 'wallet_sbs_supervision',
     difficulty: TopicDifficulty.ADVANCED,
     en: {
