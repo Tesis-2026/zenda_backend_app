@@ -132,6 +132,21 @@ export class PrismaPredictionRepository implements IPredictionRepository {
     return this.prisma.prediction.count({ where: { userId } });
   }
 
+  async recordActuals(
+    predictionId: string,
+    actualTotal: number,
+    accuracyPct: number | null,
+  ): Promise<PredictionEntity> {
+    const row = await this.prisma.prediction.update({
+      where: { id: predictionId },
+      data: {
+        actualTotal: new Decimal(actualTotal),
+        accuracy: accuracyPct === null ? null : new Decimal(accuracyPct),
+      },
+    });
+    return this.toEntity(row);
+  }
+
   // ── Read mapping ─────────────────────────────────────────────────
 
   private toEntity(row: PredictionRow): PredictionEntity {

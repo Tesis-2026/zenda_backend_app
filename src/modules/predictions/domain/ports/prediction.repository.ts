@@ -15,4 +15,15 @@ export abstract class IPredictionRepository {
   abstract getSpendingContext(userId: string, monthsBack: number): Promise<SpendingContext>;
 
   abstract countByUser(userId: string): Promise<number>;
+
+  /**
+   * Persist the observed actuals against a stored prediction so the KPI
+   * pipeline (US-015 / "AI accuracy >=80%") can roll up retrospective
+   * performance without re-aggregating the transactions table each time.
+   */
+  abstract recordActuals(
+    predictionId: string,
+    actualTotal: number,
+    accuracyPct: number | null,
+  ): Promise<PredictionEntity>;
 }

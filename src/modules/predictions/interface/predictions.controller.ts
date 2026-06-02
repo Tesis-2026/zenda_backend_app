@@ -83,6 +83,16 @@ export class PredictionsController {
         ? Math.round((1 - Math.abs(predictedTotal - actualTotal) / actualTotal) * 10000) / 100
         : null;
 
+    // Persist the comparison so the AI-accuracy KPI (US-015) is computable
+    // by aggregating Prediction rows directly instead of recomputing each
+    // time. Only persist once the period has fully closed — during the
+    // current month the actuals are still moving.
+    const now = new Date();
+    const periodClosed = to.getTime() < now.getTime();
+    if (periodClosed) {
+      await this.predictionRepository.recordActuals(prediction.id, actualTotal, accuracyPct);
+    }
+
     return { period, predictedTotal, actualTotal, accuracyPct };
   }
 }
