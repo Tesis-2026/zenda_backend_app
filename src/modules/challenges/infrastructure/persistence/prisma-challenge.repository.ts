@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { BadgesFacade } from '../../../badges/application/facades/badges.facade';
-import { ChallengeEntity, deriveChallengeStatus } from '../../domain/challenge.entity';
+import { ChallengeEntity, deriveChallengeStatus, extractDurationDays } from '../../domain/challenge.entity';
 import { IChallengeRepository } from '../../domain/ports/challenge.repository';
 
 @Injectable()
@@ -18,11 +18,17 @@ export class PrismaChallengeRepository implements IChallengeRepository {
 
     return challenges.map((c) => {
       const uc = ucMap.get(c.id) ?? null;
+      const durationDays = extractDurationDays(c.criteriaJson);
+      const status = deriveChallengeStatus(uc, durationDays);
+      const expiresAt = uc?.acceptedAt && durationDays
+        ? new Date(uc.acceptedAt.getTime() + durationDays * 24 * 60 * 60 * 1000)
+        : null;
       return new ChallengeEntity(
         c.id, c.title, c.description, c.reward,
-        deriveChallengeStatus(uc),
+        status,
         uc?.acceptedAt ?? null,
         uc?.completedAt ?? null,
+        expiresAt,
       );
     });
   }
@@ -37,10 +43,15 @@ export class PrismaChallengeRepository implements IChallengeRepository {
       update: { acceptedAt: new Date() },
     });
 
+    const durationDays = extractDurationDays(challenge.criteriaJson);
+    const expiresAt = uc.acceptedAt && durationDays
+      ? new Date(uc.acceptedAt.getTime() + durationDays * 24 * 60 * 60 * 1000)
+      : null;
+
     return new ChallengeEntity(
       challenge.id, challenge.title, challenge.description, challenge.reward,
-      deriveChallengeStatus(uc),
-      uc.acceptedAt, uc.completedAt,
+      deriveChallengeStatus(uc, durationDays),
+      uc.acceptedAt, uc.completedAt, expiresAt,
     );
   }
 
@@ -64,10 +75,15 @@ export class PrismaChallengeRepository implements IChallengeRepository {
       await this.badges.awardIfNotEarned(userId, 'Challenger');
     }
 
+    const durationDays = extractDurationDays(challenge.criteriaJson);
+    const expiresAt = uc.acceptedAt && durationDays
+      ? new Date(uc.acceptedAt.getTime() + durationDays * 24 * 60 * 60 * 1000)
+      : null;
+
     return new ChallengeEntity(
       challenge.id, challenge.title, challenge.description, challenge.reward,
-      deriveChallengeStatus(uc),
-      uc.acceptedAt, uc.completedAt,
+      deriveChallengeStatus(uc, durationDays, now),
+      uc.acceptedAt, uc.completedAt, expiresAt,
     );
   }
 }

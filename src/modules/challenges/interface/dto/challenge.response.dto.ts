@@ -6,9 +6,14 @@ export class ChallengeResponseDto {
   @ApiProperty() title!: string;
   @ApiProperty() description!: string;
   @ApiProperty({ nullable: true }) reward!: string | null;
-  @ApiProperty({ enum: ['AVAILABLE', 'ACTIVE', 'COMPLETED'] }) status!: string;
+  @ApiProperty({ enum: ['AVAILABLE', 'ACTIVE', 'COMPLETED', 'EXPIRED'] }) status!: string;
   @ApiProperty({ nullable: true }) acceptedAt!: Date | null;
   @ApiProperty({ nullable: true }) completedAt!: Date | null;
+  @ApiProperty({
+    nullable: true,
+    description: 'Deadline for an accepted challenge — acceptedAt + durationDays. Null when the challenge is open-ended or not yet accepted.',
+  })
+  expiresAt!: Date | null;
 
   static from(e: ChallengeEntity): ChallengeResponseDto {
     const dto = new ChallengeResponseDto();
@@ -19,6 +24,7 @@ export class ChallengeResponseDto {
     dto.status = e.status;
     dto.acceptedAt = e.acceptedAt;
     dto.completedAt = e.completedAt;
+    dto.expiresAt = e.expiresAt;
     return dto;
   }
 }
