@@ -82,7 +82,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         aiConfidence: params.aiConfidence ?? null,
         categorySource: params.categorySource as PrismaCategorySource,
       },
-      include: { category: { select: { id: true, name: true } } },
+      include: { category: { select: { id: true, name: true, icon: true } } },
     });
     return this.toTransactionWithCategory(row);
   }
@@ -118,7 +118,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         }),
       },
       orderBy: { occurredAt: filters.sort === 'asc' ? 'asc' : 'desc' },
-      include: { category: { select: { id: true, name: true } } },
+      include: { category: { select: { id: true, name: true, icon: true } } },
       ...(filters.skip !== undefined && { skip: filters.skip }),
       take: filters.take ?? 100,
     });
@@ -135,7 +135,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
   async findByIdWithCategory(id: string, userId: string): Promise<TransactionWithCategory | null> {
     const row = await this.prisma.transaction.findFirst({
       where: { id, userId, deletedAt: null },
-      include: { category: { select: { id: true, name: true } } },
+      include: { category: { select: { id: true, name: true, icon: true } } },
     });
     return row ? this.toTransactionWithCategory(row) : null;
   }
@@ -159,7 +159,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
           categorySource: params.categorySource as PrismaCategorySource,
         }),
       },
-      include: { category: { select: { id: true, name: true } } },
+      include: { category: { select: { id: true, name: true, icon: true } } },
     });
     return this.toTransactionWithCategory(row);
   }

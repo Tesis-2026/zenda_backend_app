@@ -17,6 +17,7 @@ export class PrismaCategoryRepository implements ICategoryRepository {
       type: row.type as CategoryType,
       userId: row.userId,
       transactionType: row.transactionType as TransactionType | null,
+      icon: row.icon ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,

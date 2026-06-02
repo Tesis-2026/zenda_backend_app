@@ -10,6 +10,7 @@ export class CategoryEntity {
     readonly type: CategoryType,
     readonly userId: string | null,
     readonly transactionType: TransactionType | null,
+    readonly icon: string | null,
     readonly createdAt: Date,
     readonly updatedAt: Date,
     readonly deletedAt: Date | null,
@@ -29,6 +30,7 @@ export class CategoryEntity {
     type: CategoryType;
     userId: string | null;
     transactionType: TransactionType | null;
+    icon: string | null;
     createdAt: Date;
     updatedAt: Date;
     deletedAt: Date | null;
@@ -39,6 +41,7 @@ export class CategoryEntity {
       params.type,
       params.userId,
       params.transactionType,
+      params.icon,
       params.createdAt,
       params.updatedAt,
       params.deletedAt,

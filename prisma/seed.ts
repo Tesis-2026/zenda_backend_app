@@ -550,29 +550,51 @@ const SURVEY_QUESTIONS: Array<{
 // SEED RUNNER
 // ─────────────────────────────────────────────────────────────────
 
+// Stable semantic icon keys, owned by the backend and resolved to an
+// IconData on the client. Keep these in sync with CategoryUtils in the app.
+const ICON_BY_CATEGORY_NAME: Record<string, string> = {
+  // Expense
+  Food: 'food',
+  Transportation: 'transport',
+  Housing: 'housing',
+  Utilities: 'utilities',
+  Health: 'health',
+  Entertainment: 'entertainment',
+  Shopping: 'shopping',
+  Subscriptions: 'subscriptions',
+  Cravings: 'cravings',
+  Savings: 'savings',
+  Education: 'education',
+  Other: 'other',
+  // Income
+  Scholarship: 'scholarship',
+  'Part-time work': 'work',
+  Family: 'family',
+  Freelance: 'freelance',
+};
+
+async function upsertSystemCategory(name: string, transactionType: TransactionType): Promise<void> {
+  const icon = ICON_BY_CATEGORY_NAME[name] ?? null;
+  const exists = await prisma.category.findFirst({
+    where: { name: { equals: name, mode: 'insensitive' }, type: CategoryType.SYSTEM, deletedAt: null },
+    select: { id: true },
+  });
+  if (exists) {
+    // Backfill the icon key on re-runs without disturbing other fields.
+    await prisma.category.update({ where: { id: exists.id }, data: { icon } });
+  } else {
+    await prisma.category.create({
+      data: { name, type: CategoryType.SYSTEM, transactionType, icon },
+    });
+  }
+}
+
 async function seedCategories(): Promise<void> {
   for (const name of EXPENSE_CATEGORIES) {
-    const exists = await prisma.category.findFirst({
-      where: { name: { equals: name, mode: 'insensitive' }, type: CategoryType.SYSTEM, deletedAt: null },
-      select: { id: true },
-    });
-    if (!exists) {
-      await prisma.category.create({
-        data: { name, type: CategoryType.SYSTEM, transactionType: TransactionType.EXPENSE },
-      });
-    }
+    await upsertSystemCategory(name, TransactionType.EXPENSE);
   }
-
   for (const name of INCOME_CATEGORIES) {
-    const exists = await prisma.category.findFirst({
-      where: { name: { equals: name, mode: 'insensitive' }, type: CategoryType.SYSTEM, deletedAt: null },
-      select: { id: true },
-    });
-    if (!exists) {
-      await prisma.category.create({
-        data: { name, type: CategoryType.SYSTEM, transactionType: TransactionType.INCOME },
-      });
-    }
+    await upsertSystemCategory(name, TransactionType.INCOME);
   }
   console.log('✓ Categories seeded');
 }

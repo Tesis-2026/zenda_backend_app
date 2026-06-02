@@ -10,6 +10,14 @@ export class CategoryResponseDto {
   @ApiProperty({ enum: ['SYSTEM', 'CUSTOM'], example: 'SYSTEM' })
   type!: 'SYSTEM' | 'CUSTOM';
 
+  @ApiPropertyOptional({
+    example: 'food',
+    nullable: true,
+    description:
+      'Stable semantic icon key the client maps to an icon. null for custom categories — the client shows a single default icon.',
+  })
+  icon?: string | null;
+
   @ApiPropertyOptional({ enum: ['INCOME', 'EXPENSE'], example: 'EXPENSE', nullable: true, description: 'null = applies to both income and expense' })
   transactionType?: 'INCOME' | 'EXPENSE' | null;
 

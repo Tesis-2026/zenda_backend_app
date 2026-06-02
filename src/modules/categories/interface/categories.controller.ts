@@ -101,6 +101,7 @@ export class CategoriesController {
       id: entity.id,
       name: entity.name,
       type: entity.type as 'SYSTEM' | 'CUSTOM',
+      icon: entity.icon,
       transactionType: entity.transactionType as 'INCOME' | 'EXPENSE' | null,
       userId: entity.userId,
       createdAt: entity.createdAt.toISOString(),

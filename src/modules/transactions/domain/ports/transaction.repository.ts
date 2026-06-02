@@ -14,7 +14,7 @@ export interface TransactionWithCategory {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
-  category: { id: string; name: string } | null;
+  category: { id: string; name: string; icon: string | null } | null;
   suggestedCategoryId: string | null;
   aiConfidence: number | null;
   categorySource: CategorySource;

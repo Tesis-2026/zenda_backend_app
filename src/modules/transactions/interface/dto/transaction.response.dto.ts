@@ -6,6 +6,13 @@ class TransactionCategoryDto {
 
   @ApiProperty({ example: 'Alimentación' })
   name!: string;
+
+  @ApiPropertyOptional({
+    example: 'food',
+    nullable: true,
+    description: 'Semantic icon key; null for custom categories (client shows a default icon).',
+  })
+  icon?: string | null;
 }
 
 export class TransactionResponseDto {

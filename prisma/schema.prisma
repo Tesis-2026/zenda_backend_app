@@ -167,6 +167,10 @@ model Category {
   id              String           @id @default(uuid()) @db.Uuid
   name            String
   type            CategoryType     @default(CUSTOM)
+  // Stable semantic icon key (e.g. "food", "transport") resolved to an
+  // IconData on the client. null = no assigned icon; the client renders a
+  // single default icon (used for CUSTOM categories — the name differentiates).
+  icon            String?
   // null = usable for both; set when the category is type-specific
   transactionType TransactionType?
   userId          String?          @db.Uuid
