@@ -27,12 +27,17 @@ export class ContributeToGoalUseCase {
     if (!goal) throw new NotFoundException('Goal not found');
 
     const newAmount = goal.contribute(cmd.amount);
-    const [updated] = await Promise.all([
+    const [intermediate] = await Promise.all([
       this.repo.updateCurrentAmount(cmd.goalId, newAmount),
       this.repo.addContribution(cmd.goalId, cmd.amount),
     ]);
 
-    if (updated.progressPercent >= 100) {
+    // Auto-finalise once the contribution closes the gap (US-045). Keeps the
+    // explicit completedAt semantics consistent whether the user reaches the
+    // target via repeated contributions or via the explicit complete endpoint.
+    let updated = intermediate;
+    if (intermediate.progressPercent >= 100 && !intermediate.isCompleted) {
+      updated = await this.repo.complete(cmd.goalId);
       await this.badges.awardIfNotEarned(cmd.userId, 'Goal Achieved');
     }
 

@@ -15,6 +15,7 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
       targetAmount: row.targetAmount.toNumber(),
       currentAmount: row.currentAmount.toNumber(),
       dueDate: row.dueDate,
+      completedAt: row.completedAt ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
@@ -97,7 +98,10 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
     if (!goal) throw new Error('Goal not found');
     const row = await this.prisma.savingsGoal.update({
       where: { id },
-      data: { currentAmount: goal.targetAmount },
+      data: {
+        currentAmount: goal.targetAmount,
+        completedAt: goal.completedAt ?? new Date(),
+      },
     });
     return this.toEntity(row);
   }

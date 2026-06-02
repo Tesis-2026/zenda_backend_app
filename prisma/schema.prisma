@@ -226,6 +226,9 @@ model SavingsGoal {
   targetAmount  Decimal   @db.Decimal(12, 2)
   currentAmount Decimal   @default(0) @db.Decimal(12, 2)
   dueDate       DateTime?
+  // Explicit completion timestamp. Distinguishes "user marked it done" from
+  // "balance happens to equal target" (US-045 / ARCH-05).
+  completedAt   DateTime?
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now())

@@ -6,6 +6,7 @@ export class SavingsGoalEntity {
     readonly targetAmount: number,
     readonly currentAmount: number,
     readonly dueDate: Date | null,
+    readonly completedAt: Date | null,
     readonly createdAt: Date,
     readonly updatedAt: Date,
     readonly deletedAt: Date | null,
@@ -14,6 +15,10 @@ export class SavingsGoalEntity {
   get progressPercent(): number {
     if (this.targetAmount === 0) return 0;
     return Math.min(100, (this.currentAmount / this.targetAmount) * 100);
+  }
+
+  get isCompleted(): boolean {
+    return this.completedAt !== null;
   }
 
   contribute(amount: number): number {
@@ -28,6 +33,7 @@ export class SavingsGoalEntity {
     targetAmount: number;
     currentAmount: number;
     dueDate: Date | null;
+    completedAt?: Date | null;
     createdAt: Date;
     updatedAt: Date;
     deletedAt: Date | null;
@@ -39,6 +45,7 @@ export class SavingsGoalEntity {
       params.targetAmount,
       params.currentAmount,
       params.dueDate,
+      params.completedAt ?? null,
       params.createdAt,
       params.updatedAt,
       params.deletedAt,

@@ -16,8 +16,14 @@ export class GoalResponseDto {
   @ApiProperty({ example: 300 })
   currentAmount!: number;
 
-  @ApiProperty({ example: false, description: 'True when currentAmount >= targetAmount' })
+  @ApiProperty({ example: false, description: 'True when completedAt is set (US-045)' })
   isCompleted!: boolean;
+
+  @ApiPropertyOptional({
+    example: '2026-04-15T10:30:10.000Z',
+    description: 'Timestamp the goal was marked completed. Null until the user (or auto-complete on contribution reaching target) finalises it.',
+  })
+  completedAt?: string | null;
 
   @ApiPropertyOptional({ example: '2026-12-31T00:00:00.000Z' })
   dueDate?: string | null;
