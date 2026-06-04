@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './shared/audit/audit.module';
 import { RequestContextInterceptor } from './shared/audit/request-context.interceptor';
@@ -14,12 +15,14 @@ import { AppLogger } from './shared/logger/app-logger.service';
 import { HealthController } from './health/health.controller';
 import { AiModule } from './infra/ai/ai.module';
 import { AnalyticsModule } from './infra/analytics/analytics.module';
+import { FcmModule } from './infra/fcm/fcm.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { BudgetsModule } from './modules/budgets/budgets.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { InsightsModule } from './modules/insights/insights.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
@@ -37,6 +40,7 @@ import { UsersModule } from './modules/users/users.module';
       load: [configuration],
       validate: validateEnv,
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         ttl: 60_000,
@@ -48,6 +52,7 @@ import { UsersModule } from './modules/users/users.module';
     IdempotencyModule,
     AiModule,
     AnalyticsModule,
+    FcmModule,
     AuthModule,
     UsersModule,
     TransactionsModule,
@@ -55,6 +60,7 @@ import { UsersModule } from './modules/users/users.module';
     BudgetsModule,
     GoalsModule,
     InsightsModule,
+    NotificationsModule,
     PredictionsModule,
     RecommendationsModule,
     ConversationsModule,

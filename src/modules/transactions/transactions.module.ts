@@ -3,8 +3,10 @@ import { AiModule } from '../../infra/ai/ai.module';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
 import { SpendingAlertService } from '../../infra/spending-alert/spending-alert.service';
 import { BadgesModule } from '../badges/badges.module';
+import { BudgetsModule } from '../budgets/budgets.module';
 import { CategoriesModule } from '../categories/categories.module';
 import { ChallengesModule } from '../challenges/challenges.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ITransactionRepository } from './domain/ports/transaction.repository';
 import { PrismaTransactionRepository } from './infrastructure/persistence/prisma-transaction.repository';
 import { CreateTransactionUseCase } from './application/use-cases/create-transaction.use-case';
@@ -15,7 +17,15 @@ import { UpdateTransactionUseCase } from './application/use-cases/update-transac
 import { TransactionsController } from './interface/transactions.controller';
 
 @Module({
-  imports: [PrismaModule, AiModule, CategoriesModule, BadgesModule, ChallengesModule],
+  imports: [
+    PrismaModule,
+    AiModule,
+    CategoriesModule,
+    BadgesModule,
+    ChallengesModule,
+    BudgetsModule,
+    NotificationsModule,
+  ],
   controllers: [TransactionsController],
   providers: [
     { provide: ITransactionRepository, useClass: PrismaTransactionRepository },

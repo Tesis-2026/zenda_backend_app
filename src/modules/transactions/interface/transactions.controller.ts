@@ -28,6 +28,8 @@ import { AiProvider } from '../../../infra/ai/AiProvider';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
+import { BudgetsFacade } from '../../budgets/application/budgets.facade';
+import { SendNotificationUseCase } from '../../notifications/application/use-cases/send-notification.use-case';
 import { CreateTransactionResult, CreateTransactionUseCase } from '../application/use-cases/create-transaction.use-case';
 import { ListTransactionsUseCase } from '../application/use-cases/list-transactions.use-case';
 import { DeleteTransactionUseCase } from '../application/use-cases/delete-transaction.use-case';
@@ -56,6 +58,8 @@ export class TransactionsController {
     @Inject(AI_PROVIDER) private readonly ai: AiProvider,
     private readonly analytics: AnalyticsService,
     private readonly spendingAlert: SpendingAlertService,
+    private readonly budgets: BudgetsFacade,
+    private readonly sendNotification: SendNotificationUseCase,
   ) {}
 
   @Post('classify')
@@ -97,6 +101,59 @@ export class TransactionsController {
             .checkAnomaly(userId, result.categoryId, result.occurredAt)
             .catch(() => null)
         : null;
+
+    // Dispatch persistent notifications + push (US-016 ANOMALY + US-020 BUDGET).
+    // Both fire-and-forget — failures must not roll back the transaction. The
+    // monthly idempotency window means each alert is sent at most once per
+    // (category|budget) per month, even if 100 transactions cross the threshold.
+    if (dto.type === TransactionType.EXPENSE && result.categoryId) {
+      const monthStart = new Date(
+        result.occurredAt.getFullYear(),
+        result.occurredAt.getMonth(),
+        1,
+      );
+
+      if (anomalyAlert !== null) {
+        const pctOver = Math.round(anomalyAlert.pctOver);
+        this.sendNotification
+          .execute({
+            userId,
+            type: 'ANOMALY_ALERT',
+            title: 'Gasto inusual detectado',
+            body: `Tu gasto en ${anomalyAlert.categoryName} este mes está ${pctOver}% por encima de tu promedio.`,
+            data: { categoryId: result.categoryId, pctOver: String(pctOver) },
+            idempotencySince: monthStart,
+            idempotencyDataKey: 'categoryId',
+            idempotencyDataValue: result.categoryId,
+          })
+          .catch(() => null);
+      }
+
+      const budgetSnapshot = await this.budgets
+        .getSnapshotForCategory(userId, result.categoryId, result.occurredAt)
+        .catch(() => null);
+      if (budgetSnapshot && budgetSnapshot.percentageUsed >= 80) {
+        const remaining = Math.max(0, budgetSnapshot.amountLimit - budgetSnapshot.currentSpent);
+        const pct = Math.round(budgetSnapshot.percentageUsed);
+        const categoryLabel = budgetSnapshot.categoryName ?? 'esta categoría';
+        this.sendNotification
+          .execute({
+            userId,
+            type: 'BUDGET_ALERT',
+            title: 'Te acercas al límite de tu presupuesto',
+            body: `Has usado el ${pct}% de tu presupuesto en ${categoryLabel}. Te quedan S/${remaining.toFixed(2)} este mes.`,
+            data: {
+              budgetId: budgetSnapshot.budgetId,
+              categoryName: categoryLabel,
+              percentageUsed: String(pct),
+            },
+            idempotencySince: monthStart,
+            idempotencyDataKey: 'budgetId',
+            idempotencyDataValue: budgetSnapshot.budgetId,
+          })
+          .catch(() => null);
+      }
+    }
 
     return {
       ...this.toResponse(result),
