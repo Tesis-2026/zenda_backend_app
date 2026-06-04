@@ -26,4 +26,12 @@ export default () => ({
     pass: process.env.SMTP_PASS ?? '',
     from: process.env.SMTP_FROM ?? 'Zenda <noreply@zenda.app>',
   },
+  fcm: {
+    // 3-field split (matches Azure config style). All three must be set for
+    // FCM to be considered configured; otherwise FcmService runs in no-op mode
+    // and the inbox row is still written.
+    projectId: process.env.FCM_PROJECT_ID ?? '',
+    clientEmail: process.env.FCM_CLIENT_EMAIL ?? '',
+    privateKey: (process.env.FCM_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
+  },
 });

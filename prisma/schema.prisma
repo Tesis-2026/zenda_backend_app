@@ -135,6 +135,14 @@ model User {
   // Missing keys default to true (opt-out behavior).
   notificationPrefs Json @default("{}")
 
+  // FCM push token from Firebase Cloud Messaging. Null until the mobile app
+  // registers a token via POST /api/notifications/fcm-token. Overwritten on
+  // re-registration (single-device model for thesis scope).
+  fcmToken          String?
+  // Preferred local time-of-day for DAILY_REMINDER cron, "HH:mm" 24h format.
+  // Null = use system default 20:00. Stored as string to avoid timezone math.
+  dailyReminderAt   String?
+
   // Relations
   categories        Category[]
   transactions      Transaction[]
@@ -155,6 +163,7 @@ model User {
   aiConversations   AiConversation[]
   financialProgress UserFinancialProgress[]
   idempotencyKeys   IdempotencyKey[]
+  notifications     Notification[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -683,4 +692,28 @@ model IdempotencyKey {
 
   @@unique([key, userId])
   @@index([createdAt])
+}
+
+// Persistent notification inbox. Every cron-fired or event-fired notification
+// is written here and (best-effort) pushed via FCM. The inbox survives push
+// failures so the user always sees the alert next time they open the app.
+//
+// `data` carries a small JSON payload routed back to the app for deep linking
+// (e.g. { budgetId, categoryName } for BUDGET_ALERT).
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  sentAt    DateTime?
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime         @default(now())
+
+  // Inbox listing: newest first per user, filtered by read state.
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }

@@ -151,4 +151,17 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
     });
     return row ? this.toEntity(row) : null;
   }
+
+  async findForCategoryAndPeriod(
+    userId: string,
+    categoryId: string,
+    month: number,
+    year: number,
+  ): Promise<BudgetEntity | null> {
+    const row = await this.prisma.budget.findFirst({
+      where: { userId, categoryId, month, year, deletedAt: null },
+      include: { category: true },
+    });
+    return row ? this.toEntity(row) : null;
+  }
 }
