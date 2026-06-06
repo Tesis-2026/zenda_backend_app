@@ -4,6 +4,7 @@ import {
   CategoryType,
   FinancialLiteracyLevel,
   IncomeType,
+  NotificationType,
   PrismaClient,
   RecommendationType,
   SurveyType,
@@ -63,6 +64,7 @@ const CHALLENGES = [
       durationDays: 3,
     },
     reward: 'Insignia Disciplina de ahorro',
+    pointsReward: 50,
   },
   {
     title: 'Registra tus gastos 7 días seguidos',
@@ -73,6 +75,7 @@ const CHALLENGES = [
       durationDays: 7,
     },
     reward: 'Insignia Constancia',
+    pointsReward: 75,
   },
   {
     title: 'Ahorra S/20 esta semana',
@@ -84,6 +87,7 @@ const CHALLENGES = [
       periodDays: 7,
     },
     reward: 'Insignia Ahorrador',
+    pointsReward: 60,
   },
   {
     title: 'Reduce tus gastos de ocio en 10%',
@@ -95,6 +99,7 @@ const CHALLENGES = [
       reductionPercent: 10,
     },
     reward: 'Insignia Consumo inteligente',
+    pointsReward: 80,
   },
 ];
 
@@ -156,6 +161,7 @@ const EDUCATIONAL_TOPICS = [
       'Un presupuesto personal es un plan que te ayuda a controlar tus ingresos y gastos. La regla 50/30/20 divide tu ingreso en: 50% para necesidades (vivienda, comida, transporte), 30% para gustos (entretenimiento, salidas) y 20% para ahorro y pago de deudas. Empieza registrando todas tus fuentes de ingreso y tus gastos fijos, y luego identifica en qué puedes recortar.',
     difficulty: TopicDifficulty.BEGINNER,
     order: 1,
+    category: 'budgeting',
   },
   {
     title: 'Hábitos de ahorro',
@@ -163,6 +169,7 @@ const EDUCATIONAL_TOPICS = [
       'Ahorrar de forma constante, aunque sea en montos pequeños, construye un colchón financiero. La estrategia de "págate primero a ti mismo" consiste en apartar el ahorro apenas recibes un ingreso, antes de gastar en cualquier otra cosa. Ahorrar S/10 por semana suma S/520 al año. Las metas de ahorro en las apps hacen tu progreso visible y motivador.',
     difficulty: TopicDifficulty.BEGINNER,
     order: 2,
+    category: 'saving',
   },
   {
     title: 'Crédito y deudas',
@@ -170,6 +177,7 @@ const EDUCATIONAL_TOPICS = [
       'El crédito te permite acceder a dinero que aún no tienes, pero tiene un costo: los intereses. Las tarjetas de crédito en Perú suelen cobrar entre 40% y 80% de interés anual (TEA). Antes de usar crédito, pregúntate: ¿puedo pagarlo dentro de un mismo ciclo de facturación? La buena deuda (educación, inversión productiva) es distinta de la mala deuda (consumo por impulso). Lee siempre la letra chica de cualquier producto financiero.',
     difficulty: TopicDifficulty.INTERMEDIATE,
     order: 3,
+    category: 'budgeting',
   },
   {
     title: 'Inflación',
@@ -177,6 +185,7 @@ const EDUCATIONAL_TOPICS = [
       'La inflación es el aumento gradual del precio de los bienes y servicios con el tiempo. El BCRP del Perú tiene una meta de 2% de inflación anual. En la práctica, esto significa que S/100 hoy compran menos que hace un año. Para los estudiantes, la inflación afecta el valor real de sus ahorros: el dinero quieto pierde poder adquisitivo. Entender la inflación te ayuda a decidir mejor entre ahorrar y gastar.',
     difficulty: TopicDifficulty.INTERMEDIATE,
     order: 4,
+    category: 'investing',
   },
   {
     title: 'Tasas de interés',
@@ -184,6 +193,7 @@ const EDUCATIONAL_TOPICS = [
       'Una tasa de interés es el costo de pedir dinero prestado o la recompensa por ahorrarlo. La TNA (tasa nominal anual) y la TEA (tasa efectiva anual) lo miden distinto: la TEA considera la capitalización y es el costo real. Al comparar préstamos o cuentas de ahorro, compara siempre la TEA. Una cuenta que ofrece 5% TEA duplica tu dinero en aproximadamente 14 años (regla del 72).',
     difficulty: TopicDifficulty.INTERMEDIATE,
     order: 5,
+    category: 'investing',
   },
   {
     title: 'Inversión básica',
@@ -191,6 +201,7 @@ const EDUCATIONAL_TOPICS = [
       'Invertir es poner tu dinero a trabajar para que crezca con el tiempo. Opciones comunes en Perú: (1) Cuentas de ahorro: bajo riesgo, bajo rendimiento (~3% TEA). (2) Fondos mutuos: inversión colectiva, riesgo moderado. (3) Acciones: mayor riesgo, mayor rendimiento potencial. Para principiantes, el principio clave es la diversificación: no pongas todo tu dinero en un solo lugar. Empieza de a pocos y aprende haciendo.',
     difficulty: TopicDifficulty.ADVANCED,
     order: 6,
+    category: 'investing',
   },
   {
     title: 'Consumo responsable',
@@ -198,6 +209,7 @@ const EDUCATIONAL_TOPICS = [
       'El consumo responsable significa comprar solo lo que realmente necesitas y evaluar cada compra antes de hacerla. La regla de las 24 horas: espera un día antes de cualquier compra no esencial mayor a S/50. Distingue entre necesidades (lo imprescindible para tu salud y funcionamiento) y gustos (lo deseable pero no esencial). Registrar cada gasto hace visibles las compras por impulso y te ayuda a romper el hábito.',
     difficulty: TopicDifficulty.BEGINNER,
     order: 7,
+    category: 'budgeting',
   },
   {
     title: 'Billeteras digitales en Perú',
@@ -205,6 +217,7 @@ const EDUCATIONAL_TOPICS = [
       'Las principales billeteras digitales del Perú son Yape (BCP), Plin (BBVA/Interbank/Scotiabank) y Tunki (Interbank). Estas apps permiten transferencias instantáneas entre personas sin comisiones. Son útiles para dividir cuentas, pagar a pequeños negocios y recibir ingresos. Sin embargo, son herramientas de pago, no de ahorro: el dinero queda en tu cuenta bancaria, no invertido. Activa siempre la verificación en dos pasos en cualquier app financiera.',
     difficulty: TopicDifficulty.BEGINNER,
     order: 8,
+    category: 'saving',
   },
 ];
 
@@ -613,6 +626,16 @@ async function seedChallenges(): Promise<void> {
     });
     if (!exists) {
       await prisma.challenge.create({ data: challenge });
+    } else {
+      await prisma.challenge.update({
+        where: { id: exists.id },
+        data: {
+          description: challenge.description,
+          criteriaJson: challenge.criteriaJson,
+          reward: challenge.reward,
+          pointsReward: challenge.pointsReward,
+        },
+      });
     }
   }
   console.log('✓ Challenges seeded');
@@ -639,6 +662,16 @@ async function seedEducationalTopics(): Promise<void> {
     });
     if (!exists) {
       await prisma.educationalTopic.create({ data: topic });
+    } else {
+      await prisma.educationalTopic.update({
+        where: { id: exists.id },
+        data: {
+          content: topic.content,
+          difficulty: topic.difficulty,
+          order: topic.order,
+          category: topic.category,
+        },
+      });
     }
   }
   console.log('✓ Educational topics seeded');
@@ -2482,6 +2515,312 @@ async function seedQuizQuestions(): Promise<void> {
   console.log(`✓ Quiz questions seeded (${created} created, ${QUIZ_QUESTIONS.length * 2 - created} updated)`);
 }
 
+// ─────────────────────────────────────────────────────────────────
+// SINGLE COMPLETE DEMO USER (default seed)
+// One coherent user (Paolo Guillen / demo@zenda.app) with several months
+// of internally-consistent data across every feature, so each screen of
+// the app shows meaningful, real-looking content. Mirrors the Flutter
+// in-app mock (lib/core/mock/demo_data.dart) so demo-mode and real-backend
+// look the same. Category names stay in English with a stable icon key —
+// the client maps them to Spanish labels + icons (see CategoryUtils).
+// Dates are RELATIVE to "now" so the demo never goes stale.
+//
+// This is the DEFAULT seed. Set SEED_PILOTS=1 to seed the 5 pilot
+// profiles instead (thesis testing).
+// ─────────────────────────────────────────────────────────────────
+
+async function seedDemoUser(): Promise<void> {
+  const DEMO_EMAIL = 'demo@zenda.app';
+  const DEMO_PASSWORD = 'Demo1234!Zenda';
+
+  const now = new Date();
+  const todayDay = now.getUTCDate();
+  // Year + 1-based month for `monthsAgo` months before now (negative = future).
+  const ym = (monthsAgo: number): { year: number; month: number } => {
+    const dt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - monthsAgo, 1));
+    return { year: dt.getUTCFullYear(), month: dt.getUTCMonth() + 1 };
+  };
+  // A UTC date on `day` of the month that is `monthsAgo` months before now.
+  const dim = (monthsAgo: number, day: number, hour = 10): Date => {
+    const { year, month } = ym(monthsAgo);
+    return new Date(Date.UTC(year, month - 1, day, hour, 0, 0));
+  };
+  // "YYYY-MM" period string for `monthsAgo` months before now.
+  const period = (monthsAgo: number): string => {
+    const { year, month } = ym(monthsAgo);
+    return `${year}-${String(month).padStart(2, '0')}`;
+  };
+
+  // Fresh start: exactly one user. FK cascade wipes all per-user data;
+  // catalogs (categories, challenges, badges, topics, surveys, quizzes) stay.
+  await prisma.user.deleteMany({});
+
+  const categories = await prisma.category.findMany({
+    where: { type: CategoryType.SYSTEM, deletedAt: null },
+    select: { id: true, name: true },
+  });
+  const catByName = new Map(categories.map((c) => [c.name, c.id]));
+
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
+  const user = await prisma.user.create({
+    data: {
+      email: DEMO_EMAIL,
+      fullName: 'Paolo Guillen',
+      passwordHash,
+      age: 22,
+      university: 'PUCP',
+      incomeType: IncomeType.PART_TIME,
+      averageMonthlyIncome: 2000,
+      financialLiteracyLevel: FinancialLiteracyLevel.MEDIUM,
+      profileCompleted: true,
+      currency: 'PEN',
+      consentGiven: true,
+      consentAt: dim(4, 5),
+      notificationPrefs: Object.fromEntries(
+        Object.values(NotificationType).map((t) => [t, true]),
+      ),
+    },
+  });
+
+  // ── Transactions: one balanced monthly template (income ≈ S/2,000),
+  //    replicated across the last 3 full months + the current partial month ─
+  interface TxTemplate {
+    categoryName: string;
+    type: TransactionType;
+    amount: number;
+    description: string; // Spanish — shown to the user
+    day: number;
+  }
+  const monthly: TxTemplate[] = [
+    // Ingresos
+    { categoryName: 'Part-time work', type: TransactionType.INCOME, amount: 1500, description: 'Sueldo part-time – Tienda Ripley', day: 1 },
+    { categoryName: 'Freelance', type: TransactionType.INCOME, amount: 500, description: 'Proyecto freelance – diseño web', day: 5 },
+    // Necesidades
+    { categoryName: 'Housing', type: TransactionType.EXPENSE, amount: 450, description: 'Alquiler mensual – depa compartido', day: 2 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 85, description: 'Compra semanal – Metro', day: 3 },
+    { categoryName: 'Transportation', type: TransactionType.EXPENSE, amount: 75, description: 'Recarga mensual – Metropolitano', day: 4 },
+    { categoryName: 'Utilities', type: TransactionType.EXPENSE, amount: 55, description: 'Internet – plan hogar Claro', day: 5 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 62, description: 'Compra semanal – Vivanda', day: 10 },
+    { categoryName: 'Utilities', type: TransactionType.EXPENSE, amount: 40, description: 'Recibo de luz – Luz del Sur', day: 12 },
+    { categoryName: 'Health', type: TransactionType.EXPENSE, amount: 28, description: 'Farmacia – vitaminas y analgésicos', day: 14 },
+    { categoryName: 'Food', type: TransactionType.EXPENSE, amount: 58, description: 'Compra semanal – Wong', day: 17 },
+    // Gustos
+    { categoryName: 'Subscriptions', type: TransactionType.EXPENSE, amount: 22.9, description: 'Netflix – plan mensual', day: 6 },
+    { categoryName: 'Subscriptions', type: TransactionType.EXPENSE, amount: 12.9, description: 'Spotify Premium', day: 6 },
+    { categoryName: 'Entertainment', type: TransactionType.EXPENSE, amount: 38, description: 'Cine – Cineplanet con amigos', day: 8 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 35, description: 'Rappi – cena de sushi', day: 13 },
+    { categoryName: 'Shopping', type: TransactionType.EXPENSE, amount: 89.9, description: 'Ropa – Zara Miraflores', day: 15 },
+    { categoryName: 'Entertainment', type: TransactionType.EXPENSE, amount: 45, description: 'Entradas a concierto', day: 20 },
+    { categoryName: 'Cravings', type: TransactionType.EXPENSE, amount: 28.5, description: 'Starbucks – cafés de la semana', day: 22 },
+    { categoryName: 'Shopping', type: TransactionType.EXPENSE, amount: 55, description: 'Libros y útiles – SBS Librería', day: 27 },
+    // Ahorro
+    { categoryName: 'Savings', type: TransactionType.EXPENSE, amount: 300, description: 'Transferencia mensual de ahorro', day: 1 },
+  ];
+
+  const insertTx = async (monthsAgo: number, t: TxTemplate): Promise<void> => {
+    await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        categoryId: catByName.get(t.categoryName) ?? null,
+        type: t.type,
+        amount: t.amount,
+        currency: 'PEN',
+        description: t.description,
+        occurredAt: dim(monthsAgo, t.day),
+      },
+    });
+  };
+  for (const monthsAgo of [3, 2, 1]) {
+    for (const t of monthly) await insertTx(monthsAgo, t);
+  }
+  // Current month: only entries up to today, so the month looks "in progress".
+  for (const t of monthly) {
+    if (t.day <= todayDay) await insertTx(0, t);
+  }
+
+  // ── Goals: two in progress + one already completed ──────────────────────
+  // Clamp a current-month contribution so it never lands in the future.
+  const contribDay = (monthsAgo: number, preferred: number): number =>
+    monthsAgo === 0 ? Math.min(preferred, todayDay) : preferred;
+
+  const laptop = await prisma.savingsGoal.create({
+    data: { userId: user.id, name: 'Laptop nueva – MacBook Air', targetAmount: 2500, currentAmount: 1200, dueDate: dim(-4, 1), createdAt: dim(4, 1) },
+  });
+  for (const [m, amt] of [[3, 300], [2, 300], [1, 300], [0, 300]] as [number, number][]) {
+    await prisma.goalContribution.create({ data: { goalId: laptop.id, amount: amt, createdAt: dim(m, contribDay(m, 5)) } });
+  }
+
+  const trip = await prisma.savingsGoal.create({
+    data: { userId: user.id, name: 'Viaje a Cusco y Machu Picchu', targetAmount: 2000, currentAmount: 650, dueDate: dim(-6, 15), createdAt: dim(4, 5) },
+  });
+  for (const [m, amt] of [[3, 200], [2, 150], [1, 150], [0, 150]] as [number, number][]) {
+    await prisma.goalContribution.create({ data: { goalId: trip.id, amount: amt, createdAt: dim(m, contribDay(m, 6)) } });
+  }
+
+  const emergency = await prisma.savingsGoal.create({
+    data: { userId: user.id, name: 'Fondo de emergencia', targetAmount: 1000, currentAmount: 1000, completedAt: dim(1, 20), createdAt: dim(4, 3) },
+  });
+  for (const [m, amt] of [[3, 300], [2, 300], [1, 400]] as [number, number][]) {
+    await prisma.goalContribution.create({ data: { goalId: emergency.id, amount: amt, createdAt: dim(m, 3) } });
+  }
+
+  // ── Budgets: overall cap + per-category, across the seeded months ───────
+  // Per-category budgets only (no global cap). Their sum is the user's
+  // "total money" shown on the home screen — here S/2,000, matching income.
+  // Each budget has a friendly name (distinct from the category label).
+  const budgetDefs: Array<{ categoryName: string; name: string; amountLimit: number }> = [
+    { categoryName: 'Housing', name: 'Alquiler y vivienda', amountLimit: 450 },
+    { categoryName: 'Food', name: 'Alimentación', amountLimit: 300 },
+    { categoryName: 'Transportation', name: 'Movilidad', amountLimit: 100 },
+    { categoryName: 'Utilities', name: 'Servicios del hogar', amountLimit: 120 },
+    { categoryName: 'Entertainment', name: 'Salidas y ocio', amountLimit: 150 },
+    { categoryName: 'Shopping', name: 'Compras personales', amountLimit: 200 },
+    { categoryName: 'Health', name: 'Salud y bienestar', amountLimit: 80 },
+    { categoryName: 'Subscriptions', name: 'Apps y streaming', amountLimit: 50 },
+    { categoryName: 'Cravings', name: 'Antojos y delivery', amountLimit: 100 },
+    { categoryName: 'Savings', name: 'Ahorro mensual', amountLimit: 350 },
+    { categoryName: 'Education', name: 'Estudios y libros', amountLimit: 100 },
+  ];
+  for (const monthsAgo of [3, 2, 1, 0]) {
+    const { year, month } = ym(monthsAgo);
+    for (const def of budgetDefs) {
+      const categoryId = catByName.get(def.categoryName) ?? null;
+      await prisma.budget.create({
+        data: { userId: user.id, categoryId, name: def.name, amountLimit: def.amountLimit, month, year },
+      });
+    }
+  }
+
+  // ── Education topic progress (a few completed, with quiz score) ──────────
+  const completedTopics = ['Presupuesto personal', 'Hábitos de ahorro', 'Consumo responsable', 'Billeteras digitales en Perú'];
+  const topics = await prisma.educationalTopic.findMany({ select: { id: true, title: true } });
+  for (const topic of topics) {
+    if (!completedTopics.includes(topic.title)) continue;
+    await prisma.userTopicProgress.create({
+      data: { userId: user.id, topicId: topic.id, completedAt: dim(2, 15), score: 85, attemptsCount: 1 },
+    });
+  }
+
+  // ── Challenges: two completed + two accepted (active) ───────────────────
+  // Status is derived from (acceptedAt, completedAt) by the domain layer.
+  const challengeAssignments: Array<{ title: string; acceptedAt: Date; completedAt?: Date }> = [
+    { title: 'Registra tus gastos 7 días seguidos', acceptedAt: dim(3, 10), completedAt: dim(3, 17) },
+    { title: 'Ahorra S/20 esta semana', acceptedAt: dim(2, 1), completedAt: dim(2, 7) },
+    { title: 'Reduce tus gastos de ocio en 10%', acceptedAt: dim(0, 2) },
+    { title: 'Sin delivery por 3 días', acceptedAt: dim(2, 15) },
+  ];
+  for (const a of challengeAssignments) {
+    const challenge = await prisma.challenge.findFirst({ where: { title: a.title }, select: { id: true } });
+    if (!challenge) continue;
+    await prisma.userChallenge.create({
+      data: { userId: user.id, challengeId: challenge.id, acceptedAt: a.acceptedAt, completedAt: a.completedAt ?? null },
+    });
+  }
+
+  // ── Badges earned ───────────────────────────────────────────────────────
+  const badgeAwards: Array<{ name: string; earnedAt: Date }> = [
+    { name: 'First Transaction', earnedAt: dim(4, 2) },
+    { name: 'Consistency', earnedAt: dim(3, 17) },
+    { name: 'Goal Achieved', earnedAt: dim(1, 20) },
+  ];
+  for (const b of badgeAwards) {
+    const badge = await prisma.badge.findFirst({ where: { name: b.name }, select: { id: true } });
+    if (!badge) continue;
+    await prisma.userBadge.create({ data: { userId: user.id, badgeId: badge.id, earnedAt: b.earnedAt } });
+  }
+
+  // ── Predictions: last month (with retrospective accuracy) + current ─────
+  await prisma.prediction.create({
+    data: {
+      userId: user.id, period: period(1), type: TransactionType.EXPENSE,
+      predictedTotal: 1480,
+      predictedByCategory: [
+        { categoryName: 'Housing', amount: 450 },
+        { categoryName: 'Food', amount: 205 },
+        { categoryName: 'Transportation', amount: 75 },
+        { categoryName: 'Utilities', amount: 95 },
+        { categoryName: 'Entertainment', amount: 83 },
+        { categoryName: 'Shopping', amount: 145 },
+        { categoryName: 'Subscriptions', amount: 35.8 },
+        { categoryName: 'Cravings', amount: 63.5 },
+        { categoryName: 'Savings', amount: 300 },
+      ],
+      confidenceLevel: 'high',
+      confidenceInterval: { lower: 1350, upper: 1650 },
+      narrative: 'Tu gasto se mantiene estable mes a mes; la mayor parte se va en alquiler, comida y ahorro.',
+      modelVersion: 'v1.0-demo', actualTotal: 1480.2, accuracy: 99.0,
+    },
+  });
+  await prisma.prediction.create({
+    data: {
+      userId: user.id, period: period(0), type: TransactionType.EXPENSE,
+      predictedTotal: 1500,
+      predictedByCategory: [
+        { categoryName: 'Housing', amount: 450 },
+        { categoryName: 'Food', amount: 210 },
+        { categoryName: 'Transportation', amount: 75 },
+        { categoryName: 'Utilities', amount: 95 },
+        { categoryName: 'Entertainment', amount: 85 },
+        { categoryName: 'Shopping', amount: 150 },
+        { categoryName: 'Subscriptions', amount: 35.8 },
+        { categoryName: 'Cravings', amount: 64 },
+        { categoryName: 'Savings', amount: 300 },
+      ],
+      confidenceLevel: 'medium',
+      confidenceInterval: { lower: 1350, upper: 1680 },
+      narrative: 'Vas en línea con tu promedio. Vigila Entretenimiento, que suele subir a fin de mes.',
+      modelVersion: 'v1.0-demo',
+    },
+  });
+  await prisma.prediction.create({
+    data: {
+      userId: user.id, period: period(0), type: TransactionType.INCOME,
+      predictedTotal: 2000,
+      predictedByCategory: [
+        { categoryName: 'Part-time work', amount: 1500 },
+        { categoryName: 'Freelance', amount: 500 },
+      ],
+      confidenceLevel: 'high',
+      confidenceInterval: { lower: 1900, upper: 2100 },
+      narrative: 'Tu ingreso part-time es constante y el freelance aporta un extra recurrente.',
+      modelVersion: 'v1.0-demo',
+    },
+  });
+
+  // ── Recommendations (Spanish), one already viewed ───────────────────────
+  await prisma.recommendation.create({
+    data: { userId: user.id, type: RecommendationType.BUDGET, message: 'El mes pasado gastaste S/205 en Comida, dentro de tu presupuesto de S/300. ¡Buen control!', suggestedAction: 'Si te sientes cómodo, baja tu presupuesto de Comida a S/280 y manda la diferencia al ahorro.', isActive: true, source: 'local-rules', modelVersion: 'rules-v1', viewedAt: dim(0, Math.max(1, todayDay - 1)) },
+  });
+  await prisma.recommendation.create({
+    data: { userId: user.id, type: RecommendationType.SAVINGS, message: 'Vas camino a tu meta "Laptop nueva". Aportar S/50 extra al mes la adelantaría unas 3 semanas.', suggestedAction: 'Agrega S/50 a tu próxima contribución de la meta Laptop nueva.', isActive: true, source: 'local-rules', modelVersion: 'rules-v1' },
+  });
+  await prisma.recommendation.create({
+    data: { userId: user.id, type: RecommendationType.GOAL, message: '¡Felicidades! Completaste tu Fondo de emergencia de S/1,000. Un colchón te protege de imprevistos.', suggestedAction: 'Define una nueva meta para mantener el impulso, por ejemplo un fondo para tus estudios.', isActive: true, source: 'local-rules', modelVersion: 'rules-v1' },
+  });
+
+  // ── Notifications inbox (some read, some unread) ─────────────────────────
+  await prisma.notification.create({ data: { userId: user.id, type: NotificationType.BADGE_EARNED, title: '¡Nueva insignia!', body: 'Ganaste la insignia "Meta cumplida" por completar tu Fondo de emergencia.', sentAt: dim(1, 20), readAt: dim(1, 21) } });
+  await prisma.notification.create({ data: { userId: user.id, type: NotificationType.PREDICTION_READY, title: 'Tu predicción de gastos está lista', body: 'Estimamos S/1,500 de gastos este mes. Revisa el detalle por categoría.', sentAt: dim(0, Math.max(1, todayDay - 2)) } });
+  await prisma.notification.create({ data: { userId: user.id, type: NotificationType.BUDGET_ALERT, title: 'Atención a tu presupuesto', body: 'Tu presupuesto de Entretenimiento va al 70%. Te quedan S/45 este mes.', data: { categoryName: 'Entertainment' }, sentAt: dim(0, Math.max(1, todayDay - 1)) } });
+
+  // ── Survey responses (pre + post → measurable literacy improvement) ─────
+  const preSurvey = await prisma.survey.findFirst({ where: { type: SurveyType.PRE }, select: { id: true } });
+  const postSurvey = await prisma.survey.findFirst({ where: { type: SurveyType.POST }, select: { id: true } });
+  if (preSurvey) await prisma.surveyResponse.create({ data: { userId: user.id, surveyId: preSurvey.id, answersJson: { seeded: true }, score: 65, completedAt: dim(4, 5) } });
+  if (postSurvey) await prisma.surveyResponse.create({ data: { userId: user.id, surveyId: postSurvey.id, answersJson: { seeded: true }, score: 85, completedAt: dim(0, Math.max(1, todayDay - 1)) } });
+
+  // ── Financial progress snapshots (monthly behavioral history) ───────────
+  for (const [m, savingsRate, compliance] of [[2, 26, 100], [1, 28, 100], [0, 30, 90]] as [number, number, number][]) {
+    await prisma.userFinancialProgress.create({
+      data: { userId: user.id, period: period(m), budgetComplianceScore: compliance, savingsRatePct: savingsRate, overspendCategoriesCount: m === 0 ? 1 : 0, recommendationsShown: 3, recommendationsAccepted: 1, quizzesCompleted: 4, avgQuizScore: 85 },
+    });
+  }
+
+  console.log(`✓ Demo user seeded: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
+  console.log('  Paolo Guillen — part-time + freelance, balanced saver, MEDIUM literacy');
+  console.log('  3 full months + partial current month across every feature.');
+}
+
 async function main(): Promise<void> {
   console.log('Seeding database...');
   await seedCategories();
@@ -2490,7 +2829,12 @@ async function main(): Promise<void> {
   await seedEducationalTopics();
   await seedSurveys();
   await seedQuizQuestions();
-  await seedPilotUsers();
+  // Default: one complete demo user. Opt into the 5 pilot profiles with SEED_PILOTS=1.
+  if (process.env.SEED_PILOTS === '1') {
+    await seedPilotUsers();
+  } else {
+    await seedDemoUser();
+  }
   console.log('Seed complete.');
 }
 

@@ -13,6 +13,7 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
       id: string;
       userId: string;
       categoryId: string | null;
+      name: string | null;
       amountLimit: { toNumber: () => number };
       month: number;
       year: number;
@@ -25,26 +26,44 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
     const from = new Date(row.year, row.month - 1, 1);
     const to = new Date(row.year, row.month, 1);
 
-    const spentAgg = await this.prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: {
-        userId: row.userId,
-        type: TransactionType.EXPENSE,
-        deletedAt: null,
-        occurredAt: { gte: from, lt: to },
-        ...(row.categoryId !== null ? { categoryId: row.categoryId } : {}),
-      },
-    });
+    // Expenses and income assigned to this budget's category in its month.
+    // Spent reduces the pot; income grows it (the user's "aumentar presupuesto").
+    const categoryFilter =
+      row.categoryId !== null ? { categoryId: row.categoryId } : {};
+    const [spentAgg, incomeAgg] = await Promise.all([
+      this.prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: {
+          userId: row.userId,
+          type: TransactionType.EXPENSE,
+          deletedAt: null,
+          occurredAt: { gte: from, lt: to },
+          ...categoryFilter,
+        },
+      }),
+      this.prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: {
+          userId: row.userId,
+          type: TransactionType.INCOME,
+          deletedAt: null,
+          occurredAt: { gte: from, lt: to },
+          ...categoryFilter,
+        },
+      }),
+    ]);
 
     return BudgetEntity.create({
       id: row.id,
       userId: row.userId,
       categoryId: row.categoryId,
       categoryName: row.category?.name ?? null,
+      name: row.name,
       amountLimit: row.amountLimit.toNumber(),
       month: row.month,
       year: row.year,
       currentSpent: spentAgg._sum.amount?.toNumber() ?? 0,
+      incomeAdded: incomeAgg._sum.amount?.toNumber() ?? 0,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
@@ -54,6 +73,7 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
   async create(params: {
     userId: string;
     categoryId?: string;
+    name?: string;
     amountLimit: number;
     month: number;
     year: number;
@@ -75,7 +95,11 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
     if (softDeleted) {
       const row = await this.prisma.budget.update({
         where: { id: softDeleted.id },
-        data: { amountLimit: params.amountLimit, deletedAt: null },
+        data: {
+          amountLimit: params.amountLimit,
+          name: params.name ?? null,
+          deletedAt: null,
+        },
         include: { category: true },
       });
       return this.toEntity(row);
@@ -85,6 +109,7 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
       data: {
         userId: params.userId,
         categoryId: params.categoryId ?? null,
+        name: params.name ?? null,
         amountLimit: params.amountLimit,
         month: params.month,
         year: params.year,
@@ -123,11 +148,14 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
   async update(
     id: string,
     userId: string,
-    params: { amountLimit: number },
+    params: { amountLimit?: number; name?: string },
   ): Promise<BudgetEntity> {
     const row = await this.prisma.budget.update({
       where: { id, userId },
-      data: { amountLimit: params.amountLimit },
+      data: {
+        ...(params.amountLimit !== undefined ? { amountLimit: params.amountLimit } : {}),
+        ...(params.name !== undefined ? { name: params.name } : {}),
+      },
       include: { category: true },
     });
     return this.toEntity(row);

@@ -1,9 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsPositive } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNumber, IsOptional, IsPositive, IsString, MaxLength } from 'class-validator';
 
 export class UpdateBudgetDto {
-  @ApiProperty({ description: 'New spending limit in PEN', example: 600 })
+  @ApiPropertyOptional({ description: 'New spending limit in PEN', example: 600 })
+  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
-  amountLimit!: number;
+  amountLimit?: number;
+
+  @ApiPropertyOptional({ description: 'New budget name (pot label)', example: 'Alquiler' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  name?: string;
 }

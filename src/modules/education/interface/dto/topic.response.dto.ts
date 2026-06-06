@@ -7,7 +7,10 @@ export class TopicResponseDto {
   @ApiProperty() content!: string;
   @ApiProperty({ enum: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] }) difficulty!: string;
   @ApiProperty() order!: number;
-  @ApiProperty() isCompleted!: boolean;
+  @ApiProperty({ description: "Theme group for client iconography: 'budgeting' | 'saving' | 'investing'." }) category!: string;
+  @ApiProperty({ description: 'Number of quiz questions available for this topic (per language).' }) questionCount!: number;
+  @ApiProperty({ description: 'Completed = passed the quiz (>=70%).' }) isCompleted!: boolean;
+  @ApiProperty({ description: 'Read = user marked it read (not the same as completed).' }) isRead!: boolean;
   @ApiProperty({ nullable: true }) completedAt!: Date | null;
 
   static from(e: EducationTopicEntity): TopicResponseDto {
@@ -17,7 +20,10 @@ export class TopicResponseDto {
     dto.content = e.content;
     dto.difficulty = e.difficulty;
     dto.order = e.order;
+    dto.category = e.category;
+    dto.questionCount = e.questionCount;
     dto.isCompleted = e.isCompleted;
+    dto.isRead = e.isRead;
     dto.completedAt = e.completedAt;
     return dto;
   }

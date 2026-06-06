@@ -267,6 +267,9 @@ model Budget {
   id          String    @id @default(uuid()) @db.Uuid
   userId      String    @db.Uuid
   categoryId  String?   @db.Uuid
+  // User-given name for the budget "pot" (e.g. "Alquiler"), independent of the
+  // category. Null falls back to the category label on the client.
+  name        String?
   amountLimit Decimal   @db.Decimal(12, 2)
   month       Int
   year        Int
@@ -297,6 +300,8 @@ model EducationalTopic {
   content       String
   difficulty    TopicDifficulty     @default(BEGINNER)
   order         Int                 @default(0)
+  // Thematic group for client iconography/colour: 'budgeting' | 'saving' | 'investing'.
+  category      String              @default("budgeting")
   userProgress  UserTopicProgress[]
   quizQuestions QuizQuestion[]
   quizAttempts  QuizAttempt[]
@@ -335,7 +340,10 @@ model UserTopicProgress {
   id            String           @id @default(uuid()) @db.Uuid
   userId        String           @db.Uuid
   topicId       String           @db.Uuid
+  // Earned by passing the topic quiz (>=70%). Drives the literacy metric + badge.
   completedAt   DateTime?
+  // Set when the user marks the topic as read — distinct from completion.
+  readAt        DateTime?
   score         Decimal?         @db.Decimal(5, 2) // 0–100, latest quiz score for this topic
   attemptsCount Int              @default(0)
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -375,6 +383,9 @@ model Challenge {
   description    String
   criteriaJson   Json
   reward         String?
+  // Gamification points awarded on completion (US-1002). Badge reward, when any,
+  // is encoded in `reward` (e.g. "Insignia Constancia").
+  pointsReward   Int             @default(0)
   userChallenges UserChallenge[]
 
   createdAt DateTime @default(now())

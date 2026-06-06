@@ -9,6 +9,7 @@ import { PrismaPersonalizedQuizContextRepository } from './infrastructure/persis
 import { ListTopicsUseCase } from './application/use-cases/list-topics.use-case';
 import { GetTopicUseCase } from './application/use-cases/get-topic.use-case';
 import { CompleteTopicUseCase } from './application/use-cases/complete-topic.use-case';
+import { MarkReadTopicUseCase } from './application/use-cases/mark-read-topic.use-case';
 import { GetQuizUseCase } from './application/use-cases/get-quiz.use-case';
 import { SubmitQuizUseCase } from './application/use-cases/submit-quiz.use-case';
 import { GetPersonalizedQuizUseCase } from './application/use-cases/get-personalized-quiz.use-case';
@@ -26,6 +27,7 @@ import { EducationController, PersonalizedQuizController } from './interface/edu
     ListTopicsUseCase,
     GetTopicUseCase,
     CompleteTopicUseCase,
+    MarkReadTopicUseCase,
     GetQuizUseCase,
     SubmitQuizUseCase,
     GetPersonalizedQuizUseCase,

@@ -101,6 +101,7 @@ export class BudgetsController {
       userId,
       budgetId: id,
       amountLimit: dto.amountLimit,
+      name: dto.name,
     });
     return this.toResponse(entity);
   }
@@ -124,10 +125,12 @@ export class BudgetsController {
       userId: entity.userId,
       categoryId: entity.categoryId,
       categoryName: entity.categoryName,
+      name: entity.name,
       amountLimit: entity.amountLimit,
       month: entity.month,
       year: entity.year,
       currentSpent: entity.currentSpent,
+      incomeAdded: entity.incomeAdded,
       percentageUsed: entity.percentageUsed,
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),

@@ -6,6 +6,7 @@ import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 export interface CreateBudgetCommand {
   userId: string;
   categoryId?: string;
+  name?: string;
   amountLimit: number;
   month: number;
   year: number;
@@ -39,6 +40,7 @@ export class CreateBudgetUseCase {
       const created = await this.repo.create({
         userId: cmd.userId,
         categoryId: cmd.categoryId,
+        name: cmd.name,
         amountLimit: cmd.amountLimit,
         month: cmd.month,
         year: cmd.year,

@@ -6,7 +6,8 @@ import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 export interface UpdateBudgetCommand {
   userId: string;
   budgetId: string;
-  amountLimit: number;
+  amountLimit?: number;
+  name?: string;
 }
 
 @Injectable()
@@ -21,6 +22,7 @@ export class UpdateBudgetUseCase {
     if (!existing) throw new NotFoundException('Budget not found');
     const updated = await this.repo.update(cmd.budgetId, cmd.userId, {
       amountLimit: cmd.amountLimit,
+      name: cmd.name,
     });
     this.auditLog.record({
       action: 'UPDATE_BUDGET',

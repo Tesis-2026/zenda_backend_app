@@ -4,6 +4,7 @@ export abstract class IBudgetRepository {
   abstract create(params: {
     userId: string;
     categoryId?: string;
+    name?: string;
     amountLimit: number;
     month: number;
     year: number;
@@ -20,7 +21,7 @@ export abstract class IBudgetRepository {
   abstract update(
     id: string,
     userId: string,
-    params: { amountLimit: number },
+    params: { amountLimit?: number; name?: string },
   ): Promise<BudgetEntity>;
 
   abstract softDelete(id: string, userId: string): Promise<void>;

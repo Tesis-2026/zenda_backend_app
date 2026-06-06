@@ -10,6 +10,7 @@ export class ChallengeEntity {
     public readonly acceptedAt: Date | null,
     public readonly completedAt: Date | null,
     public readonly expiresAt: Date | null = null,
+    public readonly pointsReward: number = 0,
   ) {}
 }
 

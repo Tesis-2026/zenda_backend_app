@@ -1,11 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNumber, IsOptional, IsPositive, IsUUID, Max, Min } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateBudgetDto {
   @ApiPropertyOptional({ description: 'Category ID (null = global budget for all categories)' })
   @IsOptional()
   @IsUUID()
   categoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Budget name (pot label)', example: 'Alquiler' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  name?: string;
 
   @ApiProperty({ description: 'Spending limit in PEN', example: 500 })
   @IsNumber({ maxDecimalPlaces: 2 })

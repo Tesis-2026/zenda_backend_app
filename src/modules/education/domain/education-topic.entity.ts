@@ -9,5 +9,9 @@ export class EducationTopicEntity {
     public readonly order: number,
     public readonly isCompleted: boolean,
     public readonly completedAt: Date | null,
+    public readonly category: string = 'budgeting',
+    public readonly questionCount: number = 0,
+    // Read = user tapped "mark as read"; distinct from isCompleted (quiz passed).
+    public readonly isRead: boolean = false,
   ) {}
 }

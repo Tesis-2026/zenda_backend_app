@@ -6,6 +6,7 @@ import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { ListTopicsUseCase } from '../application/use-cases/list-topics.use-case';
 import { GetTopicUseCase } from '../application/use-cases/get-topic.use-case';
 import { CompleteTopicUseCase } from '../application/use-cases/complete-topic.use-case';
+import { MarkReadTopicUseCase } from '../application/use-cases/mark-read-topic.use-case';
 import { GetQuizUseCase } from '../application/use-cases/get-quiz.use-case';
 import { SubmitQuizUseCase } from '../application/use-cases/submit-quiz.use-case';
 import { GetPersonalizedQuizUseCase } from '../application/use-cases/get-personalized-quiz.use-case';
@@ -23,6 +24,7 @@ export class EducationController {
     private readonly listTopics: ListTopicsUseCase,
     private readonly getTopic: GetTopicUseCase,
     private readonly completeTopic: CompleteTopicUseCase,
+    private readonly markReadTopic: MarkReadTopicUseCase,
     private readonly getQuiz: GetQuizUseCase,
     private readonly submitQuiz: SubmitQuizUseCase,
     private readonly getPersonalizedQuiz: GetPersonalizedQuizUseCase,
@@ -58,6 +60,16 @@ export class EducationController {
   async complete(@Param('id', ParseUUIDPipe) id: string, @UserId() userId: string): Promise<void> {
     await this.completeTopic.execute(id, userId);
     this.analytics.track(userId, 'complete_topic', { topicId: id });
+  }
+
+  @Patch(':id/read')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Mark topic as read — distinct from completion (earned via quiz)' })
+  @ApiNoContent('Topic marked read')
+  @ApiAuthErrors()
+  async read(@Param('id', ParseUUIDPipe) id: string, @UserId() userId: string): Promise<void> {
+    await this.markReadTopic.execute(id, userId);
+    this.analytics.track(userId, 'read_topic', { topicId: id });
   }
 
   @Get(':id/quiz')

@@ -29,6 +29,7 @@ export class PrismaChallengeRepository implements IChallengeRepository {
         uc?.acceptedAt ?? null,
         uc?.completedAt ?? null,
         expiresAt,
+        c.pointsReward,
       );
     });
   }
@@ -52,6 +53,7 @@ export class PrismaChallengeRepository implements IChallengeRepository {
       challenge.id, challenge.title, challenge.description, challenge.reward,
       deriveChallengeStatus(uc, durationDays),
       uc.acceptedAt, uc.completedAt, expiresAt,
+      challenge.pointsReward,
     );
   }
 
@@ -84,6 +86,7 @@ export class PrismaChallengeRepository implements IChallengeRepository {
       challenge.id, challenge.title, challenge.description, challenge.reward,
       deriveChallengeStatus(uc, durationDays, now),
       uc.acceptedAt, uc.completedAt, expiresAt,
+      challenge.pointsReward,
     );
   }
 }
