@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
+import { IGoalsProgressFacade } from '../../../goals/domain/ports/goals-progress.facade';
 import {
   DailyBreakdown,
   IInsightsRepository,
@@ -14,7 +15,10 @@ import {
 
 @Injectable()
 export class PrismaInsightsRepository implements IInsightsRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly goalsProgress: IGoalsProgressFacade,
+  ) {}
 
   async getMonthSummary(params: MonthSummaryParams): Promise<MonthSummaryData> {
     return this.fetchPeriodSummary(params.userId, params.from, params.to);
@@ -89,7 +93,7 @@ export class PrismaInsightsRepository implements IInsightsRepository {
   }
 
   private async fetchPeriodSummary(userId: string, from: Date, to: Date): Promise<PeriodSummaryData> {
-    const [incomeAgg, expenseAgg, expenseByCategory, goals] = await Promise.all([
+    const [incomeAgg, expenseAgg, expenseByCategory, goalsProgress] = await Promise.all([
       this.prisma.transaction.aggregate({
         where: { userId, type: TransactionType.INCOME, occurredAt: { gte: from, lte: to }, deletedAt: null },
         _sum: { amount: true },
@@ -104,9 +108,7 @@ export class PrismaInsightsRepository implements IInsightsRepository {
         _sum: { amount: true },
         orderBy: { _sum: { amount: 'desc' } },
       }),
-      this.prisma.savingsGoal.findMany({
-        where: { userId, deletedAt: null },
-      }),
+      this.goalsProgress.getGoalsProgress(userId),
     ]);
 
     const categoryIds = expenseByCategory
@@ -128,16 +130,7 @@ export class PrismaInsightsRepository implements IInsightsRepository {
         name: e.categoryId ? (categoryMap.get(e.categoryId) ?? 'Unknown') : 'Unknown',
         amount: (e._sum.amount ?? new Decimal(0)).toNumber(),
       })),
-      goalsProgress: goals.map((g) => {
-        const current = g.currentAmount.toNumber();
-        const target = g.targetAmount.toNumber();
-        return {
-          name: g.name,
-          currentAmount: current,
-          targetAmount: target,
-          progressPercent: target > 0 ? Math.min(100, (current / target) * 100) : 0,
-        };
-      }),
+      goalsProgress,
     };
   }
 }
