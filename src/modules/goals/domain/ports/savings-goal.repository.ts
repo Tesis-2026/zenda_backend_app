@@ -19,6 +19,12 @@ export abstract class ISavingsGoalRepository {
   abstract findById(id: string, userId: string): Promise<SavingsGoalEntity | null>;
 
   abstract updateCurrentAmount(id: string, newAmount: number): Promise<SavingsGoalEntity>;
+
+  abstract update(
+    id: string,
+    params: { name?: string; targetAmount?: number; dueDate?: Date | null },
+  ): Promise<SavingsGoalEntity>;
+
   abstract softDelete(id: string): Promise<void>;
 
   abstract addContribution(goalId: string, amount: number): Promise<GoalContributionRecord>;

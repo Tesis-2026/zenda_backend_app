@@ -1,4 +1,4 @@
-import { NotificationType } from '@prisma/client';
+import { NotificationType } from './notification-type.enum';
 
 /**
  * A user's opt-in/out for one notification type.

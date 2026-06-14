@@ -10,6 +10,7 @@ import { ITransactionRepository, TransactionWithCategory } from '../../domain/po
 export interface CreateTransactionCommand {
   userId: string;
   categoryId?: string;
+  budgetId?: string;
   newCategoryName?: string;
   amount: number;
   currency?: string;
@@ -67,6 +68,7 @@ export class CreateTransactionUseCase {
     const tx = await this.repo.create({
       userId: cmd.userId,
       categoryId: category.id,
+      budgetId: cmd.budgetId ?? null,
       type: cmd.type,
       amount: cmd.amount,
       currency: cmd.currency ?? 'PEN',

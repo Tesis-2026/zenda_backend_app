@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { NotificationType } from '@prisma/client';
+import { NotificationType } from '../../domain/notification-type.enum';
 import { INotificationPreferenceRepository } from '../../domain/ports/notification-preference.repository';
 
 @Injectable()

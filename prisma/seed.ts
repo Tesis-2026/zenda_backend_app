@@ -2617,11 +2617,43 @@ async function seedDemoUser(): Promise<void> {
     { categoryName: 'Savings', type: TransactionType.EXPENSE, amount: 300, description: 'Transferencia mensual de ahorro', day: 1 },
   ];
 
+  // ── Budgets first (per-category, no global cap). Their sum is the user's
+  //    "total money" on the home screen — S/2,000, matching income. Each budget
+  //    has a friendly name distinct from the category label. ─────────────────
+  const budgetDefs: Array<{ categoryName: string; name: string; amountLimit: number }> = [
+    { categoryName: 'Housing', name: 'Alquiler y vivienda', amountLimit: 450 },
+    { categoryName: 'Food', name: 'Alimentación', amountLimit: 300 },
+    { categoryName: 'Transportation', name: 'Movilidad', amountLimit: 100 },
+    { categoryName: 'Utilities', name: 'Servicios del hogar', amountLimit: 120 },
+    { categoryName: 'Entertainment', name: 'Salidas y ocio', amountLimit: 150 },
+    { categoryName: 'Shopping', name: 'Compras personales', amountLimit: 200 },
+    { categoryName: 'Health', name: 'Salud y bienestar', amountLimit: 80 },
+    { categoryName: 'Subscriptions', name: 'Apps y streaming', amountLimit: 50 },
+    { categoryName: 'Cravings', name: 'Antojos y delivery', amountLimit: 100 },
+    { categoryName: 'Savings', name: 'Ahorro mensual', amountLimit: 350 },
+    { categoryName: 'Education', name: 'Estudios y libros', amountLimit: 100 },
+  ];
+  // "<categoryName>|<monthsAgo>" → budgetId, so each transaction links to the
+  // budget for its category + month (transactions are budget-linked now).
+  const budgetByCatMonth = new Map<string, string>();
+  for (const monthsAgo of [3, 2, 1, 0]) {
+    const { year, month } = ym(monthsAgo);
+    for (const def of budgetDefs) {
+      const categoryId = catByName.get(def.categoryName) ?? null;
+      const b = await prisma.budget.create({
+        data: { userId: user.id, categoryId, name: def.name, amountLimit: def.amountLimit, month, year },
+      });
+      budgetByCatMonth.set(`${def.categoryName}|${monthsAgo}`, b.id);
+    }
+  }
+
+  // ── Transactions: linked to their category's budget for that month ────────
   const insertTx = async (monthsAgo: number, t: TxTemplate): Promise<void> => {
     await prisma.transaction.create({
       data: {
         userId: user.id,
         categoryId: catByName.get(t.categoryName) ?? null,
+        budgetId: budgetByCatMonth.get(`${t.categoryName}|${monthsAgo}`) ?? null,
         type: t.type,
         amount: t.amount,
         currency: 'PEN',
@@ -2662,33 +2694,6 @@ async function seedDemoUser(): Promise<void> {
   });
   for (const [m, amt] of [[3, 300], [2, 300], [1, 400]] as [number, number][]) {
     await prisma.goalContribution.create({ data: { goalId: emergency.id, amount: amt, createdAt: dim(m, 3) } });
-  }
-
-  // ── Budgets: overall cap + per-category, across the seeded months ───────
-  // Per-category budgets only (no global cap). Their sum is the user's
-  // "total money" shown on the home screen — here S/2,000, matching income.
-  // Each budget has a friendly name (distinct from the category label).
-  const budgetDefs: Array<{ categoryName: string; name: string; amountLimit: number }> = [
-    { categoryName: 'Housing', name: 'Alquiler y vivienda', amountLimit: 450 },
-    { categoryName: 'Food', name: 'Alimentación', amountLimit: 300 },
-    { categoryName: 'Transportation', name: 'Movilidad', amountLimit: 100 },
-    { categoryName: 'Utilities', name: 'Servicios del hogar', amountLimit: 120 },
-    { categoryName: 'Entertainment', name: 'Salidas y ocio', amountLimit: 150 },
-    { categoryName: 'Shopping', name: 'Compras personales', amountLimit: 200 },
-    { categoryName: 'Health', name: 'Salud y bienestar', amountLimit: 80 },
-    { categoryName: 'Subscriptions', name: 'Apps y streaming', amountLimit: 50 },
-    { categoryName: 'Cravings', name: 'Antojos y delivery', amountLimit: 100 },
-    { categoryName: 'Savings', name: 'Ahorro mensual', amountLimit: 350 },
-    { categoryName: 'Education', name: 'Estudios y libros', amountLimit: 100 },
-  ];
-  for (const monthsAgo of [3, 2, 1, 0]) {
-    const { year, month } = ym(monthsAgo);
-    for (const def of budgetDefs) {
-      const categoryId = catByName.get(def.categoryName) ?? null;
-      await prisma.budget.create({
-        data: { userId: user.id, categoryId, name: def.name, amountLimit: def.amountLimit, month, year },
-      });
-    }
   }
 
   // ── Education topic progress (a few completed, with quiz score) ──────────

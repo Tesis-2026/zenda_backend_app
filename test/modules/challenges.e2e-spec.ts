@@ -38,12 +38,12 @@ describe('Challenges (contract — mocked, no DB)', () => {
       title: expect.any(String),
       status: 'AVAILABLE',
     });
-    // ARCH-38: the API exposes a single `reward` string. The Flutter model
-    // expects separate `pointsReward` / `badgeReward` fields, which the
-    // backend does NOT send. Asserting the present contract pins the gap.
+    // ARCH-38 (resolved): the API exposes the raw `reward` string plus the
+    // derived `pointsReward` (number) and `badgeReward` (badge name parsed
+    // from `reward`) fields the Flutter model consumes. Pins the fixed contract.
     expect(res.body[0]).toHaveProperty('reward');
-    expect(res.body[0]).not.toHaveProperty('pointsReward');
-    expect(res.body[0]).not.toHaveProperty('badgeReward');
+    expect(res.body[0]).toHaveProperty('pointsReward', 50);
+    expect(res.body[0]).toHaveProperty('badgeReward', 'Ahorrador');
   });
 
   it('POST /api/challenges/:id/accept → 200, status flips to ACTIVE', async () => {

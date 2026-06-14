@@ -71,6 +71,23 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
     return this.toEntity(row);
   }
 
+  async update(
+    id: string,
+    params: { name?: string; targetAmount?: number; dueDate?: Date | null },
+  ): Promise<SavingsGoalEntity> {
+    const row = await this.prisma.savingsGoal.update({
+      where: { id },
+      data: {
+        ...(params.name !== undefined ? { name: params.name } : {}),
+        ...(params.targetAmount !== undefined
+          ? { targetAmount: params.targetAmount }
+          : {}),
+        ...(params.dueDate !== undefined ? { dueDate: params.dueDate } : {}),
+      },
+    });
+    return this.toEntity(row);
+  }
+
   async softDelete(id: string): Promise<void> {
     await this.prisma.savingsGoal.update({
       where: { id },

@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { NotificationType } from '@prisma/client';
+import { NotificationType } from '../domain/notification-type.enum';
 import {
   ApiAuthErrors,
   ApiNoContent,

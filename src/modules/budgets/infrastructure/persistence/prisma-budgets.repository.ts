@@ -23,32 +23,24 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
       category?: { name: string } | null;
     },
   ): Promise<BudgetEntity> {
-    const from = new Date(row.year, row.month - 1, 1);
-    const to = new Date(row.year, row.month, 1);
-
-    // Expenses and income assigned to this budget's category in its month.
-    // Spent reduces the pot; income grows it (the user's "aumentar presupuesto").
-    const categoryFilter =
-      row.categoryId !== null ? { categoryId: row.categoryId } : {};
+    // Transactions explicitly linked to THIS budget (the user picks it at
+    // create time, independent of the transaction's category). Expenses reduce
+    // the pot; income grows it ("aumentar presupuesto").
     const [spentAgg, incomeAgg] = await Promise.all([
       this.prisma.transaction.aggregate({
         _sum: { amount: true },
         where: {
-          userId: row.userId,
+          budgetId: row.id,
           type: TransactionType.EXPENSE,
           deletedAt: null,
-          occurredAt: { gte: from, lt: to },
-          ...categoryFilter,
         },
       }),
       this.prisma.transaction.aggregate({
         _sum: { amount: true },
         where: {
-          userId: row.userId,
+          budgetId: row.id,
           type: TransactionType.INCOME,
           deletedAt: null,
-          occurredAt: { gte: from, lt: to },
-          ...categoryFilter,
         },
       }),
     ]);
@@ -178,6 +170,16 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
       include: { category: true },
     });
     return row ? this.toEntity(row) : null;
+  }
+
+  async countActiveForPeriod(
+    userId: string,
+    month: number,
+    year: number,
+  ): Promise<number> {
+    return this.prisma.budget.count({
+      where: { userId, month, year, deletedAt: null },
+    });
   }
 
   async findForCategoryAndPeriod(

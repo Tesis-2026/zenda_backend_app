@@ -60,6 +60,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
   async create(params: {
     userId: string;
     categoryId: string;
+    budgetId?: string | null;
     type: TransactionType;
     amount: number;
     currency: string;
@@ -73,6 +74,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       data: {
         userId: params.userId,
         categoryId: params.categoryId,
+        budgetId: params.budgetId ?? null,
         type: params.type as PrismaTransactionType,
         amount: params.amount,
         currency: params.currency,

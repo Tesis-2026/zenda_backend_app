@@ -38,6 +38,17 @@ export abstract class IBudgetRepository {
   ): Promise<BudgetEntity | null>;
 
   /**
+   * Counts the user's active (non-deleted) budgets for a given period. Used to
+   * enforce the per-period budget cap at create time without paying the cost of
+   * hydrating every budget's spent/income aggregates.
+   */
+  abstract countActiveForPeriod(
+    userId: string,
+    month: number,
+    year: number,
+  ): Promise<number>;
+
+  /**
    * Cross-context query: returns the active (non-deleted) budget for a single
    * category in a specific month/year. Used by the BUDGET_ALERT trigger when a
    * transaction is recorded. Returns null when no budget is set for that slot.

@@ -8,6 +8,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -27,10 +28,12 @@ import { ListGoalsUseCase } from '../application/use-cases/list-goals.use-case';
 import { ContributeToGoalUseCase } from '../application/use-cases/contribute-to-goal.use-case';
 import { CompleteGoalUseCase } from '../application/use-cases/complete-goal.use-case';
 import { DeleteGoalUseCase } from '../application/use-cases/delete-goal.use-case';
+import { UpdateGoalUseCase } from '../application/use-cases/update-goal.use-case';
 import { ListGoalContributionsUseCase } from '../application/use-cases/list-goal-contributions.use-case';
 import { SavingsGoalEntity } from '../domain/savings-goal.entity';
 import { GoalContributionRecord } from '../domain/ports/savings-goal.repository';
 import { CreateGoalDto } from './dto/create-goal.dto';
+import { UpdateGoalDto } from './dto/update-goal.dto';
 import { ContributeGoalDto } from './dto/contribute-goal.dto';
 import { GoalResponseDto } from './dto/goal.response.dto';
 import { GoalContributionResponseDto } from './dto/goal-contribution.response.dto';
@@ -47,6 +50,7 @@ export class GoalsController {
     private readonly contributeToGoal: ContributeToGoalUseCase,
     private readonly completeGoal: CompleteGoalUseCase,
     private readonly deleteGoal: DeleteGoalUseCase,
+    private readonly updateGoal: UpdateGoalUseCase,
     private readonly listContributions: ListGoalContributionsUseCase,
     private readonly analytics: AnalyticsService,
   ) {}
@@ -118,6 +122,23 @@ export class GoalsController {
   ): Promise<GoalResponseDto> {
     const entity = await this.completeGoal.execute(userId, id);
     this.analytics.track(userId, 'complete_goal', { goalId: id });
+    return this.toResponse(entity);
+  }
+
+  @Put(':id')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @ApiOperation({ summary: 'Update a savings goal (name / target / due date)' })
+  @ApiOk(GoalResponseDto, 'Goal updated')
+  @ApiValidationError()
+  @ApiNotFoundError('Goal not found or not owned by caller')
+  @ApiAuthErrors()
+  async update(
+    @UserId() userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateGoalDto,
+  ): Promise<GoalResponseDto> {
+    const entity = await this.updateGoal.execute({ userId, goalId: id, ...dto });
+    this.analytics.track(userId, 'update_goal', { goalId: id });
     return this.toResponse(entity);
   }
 

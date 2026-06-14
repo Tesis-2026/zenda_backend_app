@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { IBudgetRepository } from '../../domain/ports/budget.repository';
 import { BudgetEntity } from '../../domain/budget.entity';
 import { AuditLogService } from '../../../../shared/audit/audit-log.service';
@@ -12,6 +16,13 @@ export interface CreateBudgetCommand {
   year: number;
 }
 
+/**
+ * Cap on active budgets per user per period. Keeping the set small protects the
+ * 50/30/20 model and reduces budget-tracking fatigue (the last slot is meant to
+ * be a general "Otros" catch-all).
+ */
+export const MAX_BUDGETS_PER_PERIOD = 7;
+
 @Injectable()
 export class CreateBudgetUseCase {
   constructor(
@@ -20,6 +31,20 @@ export class CreateBudgetUseCase {
   ) {}
 
   async execute(cmd: CreateBudgetCommand): Promise<BudgetEntity> {
+    // Enforce the per-period cap. Counting active budgets (not reviving a
+    // soft-deleted slot) keeps the check cheap and correct: a revive of a
+    // previously deleted slot still becomes a new active budget here.
+    const activeCount = await this.repo.countActiveForPeriod(
+      cmd.userId,
+      cmd.month,
+      cmd.year,
+    );
+    if (activeCount >= MAX_BUDGETS_PER_PERIOD) {
+      throw new BadRequestException(
+        `Budget limit reached: a maximum of ${MAX_BUDGETS_PER_PERIOD} budgets per period is allowed`,
+      );
+    }
+
     // PostgreSQL unique constraints treat NULL as distinct (NULL != NULL), so the
     // @@unique([userId, categoryId, month, year]) on Budget does NOT prevent two
     // global budgets (categoryId = null) for the same period. We enforce it here.

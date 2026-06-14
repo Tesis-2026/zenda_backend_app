@@ -161,6 +161,7 @@ export function makeChallenge(over: Record<string, any> = {}) {
     title: 'Sin gastos hormiga por 7 días',
     description: 'Evita compras impulsivas durante una semana.',
     reward: 'Insignia Ahorrador',
+    pointsReward: 50,
     status: 'AVAILABLE',
     acceptedAt: null,
     completedAt: null,

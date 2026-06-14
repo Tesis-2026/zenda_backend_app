@@ -4,7 +4,7 @@ import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { ICategoryRepository } from '../../domain/ports/category.repository';
 import { CategoryEntity } from '../../domain/category.entity';
 import { CategoryType } from '../../domain/category-type.enum';
-import { TransactionType } from '../../../transactions/domain/transaction-type.enum';
+import { TransactionType } from '../../../../shared/domain/transaction-type.enum';
 
 @Injectable()
 export class PrismaCategoryRepository implements ICategoryRepository {

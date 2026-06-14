@@ -47,6 +47,7 @@ export abstract class ITransactionRepository {
   abstract create(params: {
     userId: string;
     categoryId: string;
+    budgetId?: string | null;
     type: TransactionType;
     amount: number;
     currency: string;

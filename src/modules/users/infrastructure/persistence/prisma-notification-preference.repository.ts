@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { NotificationType, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import {
   ALL_NOTIFICATION_TYPES,
   NotificationPreference,
   buildPreferenceList,
 } from '../../domain/notification-preference';
+import { NotificationType } from '../../domain/notification-type.enum';
 import { INotificationPreferenceRepository } from '../../domain/ports/notification-preference.repository';
 
 type PrefsMap = Partial<Record<NotificationType, boolean>>;
