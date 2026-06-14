@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
+import { BudgetsModule } from '../budgets/budgets.module';
 import { IInsightsRepository } from './domain/ports/insights.repository';
 import { PrismaInsightsRepository } from './infrastructure/persistence/prisma-insights.repository';
 import { GetMonthSummaryUseCase } from './application/use-cases/get-month-summary.use-case';
@@ -11,7 +12,7 @@ import { SummaryController } from './interface/summary.controller';
 import { ReportsController } from './interface/reports.controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, BudgetsModule],
   controllers: [SummaryController, ReportsController],
   providers: [
     { provide: IInsightsRepository, useClass: PrismaInsightsRepository },

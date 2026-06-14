@@ -5,7 +5,7 @@ import { ApiAuthErrors, ApiValidationError } from '../../../shared/swagger/api-r
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { GeneratePdfReportUseCase } from '../application/use-cases/generate-pdf-report.use-case';
-import { MonthSummaryDto } from './dto/month-summary.dto';
+import { ReportRangeDto } from './dto/report-range.dto';
 
 @ApiTags('Insights')
 @ApiBearerAuth()
@@ -15,23 +15,30 @@ export class ReportsController {
   constructor(private readonly generatePdf: GeneratePdfReportUseCase) {}
 
   @Get('export/pdf')
-  @ApiOperation({ summary: 'Export monthly financial report as PDF' })
+  @ApiOperation({ summary: 'Export financial report as PDF over a month range (max 6 months)' })
   @ApiProduces('application/pdf')
   @ApiResponse({ status: 200, description: 'PDF binary stream (application/pdf)' })
   @ApiValidationError()
   @ApiAuthErrors()
   async exportPdf(
     @UserId() userId: string,
-    @Query() query: MonthSummaryDto,
+    @Query() query: ReportRangeDto,
     @Res() res: Response,
   ): Promise<void> {
     const buffer = await this.generatePdf.execute({
       userId,
-      year: query.year,
-      month: query.month,
+      fromYear: query.fromYear,
+      fromMonth: query.fromMonth,
+      toYear: query.toYear,
+      toMonth: query.toMonth,
     });
 
-    const filename = `zenda-report-${query.year}-${String(query.month).padStart(2, '0')}.pdf`;
+    const fromStr = `${query.fromYear}-${String(query.fromMonth).padStart(2, '0')}`;
+    const toStr = `${query.toYear}-${String(query.toMonth).padStart(2, '0')}`;
+    const filename =
+      fromStr === toStr
+        ? `zenda-report-${fromStr}.pdf`
+        : `zenda-report-${fromStr}_${toStr}.pdf`;
 
     res.set({
       'Content-Type': 'application/pdf',

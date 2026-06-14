@@ -21,6 +21,13 @@ export abstract class BudgetsFacade {
     categoryId: string,
     occurredAt: Date,
   ): Promise<BudgetSnapshot | null>;
+
+  /** All of the user's budgets for a given month/year (used by PDF reports). */
+  abstract listSnapshotsForPeriod(
+    userId: string,
+    month: number,
+    year: number,
+  ): Promise<BudgetSnapshot[]>;
 }
 
 @Injectable()
@@ -48,5 +55,20 @@ export class BudgetsFacadeImpl extends BudgetsFacade {
       currentSpent: budget.currentSpent,
       percentageUsed: budget.percentageUsed,
     };
+  }
+
+  async listSnapshotsForPeriod(
+    userId: string,
+    month: number,
+    year: number,
+  ): Promise<BudgetSnapshot[]> {
+    const budgets = await this.repo.findAll({ userId, month, year });
+    return budgets.map((b) => ({
+      budgetId: b.id,
+      categoryName: b.categoryName,
+      amountLimit: b.amountLimit,
+      currentSpent: b.currentSpent,
+      percentageUsed: b.percentageUsed,
+    }));
   }
 }
