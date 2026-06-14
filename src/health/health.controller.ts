@@ -1,10 +1,15 @@
 import { Controller, Get, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { PrismaService } from '../infra/prisma/prisma.service';
 import { HealthCheckItemDto, HealthResponseDto } from './dto/health.response.dto';
 
 const VERSION = '1.0.0';
 
+// Probes (k8s liveness/readiness, Docker HEALTHCHECK, load balancers) poll these
+// frequently from a stable IP — exempt them from the global rate limit so a busy
+// probe interval can never trip a 429 and be read as a failed health check.
+@SkipThrottle()
 @ApiTags('Health')
 @Controller()
 export class HealthController {

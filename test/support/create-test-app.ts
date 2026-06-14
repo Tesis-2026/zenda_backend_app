@@ -1,6 +1,8 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
+import { ThrottlerGuard } from '@nestjs/throttler';
+
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/infra/prisma/prisma.service';
 import { JwtAuthGuard } from '../../src/modules/auth/infrastructure/jwt-auth.guard';
@@ -39,7 +41,11 @@ export async function createTestApp(
 
   const builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(PrismaService)
-    .useValue(prisma);
+    .useValue(prisma)
+    // Rate limiting is a production concern; disable it in contract tests so the
+    // suites can fire requests freely without tripping the global ThrottlerGuard.
+    .overrideGuard(ThrottlerGuard)
+    .useValue({ canActivate: () => true });
 
   if (options.user) {
     builder.overrideGuard(JwtAuthGuard).useValue({

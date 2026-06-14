@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './shared/audit/audit.module';
 import { RequestContextInterceptor } from './shared/audit/request-context.interceptor';
 import { GlobalExceptionFilter } from './shared/exceptions/global-exception.filter';
@@ -72,6 +72,13 @@ import { UsersModule } from './modules/users/users.module';
   controllers: [HealthController],
   providers: [
     AppLogger,
+    {
+      // Enforces the @Throttle() rate limits (auth brute-force, OTP, AI chat)
+      // and the global default (120/min). Without this APP_GUARD the
+      // ThrottlerModule config is inert. Neutralized in e2e via overrideGuard.
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,

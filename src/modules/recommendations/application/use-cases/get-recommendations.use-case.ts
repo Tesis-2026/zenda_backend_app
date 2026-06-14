@@ -24,6 +24,10 @@ export class GetRecommendationsUseCase {
       return this.repo.listActive(userId);
     }
 
+    // Record AI provenance so the recommendation-accuracy KPI can be attributed
+    // to the model/inputs that produced each row (instead of persisting nulls).
+    // `modelVersion` is provider-level granularity (the AiProvider name); the
+    // SpendingContext fed to the model is captured as the input context.
     return this.repo.replaceAll(
       userId,
       results.map((r) => ({
@@ -32,6 +36,9 @@ export class GetRecommendationsUseCase {
         message: r.message,
         suggestedAction: r.suggestedAction,
         isActive: true,
+        modelVersion: this.ai.name,
+        source: 'AI',
+        inputContextJson: context,
       })),
     );
   }

@@ -16,13 +16,13 @@ import { PredictionAccuracyResponseDto } from './dto/prediction-accuracy.respons
 
 class AccuracyCheckDto {
   @IsInt()
-  @Min(2020)
-  @Max(2100)
+  @Min(1)
+  @Max(12)
   month!: number;
 
   @IsInt()
-  @Min(1)
-  @Max(12)
+  @Min(2020)
+  @Max(2100)
   year!: number;
 }
 

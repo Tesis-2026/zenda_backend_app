@@ -64,7 +64,7 @@ describe('Predictions (contract — mocked, no DB)', () => {
     const res = await request(app.getHttpServer())
       .post('/api/predictions/accuracy-check')
       .set('Authorization', 'Bearer test')
-      .send({ month: 2026, year: 5 }); // DTO: month∈[2020,2100], year∈[1,12]
+      .send({ month: 5, year: 2026 }); // DTO: month∈[1,12], year∈[2020,2100]
     expect(res.status).toBe(404);
   });
 });
