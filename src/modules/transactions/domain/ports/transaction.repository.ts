@@ -41,6 +41,8 @@ export interface UpdateTransactionParams {
   description?: string;
   occurredAt?: Date;
   categorySource?: CategorySource;
+  /** Set to null to clear an expense's budget link (e.g. when it becomes income). */
+  budgetId?: string | null;
 }
 
 export abstract class ITransactionRepository {

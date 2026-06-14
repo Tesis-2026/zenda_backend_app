@@ -157,6 +157,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         ...(params.currency !== undefined && { currency: params.currency }),
         ...(params.description !== undefined && { description: params.description }),
         ...(params.occurredAt !== undefined && { occurredAt: params.occurredAt }),
+        ...(params.budgetId !== undefined && { budgetId: params.budgetId }),
         ...(params.categorySource !== undefined && {
           categorySource: params.categorySource as PrismaCategorySource,
         }),

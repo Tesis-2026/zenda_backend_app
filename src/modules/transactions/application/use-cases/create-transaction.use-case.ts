@@ -65,10 +65,16 @@ export class CreateTransactionUseCase {
       finalCategoryId: category.id,
     });
 
+    // A budget is a spending limit, so only expenses draw from one. Income is a
+    // first-class concept tracked on its own (see docs/income-as-first-class-concept.md),
+    // so any budgetId sent alongside an income is ignored.
+    const budgetId =
+      cmd.type === TransactionType.EXPENSE ? (cmd.budgetId ?? null) : null;
+
     const tx = await this.repo.create({
       userId: cmd.userId,
       categoryId: category.id,
-      budgetId: cmd.budgetId ?? null,
+      budgetId,
       type: cmd.type,
       amount: cmd.amount,
       currency: cmd.currency ?? 'PEN',

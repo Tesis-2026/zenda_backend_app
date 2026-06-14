@@ -24,7 +24,7 @@ export class CreateTransactionDto {
   categoryId?: string;
 
   @ApiPropertyOptional({
-    description: 'Budget UUID this transaction draws from (expense) or adds to (income)',
+    description: 'Budget UUID this expense draws from. Ignored for income (income is never linked to a budget).',
     example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8',
   })
   @IsOptional()

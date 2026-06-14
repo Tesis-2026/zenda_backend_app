@@ -8,7 +8,6 @@ export class BudgetResponseDto {
   month!: number;
   year!: number;
   currentSpent!: number;
-  incomeAdded!: number;
   percentageUsed!: number;
   createdAt!: string;
   updatedAt!: string;

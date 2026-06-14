@@ -58,6 +58,12 @@ export class UpdateTransactionUseCase {
       });
     }
 
+    // A budget is a spending limit — only expenses draw from one. If this edit
+    // makes the transaction an income (or it already is one), clear any
+    // (possibly stale) budget link so income is never coupled to a budget.
+    const effectiveType = cmd.type ?? existing.type;
+    const clearBudget = effectiveType === TransactionType.INCOME;
+
     const params: UpdateTransactionParams = {
       categoryId,
       type: cmd.type,
@@ -66,6 +72,7 @@ export class UpdateTransactionUseCase {
       description: cmd.description,
       occurredAt,
       categorySource,
+      budgetId: clearBudget ? null : undefined,
     };
 
     const updated = await this.repo.update(cmd.id, cmd.userId, params);

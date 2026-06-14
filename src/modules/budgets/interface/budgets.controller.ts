@@ -130,7 +130,6 @@ export class BudgetsController {
       month: entity.month,
       year: entity.year,
       currentSpent: entity.currentSpent,
-      incomeAdded: entity.incomeAdded,
       percentageUsed: entity.percentageUsed,
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),

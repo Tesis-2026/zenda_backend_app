@@ -23,27 +23,17 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
       category?: { name: string } | null;
     },
   ): Promise<BudgetEntity> {
-    // Transactions explicitly linked to THIS budget (the user picks it at
-    // create time, independent of the transaction's category). Expenses reduce
-    // the pot; income grows it ("aumentar presupuesto").
-    const [spentAgg, incomeAgg] = await Promise.all([
-      this.prisma.transaction.aggregate({
-        _sum: { amount: true },
-        where: {
-          budgetId: row.id,
-          type: TransactionType.EXPENSE,
-          deletedAt: null,
-        },
-      }),
-      this.prisma.transaction.aggregate({
-        _sum: { amount: true },
-        where: {
-          budgetId: row.id,
-          type: TransactionType.INCOME,
-          deletedAt: null,
-        },
-      }),
-    ]);
+    // Expenses explicitly linked to THIS budget reduce its remaining limit.
+    // A budget is a pure spending limit — income never inflates it
+    // (see docs/income-as-first-class-concept.md).
+    const spentAgg = await this.prisma.transaction.aggregate({
+      _sum: { amount: true },
+      where: {
+        budgetId: row.id,
+        type: TransactionType.EXPENSE,
+        deletedAt: null,
+      },
+    });
 
     return BudgetEntity.create({
       id: row.id,
@@ -55,7 +45,6 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
       month: row.month,
       year: row.year,
       currentSpent: spentAgg._sum.amount?.toNumber() ?? 0,
-      incomeAdded: incomeAgg._sum.amount?.toNumber() ?? 0,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
