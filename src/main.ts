@@ -41,9 +41,12 @@ async function bootstrap() {
   );
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = config.get<number>('app.port') ?? 3000;
+  // Azure App Service (Windows/iisnode) injects PORT as a named pipe string
+  // (e.g. \\.\pipe\...), not a number. Pass it through untouched; fall back to
+  // the configured numeric port for local runs where PORT is unset.
+  const port = process.env.PORT ?? config.get<number>('app.port') ?? 3000;
   await app.listen(port);
-  logger.log(`Application running on port ${port}`, 'Bootstrap');
+  logger.log(`Application running on ${port}`, 'Bootstrap');
 }
 
 void bootstrap();
