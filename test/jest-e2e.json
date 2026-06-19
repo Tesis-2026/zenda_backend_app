@@ -6,6 +6,7 @@
     "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "tsconfig.json", "isolatedModules": true }]
   },
   "testEnvironment": "node",
+  "setupFiles": ["<rootDir>/test/support/setup-env.ts"],
   "testTimeout": 30000,
   "moduleNameMapper": {}
 }
