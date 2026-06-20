@@ -42,6 +42,11 @@ jobs:
         with:
           name: node-app
           path: .
+          # upload-artifact@v4 excludes hidden files by default. The Prisma
+          # client is generated into node_modules/.prisma/ (a dot-dir), so
+          # without this it is dropped from the package and the app crashes at
+          # boot with "Cannot find module '.prisma/client/default'".
+          include-hidden-files: true
 
   deploy:
     runs-on: ubuntu-latest
