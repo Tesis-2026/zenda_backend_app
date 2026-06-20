@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiAuthErrors, ApiNoContent, ApiOk, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -40,13 +49,16 @@ export class ChatController {
   @ApiValidationError()
   @ApiAuthErrors()
   send(@UserId() userId: string, @Body() dto: SendChatMessageDto): Promise<ChatReplyResponseDto> {
+    if (dto.userId && dto.userId !== userId) {
+      throw new ForbiddenException('No puedes enviar mensajes para otro usuario');
+    }
     return this.sendChatMessage.execute(userId, dto.message);
   }
 
   @Post('close')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @ApiOperation({ summary: 'Close the active conversation (e.g. on logout) — messages are retained' })
+  @ApiOperation({ summary: 'Close the active conversation — messages are retained' })
   @ApiNoContent('Conversation closed')
   @ApiAuthErrors()
   async close(@UserId() userId: string): Promise<void> {

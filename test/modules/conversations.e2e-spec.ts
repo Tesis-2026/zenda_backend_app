@@ -65,15 +65,38 @@ describe('AI Chat / Conversations (contract — mocked, no DB)', () => {
   });
 
   it('POST /api/ai/chat → 201 with {conversationId, reply}', async () => {
-    sendMessage.execute.mockResolvedValue({ conversationId: 'conv-1', reply: 'Claro, te explico.' });
+    sendMessage.execute.mockResolvedValue({
+      conversationId: 'conv-1',
+      reply: 'Claro, te explico.',
+      answer: 'Claro, te explico.',
+      sources: [],
+      metadata: { agent: 'ZENDA', usedRag: true },
+    });
     await bootAuthed();
     const res = await request(app.getHttpServer())
       .post('/api/ai/chat')
       .set('Authorization', 'Bearer test')
-      .send({ message: '¿Cómo armo un presupuesto?' });
+      .send({ userId: fixtureUser.sub, message: '¿Cómo armo un presupuesto?' });
     // POST has no @HttpCode override → Nest's default 201 (the @ApiOk(200) is Swagger-only).
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ conversationId: 'conv-1', reply: expect.any(String) });
+    expect(sendMessage.execute).toHaveBeenCalledWith(fixtureUser.sub, '¿Cómo armo un presupuesto?');
+    expect(res.body).toMatchObject({
+      conversationId: 'conv-1',
+      reply: expect.any(String),
+      answer: expect.any(String),
+      sources: [],
+      metadata: { agent: 'ZENDA', usedRag: true },
+    });
+  });
+
+  it('POST /api/ai/chat → 403 when body userId does not match JWT user', async () => {
+    await bootAuthed();
+    const res = await request(app.getHttpServer())
+      .post('/api/ai/chat')
+      .set('Authorization', 'Bearer test')
+      .send({ userId: 'another-user', message: '¿Cómo armo un presupuesto?' });
+    expect(res.status).toBe(403);
+    expect(sendMessage.execute).not.toHaveBeenCalled();
   });
 
   it('POST /api/ai/chat → 400 when message is empty', async () => {
