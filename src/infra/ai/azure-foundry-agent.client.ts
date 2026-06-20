@@ -26,6 +26,7 @@ export interface RagAgentRequest {
   financialContext: string;
   message: string;
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  taskInstructions?: string;
 }
 
 export interface RagAgentResponse {
@@ -152,8 +153,7 @@ export class AzureFoundryAgentClient {
       await client.messages.create(thread.id, 'user', this.buildAgentInput(request), { abortSignal });
 
       const poller = client.runs.createAndPoll(thread.id, agentId, {
-        additionalInstructions:
-          'Usa la base documental de Zenda y el contexto financiero del usuario para responder de forma educativa, segura y personalizada. No solicites datos sensibles ni recomiendes inversiones especificas.',
+        additionalInstructions: request.taskInstructions?.trim() || this.defaultTaskInstructions(),
         pollingOptions: { intervalInMs: 1000 },
         abortSignal,
       });
@@ -259,24 +259,31 @@ export class AzureFoundryAgentClient {
   }
 
   private buildAgentInput(request: RagAgentRequest): string {
+    const taskInstructions = request.taskInstructions?.trim() || this.defaultTaskInstructions();
     const recentHistory = (request.conversationHistory ?? [])
       .slice(-6)
       .map((m) => `${m.role === 'user' ? 'Usuario' : 'Zenda'}: ${this.safeHistoryText(m.content)}`)
       .join('\n');
 
     return [
-      'Usa la base documental de Zenda y el contexto financiero del usuario para responder de forma educativa, segura y personalizada.',
-      'No solicites datos sensibles. No recomiendes inversiones especificas ni promesas de ganancia rapida.',
-      'Si la pregunta es de inversion riesgosa o enriquecimiento rapido, rechaza la recomendacion especifica y orienta a educacion financiera general.',
+      taskInstructions,
       '',
       request.financialContext,
       '',
       recentHistory ? `Historial reciente resumido:\n${recentHistory}\n` : '',
-      'Pregunta del usuario:',
+      'Solicitud del usuario:',
       request.message,
     ]
       .filter(Boolean)
       .join('\n');
+  }
+
+  private defaultTaskInstructions(): string {
+    return [
+      'Usa la base documental de Zenda y el contexto financiero del usuario para responder de forma educativa, segura y personalizada.',
+      'No solicites datos sensibles. No recomiendes inversiones especificas ni promesas de ganancia rapida.',
+      'Si la pregunta es de inversion riesgosa o enriquecimiento rapido, rechaza la recomendacion especifica y orienta a educacion financiera general.',
+    ].join('\n');
   }
 
   private safeHistoryText(value: string): string {

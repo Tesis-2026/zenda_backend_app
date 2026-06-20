@@ -4,6 +4,8 @@
 
 The backend endpoint `POST /api/ai/chat` connects the mobile app to the existing Azure AI Foundry Agent named `ZENDA`. That agent is expected to have File Search attached to the financial education document base.
 
+The personalized quiz endpoint `GET /api/education/quiz/personalized` also uses the same `ZENDA` agent. It sends a quiz-generation task prompt plus the user's aggregated profile/spending context, asks the agent for strict JSON, validates the questions/options/correct answers, stores them as `QuizQuestion` rows, and keeps the existing frontend response contract.
+
 The backend keeps the current Zenda architecture:
 
 1. Android/mobile app sends a chat message to the NestJS backend.
@@ -14,6 +16,16 @@ The backend keeps the current Zenda architecture:
 6. The agent uses its File Search/RAG document base.
 7. Backend stores the user message and assistant answer in `AiConversation` / `AiMessage`.
 8. Backend returns the answer, optional sources, and RAG metadata.
+
+For personalized quizzes:
+
+1. Android/mobile app requests `GET /api/education/quiz/personalized?language=es`.
+2. Backend enforces the existing daily limit of 5 personalized quizzes.
+3. Backend reads the user's profile and last 3 months of aggregated spending.
+4. Backend sends a quiz-specific prompt to the same Azure AI Foundry Agent.
+5. The agent uses its File Search/RAG document base and returns strict JSON.
+6. Backend validates and persists the generated questions.
+7. Backend returns `{ questions, attemptsRemainingToday }` with the same shape the app already consumes.
 
 ## Endpoint
 
@@ -53,6 +65,29 @@ Response:
 ```
 
 `reply` is preserved for the existing app contract. `answer`, `sources`, and `metadata` are the RAG contract fields.
+
+### Personalized Quiz Endpoint
+
+`GET /api/education/quiz/personalized?language=es`
+
+This endpoint uses the same `AZURE_AI_PROJECT_ENDPOINT`, `AZURE_AI_AGENT_NAME`, and Azure authentication settings as chat. It does not require `AZURE_OPENAI_ENDPOINT` or `AZURE_OPENAI_KEY` for quiz generation.
+
+The agent must return JSON matching:
+
+```json
+{
+  "questions": [
+    {
+      "text": "Pregunta",
+      "options": ["A) Opcion", "B) Opcion", "C) Opcion", "D) Opcion"],
+      "correctAnswer": "A) Opcion",
+      "difficulty": "BEGINNER"
+    }
+  ]
+}
+```
+
+`correctAnswer` must exactly match one of the returned `options`; otherwise the backend rejects that question before saving.
 
 ## Required Environment Variables
 
