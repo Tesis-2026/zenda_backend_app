@@ -25,9 +25,28 @@ export class PrismaConversationRepository implements IConversationRepository {
     return row ? this.toEntity(row) : null;
   }
 
+  async findLatestByUserId(userId: string): Promise<ConversationEntity | null> {
+    const row = await this.prisma.aiConversation.findFirst({
+      where: { userId },
+      orderBy: { startedAt: 'desc' },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
+    });
+    return row ? this.toEntity(row) : null;
+  }
+
   async getOrCreateActive(userId: string): Promise<ConversationEntity> {
     const existing = await this.findActiveByUserId(userId);
     if (existing) return existing;
+
+    const latest = await this.findLatestByUserId(userId);
+    if (latest) {
+      const reopened = await this.prisma.aiConversation.update({
+        where: { id: latest.id },
+        data: { status: AiConversationStatus.ACTIVE, endedAt: null },
+        include: { messages: { orderBy: { createdAt: 'asc' } } },
+      });
+      return this.toEntity(reopened);
+    }
 
     const created = await this.prisma.aiConversation.create({
       data: { userId, status: AiConversationStatus.ACTIVE },

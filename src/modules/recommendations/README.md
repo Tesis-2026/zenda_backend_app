@@ -24,7 +24,7 @@ AI advice bounded context. Two surfaces: (1) batch recommendations with a lifecy
 |--------|------|------|----------------------|-------------|
 | GET | `/ai/chat/active` | JWT | (global) | Get the active conversation + its message history |
 | POST | `/ai/chat` | JWT | **10** | Send a message; append to the active conversation; return assistant reply |
-| POST | `/ai/chat/close` | JWT | 10 | Close the active conversation (e.g. on logout); messages are retained |
+| POST | `/ai/chat/close` | JWT | 10 | Close the active conversation; messages are retained |
 
 For full request/response shapes see Swagger at `/api/docs` (tags: `Recommendations`, `AI Chat`).
 
