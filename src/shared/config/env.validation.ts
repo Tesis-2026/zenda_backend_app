@@ -85,6 +85,45 @@ export class EnvSchema {
   @IsString()
   AZURE_OPENAI_DEPLOYMENT?: string;
 
+  // ── Azure AI Foundry Agent RAG (optional until chat endpoint is used) ──
+  @IsOptional()
+  @IsString()
+  AZURE_AI_PROJECT_ENDPOINT?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_AI_AGENT_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_AI_AGENT_NAME?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_AI_AUTH_MODE?: string;
+
+  @IsOptional()
+  @IsBooleanString()
+  AZURE_AI_USE_MANAGED_IDENTITY?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_TENANT_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_CLIENT_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_CLIENT_SECRET?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1000)
+  @Max(120000)
+  AZURE_AI_AGENT_TIMEOUT_MS?: number;
+
   // ── SMTP (optional in dev/test; required-shape only when set) ────
   @IsOptional()
   @IsString()

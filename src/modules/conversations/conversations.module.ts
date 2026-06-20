@@ -6,6 +6,7 @@ import { PrismaConversationRepository } from './infrastructure/persistence/prism
 import { GetActiveConversationUseCase } from './application/use-cases/get-active-conversation.use-case';
 import { SendChatMessageUseCase } from './application/use-cases/send-chat-message.use-case';
 import { CloseActiveConversationUseCase } from './application/use-cases/close-active-conversation.use-case';
+import { FinancialContextService } from './application/services/financial-context.service';
 import { ChatController } from './interface/chat.controller';
 
 /**
@@ -27,6 +28,7 @@ import { ChatController } from './interface/chat.controller';
     GetActiveConversationUseCase,
     SendChatMessageUseCase,
     CloseActiveConversationUseCase,
+    FinancialContextService,
   ],
 })
 export class ConversationsModule {}

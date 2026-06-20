@@ -6,8 +6,8 @@ export class CloseActiveConversationUseCase {
   constructor(private readonly repo: IConversationRepository) {}
 
   /**
-   * Closes the user's active conversation (e.g. on logout). Messages are retained
-   * in the database — the conversation is simply marked CLOSED and no longer resumable.
+   * Closes the user's active conversation when the user explicitly wants a
+   * fresh chat. Messages are retained and can still be reopened later.
    */
   execute(userId: string): Promise<void> {
     return this.repo.closeActiveByUserId(userId);

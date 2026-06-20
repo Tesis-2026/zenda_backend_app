@@ -101,6 +101,7 @@ All endpoints require `Authorization: Bearer <token>` except `/auth/*`.
 | `POST` | `/api/goals/:id/contribute` | Contribute to a goal |
 | `DELETE` | `/api/goals/:id` | Soft-delete goal |
 | `GET` | `/api/summary/month` | Monthly financial summary |
+| `POST` | `/api/ai/chat` | Chat with the ZENDA Azure AI Foundry RAG agent |
 
 ---
 
@@ -143,3 +144,13 @@ Common infrastructure:
 ---
 
 See [`../SETUP.md`](../SETUP.md) for full environment setup instructions.
+
+---
+
+## Azure AI Foundry RAG Chat
+
+`POST /api/ai/chat` uses the existing authenticated conversation flow and calls the ZENDA Azure AI Foundry Agent with File Search enabled. The backend adds only an aggregated, non-sensitive financial context for the authenticated user.
+
+Current Microsoft Foundry agents are invoked by `AZURE_AI_AGENT_NAME` through the Responses API. `AZURE_AI_AGENT_ID` is only needed for classic assistants whose id starts with `asst_`.
+
+Detailed setup, privacy rules, and manual test cases are in [`docs/rag-integration.md`](docs/rag-integration.md).

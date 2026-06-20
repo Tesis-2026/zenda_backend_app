@@ -18,6 +18,17 @@ export default () => ({
     key: process.env.AZURE_OPENAI_KEY,
     deployment: process.env.AZURE_OPENAI_DEPLOYMENT ?? 'gpt-4o-mini',
   },
+  azureAiAgent: {
+    projectEndpoint: process.env.AZURE_AI_PROJECT_ENDPOINT,
+    agentId: process.env.AZURE_AI_AGENT_ID,
+    agentName: process.env.AZURE_AI_AGENT_NAME ?? 'ZENDA',
+    authMode: process.env.AZURE_AI_AUTH_MODE ?? 'default',
+    useManagedIdentity: process.env.AZURE_AI_USE_MANAGED_IDENTITY === 'true',
+    tenantId: process.env.AZURE_TENANT_ID,
+    clientId: process.env.AZURE_CLIENT_ID,
+    clientSecret: process.env.AZURE_CLIENT_SECRET,
+    timeoutMs: Number(process.env.AZURE_AI_AGENT_TIMEOUT_MS ?? 30000),
+  },
   email: {
     host: process.env.SMTP_HOST ?? 'smtp.example.com',
     port: Number(process.env.SMTP_PORT ?? 587),

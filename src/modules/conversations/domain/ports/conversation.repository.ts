@@ -5,6 +5,9 @@ export abstract class IConversationRepository {
   /** Returns the user's ACTIVE conversation with its messages, or null if none exists. */
   abstract findActiveByUserId(userId: string): Promise<ConversationEntity | null>;
 
+  /** Returns the most recent conversation for the user, even if it was closed. */
+  abstract findLatestByUserId(userId: string): Promise<ConversationEntity | null>;
+
   /** Returns the user's ACTIVE conversation, creating an empty one if none exists. */
   abstract getOrCreateActive(userId: string): Promise<ConversationEntity>;
 
