@@ -9,6 +9,14 @@ on:
       - main
   workflow_dispatch:
 
+# Serialize runs so two deploys never hit the App Service at once. Overlapping
+# OneDeploy calls return HTTP 409 Conflict (a deploy is already in progress) and
+# can leave a stuck deployment lock. Queue instead of cancel — cancelling a live
+# deploy mid-flight is what leaves the lock behind.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: windows-latest
