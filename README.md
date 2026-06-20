@@ -102,6 +102,7 @@ All endpoints require `Authorization: Bearer <token>` except `/auth/*`.
 | `DELETE` | `/api/goals/:id` | Soft-delete goal |
 | `GET` | `/api/summary/month` | Monthly financial summary |
 | `POST` | `/api/ai/chat` | Chat with the ZENDA Azure AI Foundry RAG agent |
+| `GET` | `/api/predictions/expenses` | Generate next-month expense prediction with the ZENDA Azure AI Foundry RAG agent |
 | `GET` | `/api/education/quiz/personalized` | Generate a personalized quiz with the ZENDA Azure AI Foundry RAG agent |
 
 ---
@@ -153,6 +154,8 @@ See [`../SETUP.md`](../SETUP.md) for full environment setup instructions.
 `POST /api/ai/chat` uses the existing authenticated conversation flow and calls the ZENDA Azure AI Foundry Agent with File Search enabled. The backend adds only an aggregated, non-sensitive financial context for the authenticated user.
 
 `GET /api/education/quiz/personalized` uses the same ZENDA agent with a quiz-generation prompt. It validates the JSON questions returned by the agent, saves them, and preserves the existing mobile contract.
+
+`GET /api/predictions/expenses` also uses the same ZENDA agent with a prediction prompt. It validates the JSON prediction returned by the agent, stores the forecast, and falls back to a local weighted statistical model if the agent is unavailable.
 
 Current Microsoft Foundry agents are invoked by `AZURE_AI_AGENT_NAME` through the Responses API. `AZURE_AI_AGENT_ID` is only needed for classic assistants whose id starts with `asst_`.
 

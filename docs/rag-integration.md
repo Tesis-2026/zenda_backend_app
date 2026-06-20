@@ -6,6 +6,8 @@ The backend endpoint `POST /api/ai/chat` connects the mobile app to the existing
 
 The personalized quiz endpoint `GET /api/education/quiz/personalized` also uses the same `ZENDA` agent. It sends a quiz-generation task prompt plus the user's aggregated profile/spending context, asks the agent for strict JSON, validates the questions/options/correct answers, stores them as `QuizQuestion` rows, and keeps the existing frontend response contract.
 
+The prediction endpoint `GET /api/predictions/expenses` uses the same `ZENDA` agent too. It sends a prediction-specific task prompt plus the user's last 3 months of aggregated income/expense context, asks for strict JSON, validates the forecast, persists it in `Prediction`, and falls back to a local weighted statistical model if the agent is unavailable.
+
 The backend keeps the current Zenda architecture:
 
 1. Android/mobile app sends a chat message to the NestJS backend.
@@ -26,6 +28,17 @@ For personalized quizzes:
 5. The agent uses its File Search/RAG document base and returns strict JSON.
 6. Backend validates and persists the generated questions.
 7. Backend returns `{ questions, attemptsRemainingToday }` with the same shape the app already consumes.
+
+For expense predictions:
+
+1. Android/mobile app requests `GET /api/predictions/expenses`.
+2. Backend requires at least 2 months with income or expense history.
+3. Backend reads the user's profile and last 3 months of aggregated income/expense data.
+4. Backend sends a prediction-specific prompt to the same Azure AI Foundry Agent.
+5. The agent uses its File Search/RAG document base and returns strict JSON.
+6. Backend validates the total, category breakdown, confidence, and narrative.
+7. Backend persists the forecast in `Prediction` and returns the existing prediction response shape.
+8. If the agent fails, backend uses a local weighted statistical fallback so the screen still works.
 
 ## Endpoint
 
@@ -88,6 +101,31 @@ The agent must return JSON matching:
 ```
 
 `correctAnswer` must exactly match one of the returned `options`; otherwise the backend rejects that question before saving.
+
+### Expense Prediction Endpoint
+
+`GET /api/predictions/expenses`
+
+This endpoint uses the same `AZURE_AI_PROJECT_ENDPOINT`, `AZURE_AI_AGENT_NAME`, and Azure authentication settings as chat. It does not require `AZURE_OPENAI_ENDPOINT` or `AZURE_OPENAI_KEY` for prediction generation.
+
+The agent must return JSON matching:
+
+```json
+{
+  "predictedTotal": 850.5,
+  "predictedByCategory": [
+    {
+      "categoryId": "category-id-from-context",
+      "categoryName": "Comida",
+      "amount": 390
+    }
+  ],
+  "confidenceLevel": "medium",
+  "narrative": "Explicacion breve en espanol."
+}
+```
+
+`predictedByCategory` is validated against the category ids/names provided in the aggregated context. Unknown categories are ignored before saving.
 
 ## Required Environment Variables
 

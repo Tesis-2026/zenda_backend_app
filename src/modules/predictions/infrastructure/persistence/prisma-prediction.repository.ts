@@ -102,7 +102,7 @@ export class PrismaPredictionRepository implements IPredictionRepository {
         }),
         this.prisma.transaction.groupBy({
           by: ['categoryId'],
-          where: { userId, occurredAt: { gte: from, lte: to }, deletedAt: null },
+          where: { userId, type: TransactionType.EXPENSE, occurredAt: { gte: from, lte: to }, deletedAt: null },
           _sum: { amount: true },
           _count: { id: true },
         }),
