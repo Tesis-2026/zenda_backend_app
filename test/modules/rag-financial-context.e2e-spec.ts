@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   AzureFoundryAgentClient,
   AzureFoundryAgentConfigurationError,
+  sanitizeAgentVisibleCitations,
 } from '../../src/infra/ai/azure-foundry-agent.client';
 import { FinancialContextService } from '../../src/modules/conversations/application/services/financial-context.service';
 import { createPrismaMock } from '../support/prisma.mock';
@@ -104,5 +105,15 @@ describe('RAG financial context (unit-style, mocked Prisma)', () => {
         message: '¿Cómo ahorro?',
       }),
     ).rejects.toBeInstanceOf(AzureFoundryAgentConfigurationError);
+  });
+
+  it('removes visible document citations from agent answers', () => {
+    const answer = sanitizeAgentVisibleCitations(
+      'Esto te ayudara a tener control real y avanzar en tu ahorro [3:04_ahorro_y_metas_financieras.md].\n\nTambien revisa tu presupuesto 【0:0†source】.',
+    );
+
+    expect(answer).toBe(
+      'Esto te ayudara a tener control real y avanzar en tu ahorro.\n\nTambien revisa tu presupuesto.',
+    );
   });
 });

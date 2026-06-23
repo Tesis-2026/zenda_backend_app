@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ApiHideProperty, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { sanitizeAgentVisibleCitations } from '../../../../infra/ai/azure-foundry-agent.client';
 import { ChatMessageEntity, ConversationEntity } from '../../domain/conversation.entity';
 
 export class SendChatMessageDto {
@@ -36,7 +37,10 @@ export class ChatMessageResponseDto {
     return {
       id: message.id,
       role: message.role,
-      content: message.content,
+      content:
+        message.role === 'assistant'
+          ? sanitizeAgentVisibleCitations(message.content)
+          : message.content,
       createdAt: message.createdAt.toISOString(),
     };
   }

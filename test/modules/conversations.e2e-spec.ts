@@ -39,7 +39,12 @@ describe('AI Chat / Conversations (contract — mocked, no DB)', () => {
       id: 'conv-1',
       messages: [
         { id: 'm1', role: 'user', content: '¿Cómo ahorro?', createdAt: NOW_DATE },
-        { id: 'm2', role: 'assistant', content: 'Empieza con la regla 50/30/20.', createdAt: NOW_DATE },
+        {
+          id: 'm2',
+          role: 'assistant',
+          content: 'Empieza con la regla 50/30/20 [3:04_ahorro_y_metas_financieras.md].',
+          createdAt: NOW_DATE,
+        },
       ],
     });
     await bootAuthed();
@@ -50,6 +55,10 @@ describe('AI Chat / Conversations (contract — mocked, no DB)', () => {
     expect(res.body).toMatchObject({ conversationId: 'conv-1' });
     expect(res.body.messages).toHaveLength(2);
     expect(res.body.messages[0]).toMatchObject({ role: 'user', content: expect.any(String) });
+    expect(res.body.messages[1]).toMatchObject({
+      role: 'assistant',
+      content: 'Empieza con la regla 50/30/20.',
+    });
     // createdAt is serialized to an ISO-8601 string in the response DTO.
     expect(typeof res.body.messages[0].createdAt).toBe('string');
   });
