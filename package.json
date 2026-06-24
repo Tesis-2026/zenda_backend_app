@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@azure/ai-agents": "^1.1.0",
+    "@azure/ai-form-recognizer": "^5.1.0",
     "@azure/ai-projects": "^2.2.0",
     "@azure/identity": "^4.13.1",
     "@nestjs/common": "^11.0.0",
@@ -44,6 +45,7 @@
     "class-validator": "^0.14.1",
     "firebase-admin": "^13.10.0",
     "helmet": "^8.1.0",
+    "multer": "^2.2.0",
     "nodemailer": "^8.0.4",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -58,6 +60,7 @@
     "@nestjs/testing": "^11.1.24",
     "@types/bcrypt": "^6.0.0",
     "@types/jest": "^29.5.14",
+    "@types/multer": "^2.1.0",
     "@types/node": "^22.0.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.3",

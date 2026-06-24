@@ -23,6 +23,8 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       id: row.id,
       userId: row.userId,
       categoryId: row.categoryId,
+      accountId: row.accountId ?? null,
+      toAccountId: row.toAccountId ?? null,
       type: row.type as TransactionType,
       amount: row.amount.toNumber(),
       currency: row.currency,
@@ -42,6 +44,8 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       id: row.id,
       userId: row.userId,
       categoryId: row.categoryId ?? null,
+      accountId: row.accountId ?? null,
+      toAccountId: row.toAccountId ?? null,
       type: row.type as TransactionType,
       amount: row.amount.toNumber(),
       currency: row.currency,
@@ -51,6 +55,8 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,
       category: row.category ?? null,
+      account: row.account ?? null,
+      toAccount: row.toAccount ?? null,
       suggestedCategoryId: row.suggestedCategoryId ?? null,
       aiConfidence: row.aiConfidence ? row.aiConfidence.toNumber() : null,
       categorySource: row.categorySource as CategorySource,
@@ -59,7 +65,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
 
   async create(params: {
     userId: string;
-    categoryId: string;
+    categoryId?: string | null;
+    accountId?: string | null;
+    toAccountId?: string | null;
     budgetId?: string | null;
     type: TransactionType;
     amount: number;
@@ -73,7 +81,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
     const row = await this.prisma.transaction.create({
       data: {
         userId: params.userId,
-        categoryId: params.categoryId,
+        categoryId: params.categoryId ?? null,
+        accountId: params.accountId ?? null,
+        toAccountId: params.toAccountId ?? null,
         budgetId: params.budgetId ?? null,
         type: params.type as PrismaTransactionType,
         amount: params.amount,
@@ -84,7 +94,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         aiConfidence: params.aiConfidence ?? null,
         categorySource: params.categorySource as PrismaCategorySource,
       },
-      include: { category: { select: { id: true, name: true, icon: true } } },
+      include: this.transactionInclude(),
     });
     return this.toTransactionWithCategory(row);
   }
@@ -99,6 +109,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         deletedAt: null,
         ...(filters.type && { type: filters.type as PrismaTransactionType }),
         ...(filters.categoryId && { categoryId: filters.categoryId }),
+        ...(filters.accountId && {
+          OR: [{ accountId: filters.accountId }, { toAccountId: filters.accountId }],
+        }),
         ...(filters.from || filters.to
           ? {
               occurredAt: {
@@ -120,7 +133,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         }),
       },
       orderBy: { occurredAt: filters.sort === 'asc' ? 'asc' : 'desc' },
-      include: { category: { select: { id: true, name: true, icon: true } } },
+      include: this.transactionInclude(),
       ...(filters.skip !== undefined && { skip: filters.skip }),
       take: filters.take ?? 100,
     });
@@ -137,7 +150,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
   async findByIdWithCategory(id: string, userId: string): Promise<TransactionWithCategory | null> {
     const row = await this.prisma.transaction.findFirst({
       where: { id, userId, deletedAt: null },
-      include: { category: { select: { id: true, name: true, icon: true } } },
+      include: this.transactionInclude(),
     });
     return row ? this.toTransactionWithCategory(row) : null;
   }
@@ -152,6 +165,8 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       where: { id },
       data: {
         ...(params.categoryId !== undefined && { categoryId: params.categoryId }),
+        ...(params.accountId !== undefined && { accountId: params.accountId }),
+        ...(params.toAccountId !== undefined && { toAccountId: params.toAccountId }),
         ...(params.type !== undefined && { type: params.type as PrismaTransactionType }),
         ...(params.amount !== undefined && { amount: params.amount }),
         ...(params.currency !== undefined && { currency: params.currency }),
@@ -162,7 +177,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
           categorySource: params.categorySource as PrismaCategorySource,
         }),
       },
-      include: { category: { select: { id: true, name: true, icon: true } } },
+      include: this.transactionInclude(),
     });
     return this.toTransactionWithCategory(row);
   }
@@ -187,5 +202,13 @@ export class PrismaTransactionRepository implements ITransactionRepository {
       if (!distinctDates.has(d.toISOString().slice(0, 10))) return false;
     }
     return true;
+  }
+
+  private transactionInclude() {
+    return {
+      category: { select: { id: true, name: true, icon: true } },
+      account: { select: { id: true, name: true, type: true, currency: true } },
+      toAccount: { select: { id: true, name: true, type: true, currency: true } },
+    };
   }
 }

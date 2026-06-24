@@ -9,6 +9,7 @@ import {
   SpendingContext,
   UserProfile,
 } from './AiProvider';
+import { classifyTransactionByRules } from './transaction-category-classifier';
 
 // Kept for local/offline development only.
 // In production, AzureFoundryProvider is the active implementation.
@@ -30,8 +31,8 @@ export class LocalRulesProvider implements AiProvider {
     return [];
   }
 
-  async classifyTransaction(_description: string, _amount: number): Promise<ClassificationResult> {
-    return { categoryName: 'Otros', confidence: 0 };
+  async classifyTransaction(description: string, amount: number): Promise<ClassificationResult> {
+    return classifyTransactionByRules(description, amount);
   }
 
   async chat(_messages: ChatMessage[], _userProfile?: UserProfile): Promise<string> {

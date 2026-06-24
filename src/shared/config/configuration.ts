@@ -29,6 +29,15 @@ export default () => ({
     clientSecret: process.env.AZURE_CLIENT_SECRET,
     timeoutMs: Number(process.env.AZURE_AI_AGENT_TIMEOUT_MS ?? 30000),
   },
+  azureDocumentIntelligence: {
+    endpoint: process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT,
+    key: process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY,
+    modelId:
+      process.env.AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID ?? 'prebuilt-receipt',
+    timeoutMs: Number(
+      process.env.AZURE_DOCUMENT_INTELLIGENCE_TIMEOUT_MS ?? 30000,
+    ),
+  },
   email: {
     host: process.env.SMTP_HOST ?? 'smtp.example.com',
     port: Number(process.env.SMTP_PORT ?? 587),

@@ -124,6 +124,24 @@ export class EnvSchema {
   @Max(120000)
   AZURE_AI_AGENT_TIMEOUT_MS?: number;
 
+  @IsOptional()
+  @IsString()
+  AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_DOCUMENT_INTELLIGENCE_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1000)
+  @Max(120000)
+  AZURE_DOCUMENT_INTELLIGENCE_TIMEOUT_MS?: number;
+
   // ── SMTP (optional in dev/test; required-shape only when set) ────
   @IsOptional()
   @IsString()

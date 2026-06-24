@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AiModule } from '../../infra/ai/ai.module';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
 import { SpendingAlertService } from '../../infra/spending-alert/spending-alert.service';
+import { AccountsModule } from '../accounts/accounts.module';
 import { BadgesModule } from '../badges/badges.module';
 import { BudgetsModule } from '../budgets/budgets.module';
 import { CategoriesModule } from '../categories/categories.module';
@@ -13,6 +14,7 @@ import { CreateTransactionUseCase } from './application/use-cases/create-transac
 import { ListTransactionsUseCase } from './application/use-cases/list-transactions.use-case';
 import { DeleteTransactionUseCase } from './application/use-cases/delete-transaction.use-case';
 import { GetTransactionUseCase } from './application/use-cases/get-transaction.use-case';
+import { ParseVoiceTransactionUseCase } from './application/use-cases/parse-voice-transaction.use-case';
 import { UpdateTransactionUseCase } from './application/use-cases/update-transaction.use-case';
 import { TransactionsController } from './interface/transactions.controller';
 
@@ -20,6 +22,7 @@ import { TransactionsController } from './interface/transactions.controller';
   imports: [
     PrismaModule,
     AiModule,
+    AccountsModule,
     CategoriesModule,
     BadgesModule,
     ChallengesModule,
@@ -33,6 +36,7 @@ import { TransactionsController } from './interface/transactions.controller';
     ListTransactionsUseCase,
     DeleteTransactionUseCase,
     GetTransactionUseCase,
+    ParseVoiceTransactionUseCase,
     UpdateTransactionUseCase,
     SpendingAlertService,
   ],

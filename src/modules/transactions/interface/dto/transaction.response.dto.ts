@@ -15,6 +15,23 @@ class TransactionCategoryDto {
   icon?: string | null;
 }
 
+class TransactionAccountDto {
+  @ApiProperty({ example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8' })
+  id!: string;
+
+  @ApiProperty({ example: 'Yape / Plin' })
+  name!: string;
+
+  @ApiProperty({
+    enum: ['CASH', 'BANK_ACCOUNT', 'DIGITAL_WALLET', 'CREDIT_CARD'],
+    example: 'DIGITAL_WALLET',
+  })
+  type!: string;
+
+  @ApiProperty({ example: 'PEN' })
+  currency!: string;
+}
+
 export class TransactionResponseDto {
   @ApiProperty({ example: '0403f4f8-f5e0-4f9b-b9e8-36c33320e8be' })
   id!: string;
@@ -25,8 +42,14 @@ export class TransactionResponseDto {
   @ApiPropertyOptional({ example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8' })
   categoryId?: string | null;
 
-  @ApiProperty({ enum: ['expense', 'income'], example: 'expense' })
-  type!: 'expense' | 'income';
+  @ApiPropertyOptional({ example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8' })
+  accountId?: string | null;
+
+  @ApiPropertyOptional({ example: '73ae7668-1c5f-4b7a-a16d-420a6a6a5b90' })
+  toAccountId?: string | null;
+
+  @ApiProperty({ enum: ['expense', 'income', 'transfer'], example: 'expense' })
+  type!: 'expense' | 'income' | 'transfer';
 
   @ApiProperty({ example: 'PEN' })
   currency!: string;
@@ -48,6 +71,12 @@ export class TransactionResponseDto {
 
   @ApiPropertyOptional({ type: () => TransactionCategoryDto })
   category?: TransactionCategoryDto | null;
+
+  @ApiPropertyOptional({ type: () => TransactionAccountDto })
+  account?: TransactionAccountDto | null;
+
+  @ApiPropertyOptional({ type: () => TransactionAccountDto })
+  toAccount?: TransactionAccountDto | null;
 
   @ApiPropertyOptional({
     description: 'UUID of the category the AI proposed at create time; null if no AI suggestion was made',

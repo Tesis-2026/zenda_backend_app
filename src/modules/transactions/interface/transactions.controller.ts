@@ -34,6 +34,7 @@ import { CreateTransactionResult, CreateTransactionUseCase } from '../applicatio
 import { ListTransactionsUseCase } from '../application/use-cases/list-transactions.use-case';
 import { DeleteTransactionUseCase } from '../application/use-cases/delete-transaction.use-case';
 import { GetTransactionUseCase } from '../application/use-cases/get-transaction.use-case';
+import { ParseVoiceTransactionUseCase } from '../application/use-cases/parse-voice-transaction.use-case';
 import { UpdateTransactionUseCase } from '../application/use-cases/update-transaction.use-case';
 import { TransactionWithCategory } from '../domain/ports/transaction.repository';
 import { SpendingAlertService } from '../../../infra/spending-alert/spending-alert.service';
@@ -43,6 +44,10 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { ListTransactionsDto } from './dto/list-transactions.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { TransactionResponseDto } from './dto/transaction.response.dto';
+import {
+  VoiceTransactionDraftRequestDto,
+  VoiceTransactionDraftResponseDto,
+} from './dto/voice-transaction-draft.dto';
 
 @ApiTags('Transactions')
 @ApiBearerAuth()
@@ -54,6 +59,7 @@ export class TransactionsController {
     private readonly listTransactions: ListTransactionsUseCase,
     private readonly deleteTransaction: DeleteTransactionUseCase,
     private readonly getTransaction: GetTransactionUseCase,
+    private readonly parseVoiceTransaction: ParseVoiceTransactionUseCase,
     private readonly updateTransaction: UpdateTransactionUseCase,
     @Inject(AI_PROVIDER) private readonly ai: AiProvider,
     private readonly analytics: AnalyticsService,
@@ -75,6 +81,23 @@ export class TransactionsController {
   ): Promise<{ categoryName: string; confidence: number }> {
     this.analytics.track(userId, 'classify_transaction', { description: dto.description });
     return this.ai.classifyTransaction(dto.description, dto.amount);
+  }
+
+  @Post('voice-draft')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @ApiOperation({ summary: 'Parse recognized speech into a transaction draft' })
+  @ApiOk(VoiceTransactionDraftResponseDto, 'Voice transaction draft')
+  @ApiValidationError()
+  @ApiAuthErrors()
+  async voiceDraft(
+    @UserId() userId: string,
+    @Body() dto: VoiceTransactionDraftRequestDto,
+  ): Promise<VoiceTransactionDraftResponseDto> {
+    this.analytics.track(userId, 'voice_transaction_draft', {
+      textLength: dto.text.length,
+    });
+    return this.parseVoiceTransaction.execute(dto);
   }
 
   @Post()
@@ -221,7 +244,9 @@ export class TransactionsController {
       id: t.id,
       userId: t.userId,
       categoryId: t.categoryId,
-      type: t.type.toLowerCase() as 'income' | 'expense',
+      accountId: t.accountId,
+      toAccountId: t.toAccountId,
+      type: t.type.toLowerCase() as 'income' | 'expense' | 'transfer',
       currency: t.currency,
       amount: t.amount,
       description: t.description ?? '',
@@ -229,6 +254,8 @@ export class TransactionsController {
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
       category: t.category,
+      account: t.account,
+      toAccount: t.toAccount,
       suggestedCategoryId: t.suggestedCategoryId,
       aiConfidence: t.aiConfidence,
       categorySource: t.categorySource,

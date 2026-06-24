@@ -17,6 +17,7 @@ import { AiModule } from './infra/ai/ai.module';
 import { AnalyticsModule } from './infra/analytics/analytics.module';
 import { FcmModule } from './infra/fcm/fcm.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
+import { AccountsModule } from './modules/accounts/accounts.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { BudgetsModule } from './modules/budgets/budgets.module';
@@ -25,6 +26,7 @@ import { InsightsModule } from './modules/insights/insights.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { ReceiptsModule } from './modules/receipts/receipts.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { EducationModule } from './modules/education/education.module';
 import { SurveysModule } from './modules/surveys/surveys.module';
@@ -53,6 +55,7 @@ import { UsersModule } from './modules/users/users.module';
     AiModule,
     AnalyticsModule,
     FcmModule,
+    AccountsModule,
     AuthModule,
     UsersModule,
     TransactionsModule,
@@ -63,6 +66,7 @@ import { UsersModule } from './modules/users/users.module';
     NotificationsModule,
     PredictionsModule,
     RecommendationsModule,
+    ReceiptsModule,
     ConversationsModule,
     EducationModule,
     SurveysModule,
