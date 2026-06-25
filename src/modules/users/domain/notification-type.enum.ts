@@ -10,6 +10,7 @@
  * — the matching string values are the mapping.
  */
 export enum NotificationType {
+  TRANSACTION_RECORDED = 'TRANSACTION_RECORDED',
   BUDGET_ALERT = 'BUDGET_ALERT',
   ANOMALY_ALERT = 'ANOMALY_ALERT',
   PREDICTION_READY = 'PREDICTION_READY',

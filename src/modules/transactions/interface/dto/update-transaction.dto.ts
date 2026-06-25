@@ -14,6 +14,11 @@ export class UpdateTransactionDto {
   @IsUUID('4')
   categoryId?: string;
 
+  @ApiPropertyOptional({ example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8' })
+  @IsOptional()
+  @IsUUID('4')
+  accountId?: string;
+
   @ApiPropertyOptional({ example: 'Veterinaria', maxLength: 40 })
   @IsOptional()
   @IsString()

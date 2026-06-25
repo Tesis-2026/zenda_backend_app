@@ -32,6 +32,14 @@ export class CreateTransactionDto {
   budgetId?: string;
 
   @ApiPropertyOptional({
+    description: 'Source/destination account UUID. Expense pays from this account; income is received in this account.',
+    example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8',
+  })
+  @IsOptional()
+  @IsUUID('4')
+  accountId?: string;
+
+  @ApiPropertyOptional({
     description:
       'Create and use a custom category for this transaction (cannot be sent with categoryId)',
     example: 'Veterinaria',

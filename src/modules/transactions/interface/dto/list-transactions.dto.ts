@@ -32,6 +32,11 @@ export class ListTransactionsDto {
   @IsUUID('4')
   categoryId?: string;
 
+  @ApiPropertyOptional({ example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8' })
+  @IsOptional()
+  @IsUUID('4')
+  accountId?: string;
+
   @ApiPropertyOptional({ description: 'Number of records to skip', example: 0 })
   @IsOptional()
   @Type(() => Number)

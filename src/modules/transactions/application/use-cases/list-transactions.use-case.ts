@@ -8,6 +8,7 @@ export interface ListTransactionsQuery {
   to?: Date;
   type?: TransactionType;
   categoryId?: string;
+  accountId?: string;
   skip?: number;
   take?: number;
   minAmount?: number;
@@ -26,6 +27,7 @@ export class ListTransactionsUseCase {
       to: query.to,
       type: query.type,
       categoryId: query.categoryId,
+      accountId: query.accountId,
       skip: query.skip,
       take: query.take,
       minAmount: query.minAmount,

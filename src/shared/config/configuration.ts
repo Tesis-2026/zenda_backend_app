@@ -1,3 +1,19 @@
+function normalizeFirebasePrivateKey(value?: string): string {
+  let key = (value ?? '').trim().replace(/\\n/g, '\n');
+
+  // dotenv already removes the outer quotes for normal values, but pasted
+  // Firebase JSON snippets sometimes leave an extra quote as part of the value.
+  for (let i = 0; i < 2; i++) {
+    const trimmed = key.trim();
+    const wrappedInDoubleQuotes = trimmed.startsWith('"') && trimmed.endsWith('"');
+    const wrappedInSingleQuotes = trimmed.startsWith("'") && trimmed.endsWith("'");
+    if (!wrappedInDoubleQuotes && !wrappedInSingleQuotes) break;
+    key = trimmed.slice(1, -1).trim();
+  }
+
+  return key;
+}
+
 export default () => ({
   app: {
     name: process.env.APP_NAME ?? 'ZENDA API',
@@ -29,6 +45,15 @@ export default () => ({
     clientSecret: process.env.AZURE_CLIENT_SECRET,
     timeoutMs: Number(process.env.AZURE_AI_AGENT_TIMEOUT_MS ?? 30000),
   },
+  azureDocumentIntelligence: {
+    endpoint: process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT,
+    key: process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY,
+    modelId:
+      process.env.AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID ?? 'prebuilt-receipt',
+    timeoutMs: Number(
+      process.env.AZURE_DOCUMENT_INTELLIGENCE_TIMEOUT_MS ?? 30000,
+    ),
+  },
   email: {
     host: process.env.SMTP_HOST ?? 'smtp.example.com',
     port: Number(process.env.SMTP_PORT ?? 587),
@@ -43,6 +68,6 @@ export default () => ({
     // and the inbox row is still written.
     projectId: process.env.FCM_PROJECT_ID ?? '',
     clientEmail: process.env.FCM_CLIENT_EMAIL ?? '',
-    privateKey: (process.env.FCM_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
+    privateKey: normalizeFirebasePrivateKey(process.env.FCM_PRIVATE_KEY),
   },
 });

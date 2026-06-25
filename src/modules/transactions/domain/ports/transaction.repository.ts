@@ -6,6 +6,8 @@ export interface TransactionWithCategory {
   id: string;
   userId: string;
   categoryId: string | null;
+  accountId: string | null;
+  toAccountId: string | null;
   type: TransactionType;
   amount: number;
   currency: string;
@@ -15,6 +17,8 @@ export interface TransactionWithCategory {
   updatedAt: Date;
   deletedAt: Date | null;
   category: { id: string; name: string; icon: string | null } | null;
+  account: { id: string; name: string; type: string; currency: string } | null;
+  toAccount: { id: string; name: string; type: string; currency: string } | null;
   suggestedCategoryId: string | null;
   aiConfidence: number | null;
   categorySource: CategorySource;
@@ -25,6 +29,7 @@ export interface TransactionFilters {
   to?: Date;
   type?: TransactionType;
   categoryId?: string;
+  accountId?: string;
   skip?: number;
   take?: number;
   minAmount?: number;
@@ -34,7 +39,9 @@ export interface TransactionFilters {
 }
 
 export interface UpdateTransactionParams {
-  categoryId?: string;
+  categoryId?: string | null;
+  accountId?: string | null;
+  toAccountId?: string | null;
   type?: TransactionType;
   amount?: number;
   currency?: string;
@@ -48,7 +55,9 @@ export interface UpdateTransactionParams {
 export abstract class ITransactionRepository {
   abstract create(params: {
     userId: string;
-    categoryId: string;
+    categoryId?: string | null;
+    accountId?: string | null;
+    toAccountId?: string | null;
     budgetId?: string | null;
     type: TransactionType;
     amount: number;
