@@ -61,6 +61,7 @@ enum SurveyType {
 }
 
 enum NotificationType {
+  TRANSACTION_RECORDED
   BUDGET_ALERT
   ANOMALY_ALERT
   PREDICTION_READY

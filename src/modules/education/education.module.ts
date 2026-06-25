@@ -13,11 +13,12 @@ import { MarkReadTopicUseCase } from './application/use-cases/mark-read-topic.us
 import { GetQuizUseCase } from './application/use-cases/get-quiz.use-case';
 import { SubmitQuizUseCase } from './application/use-cases/submit-quiz.use-case';
 import { GetPersonalizedQuizUseCase } from './application/use-cases/get-personalized-quiz.use-case';
-import { EducationController, PersonalizedQuizController } from './interface/education.controller';
+import { GetPersonalizedLearningPathUseCase } from './application/use-cases/get-personalized-learning-path.use-case';
+import { EducationController, PersonalizedLearningPathController, PersonalizedQuizController } from './interface/education.controller';
 
 @Module({
   imports: [PrismaModule, AiModule, BadgesModule],
-  controllers: [EducationController, PersonalizedQuizController],
+  controllers: [EducationController, PersonalizedQuizController, PersonalizedLearningPathController],
   providers: [
     { provide: IEducationRepository, useClass: PrismaEducationRepository },
     {
@@ -31,6 +32,7 @@ import { EducationController, PersonalizedQuizController } from './interface/edu
     GetQuizUseCase,
     SubmitQuizUseCase,
     GetPersonalizedQuizUseCase,
+    GetPersonalizedLearningPathUseCase,
   ],
   exports: [IEducationRepository],
 })

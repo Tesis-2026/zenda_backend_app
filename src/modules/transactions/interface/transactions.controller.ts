@@ -117,6 +117,22 @@ export class TransactionsController {
       categoryId: dto.categoryId ?? null,
     });
 
+    if (dto.type === TransactionType.EXPENSE) {
+      this.sendNotification
+        .execute({
+          userId,
+          type: 'TRANSACTION_RECORDED',
+          title: 'Gasto registrado',
+          body: 'Genial, sigue asi registrando tus gastos a lo largo del dia.',
+          data: {
+            transactionId: result.id,
+            amount: String(result.amount),
+            currency: result.currency,
+          },
+        })
+        .catch(() => null);
+    }
+
     // US-016: check spending anomaly (>20% over 3-month category average)
     const anomalyAlert =
       dto.type === TransactionType.EXPENSE && result.categoryId
