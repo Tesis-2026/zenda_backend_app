@@ -14,6 +14,14 @@ datasource db {
 enum TransactionType {
   INCOME
   EXPENSE
+  TRANSFER
+}
+
+enum AccountType {
+  CASH
+  BANK_ACCOUNT
+  DIGITAL_WALLET
+  CREDIT_CARD
 }
 
 enum CategoryType {
@@ -50,9 +58,11 @@ enum SurveyType {
   PRE
   POST
   SUS
+  SATISFACTION
 }
 
 enum NotificationType {
+  TRANSACTION_RECORDED
   BUDGET_ALERT
   ANOMALY_ALERT
   PREDICTION_READY
@@ -145,6 +155,7 @@ model User {
 
   // Relations
   categories        Category[]
+  accounts          Account[]
   transactions      Transaction[]
   savingsGoals      SavingsGoal[]
   budgets           Budget[]
@@ -196,10 +207,35 @@ model Category {
   @@index([name])
 }
 
+model Account {
+  id             String      @id @default(uuid()) @db.Uuid
+  userId         String      @db.Uuid
+  name           String
+  type           AccountType
+  currency       String      @default("PEN")
+  openingBalance Decimal     @default(0) @db.Decimal(12, 2)
+  creditLimit    Decimal?    @db.Decimal(12, 2)
+  institution    String?
+  isDefault      Boolean     @default(false)
+
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceTransactions      Transaction[] @relation("TransactionSourceAccount")
+  destinationTransactions Transaction[] @relation("TransactionDestinationAccount")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([userId, type, deletedAt])
+  @@index([userId, isDefault])
+}
+
 model Transaction {
   id          String          @id @default(uuid()) @db.Uuid
   userId      String          @db.Uuid
   categoryId  String?         @db.Uuid
+  accountId   String?         @db.Uuid
+  toAccountId String?         @db.Uuid
   // Budget this transaction draws from (expense) or adds to (income). Chosen by
   // the user, independent of the category. Null = not linked to a budget.
   budgetId    String?         @db.Uuid
@@ -220,6 +256,8 @@ model Transaction {
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   category          Category? @relation("TransactionCategory", fields: [categoryId], references: [id], onDelete: SetNull)
   suggestedCategory Category? @relation("TransactionSuggestedCategory", fields: [suggestedCategoryId], references: [id], onDelete: SetNull)
+  account           Account?  @relation("TransactionSourceAccount", fields: [accountId], references: [id], onDelete: SetNull)
+  toAccount         Account?  @relation("TransactionDestinationAccount", fields: [toAccountId], references: [id], onDelete: SetNull)
   budget            Budget?   @relation(fields: [budgetId], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now())
@@ -230,6 +268,8 @@ model Transaction {
   @@index([userId, categoryId])
   @@index([userId, type, occurredAt])
   @@index([userId, categorySource])
+  @@index([userId, accountId, occurredAt])
+  @@index([userId, toAccountId, occurredAt])
   @@index([budgetId])
 }
 
@@ -674,11 +714,18 @@ model AiMessage {
   conversationId String         @db.Uuid
   role           AiMessageRole
   content        String
+  feedbackRating Int?
+  feedbackHelpful Boolean?
+  feedbackClear Boolean?
+  feedbackPersonalized Boolean?
+  feedbackComment String?
+  feedbackAt DateTime?
   conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   createdAt      DateTime       @default(now())
 
   @@index([conversationId, createdAt])
+  @@index([feedbackAt])
 }
 
 // ─────────────────────────────────────────────────────────────────

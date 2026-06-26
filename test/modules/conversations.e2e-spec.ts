@@ -9,12 +9,13 @@ import { CloseActiveConversationUseCase } from '../../src/modules/conversations/
 
 describe('AI Chat / Conversations (contract — mocked, no DB)', () => {
   let app: INestApplication;
+  let prisma: any;
   const getActive = { execute: jest.fn() };
   const sendMessage = { execute: jest.fn() };
   const closeActive = { execute: jest.fn() };
 
   async function bootAuthed() {
-    ({ app } = await createTestApp({
+    ({ app, prisma } = await createTestApp({
       user: fixtureUser,
       overrides: [
         { provide: GetActiveConversationUseCase, useValue: getActive },
@@ -39,7 +40,12 @@ describe('AI Chat / Conversations (contract — mocked, no DB)', () => {
       id: 'conv-1',
       messages: [
         { id: 'm1', role: 'user', content: '¿Cómo ahorro?', createdAt: NOW_DATE },
-        { id: 'm2', role: 'assistant', content: 'Empieza con la regla 50/30/20.', createdAt: NOW_DATE },
+        {
+          id: 'm2',
+          role: 'assistant',
+          content: 'Empieza con la regla 50/30/20 [3:04_ahorro_y_metas_financieras.md].',
+          createdAt: NOW_DATE,
+        },
       ],
     });
     await bootAuthed();
@@ -50,6 +56,10 @@ describe('AI Chat / Conversations (contract — mocked, no DB)', () => {
     expect(res.body).toMatchObject({ conversationId: 'conv-1' });
     expect(res.body.messages).toHaveLength(2);
     expect(res.body.messages[0]).toMatchObject({ role: 'user', content: expect.any(String) });
+    expect(res.body.messages[1]).toMatchObject({
+      role: 'assistant',
+      content: 'Empieza con la regla 50/30/20.',
+    });
     // createdAt is serialized to an ISO-8601 string in the response DTO.
     expect(typeof res.body.messages[0].createdAt).toBe('string');
   });
@@ -67,6 +77,7 @@ describe('AI Chat / Conversations (contract — mocked, no DB)', () => {
   it('POST /api/ai/chat → 201 with {conversationId, reply}', async () => {
     sendMessage.execute.mockResolvedValue({
       conversationId: 'conv-1',
+      assistantMessageId: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8',
       reply: 'Claro, te explico.',
       answer: 'Claro, te explico.',
       sources: [],
@@ -82,11 +93,41 @@ describe('AI Chat / Conversations (contract — mocked, no DB)', () => {
     expect(sendMessage.execute).toHaveBeenCalledWith(fixtureUser.sub, '¿Cómo armo un presupuesto?');
     expect(res.body).toMatchObject({
       conversationId: 'conv-1',
+      assistantMessageId: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8',
       reply: expect.any(String),
       answer: expect.any(String),
       sources: [],
       metadata: { agent: 'ZENDA', usedRag: true },
     });
+  });
+
+  it('POST /api/ai/chat/messages/:id/feedback returns 201 and stores rating', async () => {
+    await bootAuthed();
+    prisma.aiMessage.findFirst.mockResolvedValue({
+      id: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8',
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(
+        '/api/ai/chat/messages/8f87bc0f-f046-4e90-bbf9-ed18ed1699a8/feedback',
+      )
+      .set('Authorization', 'Bearer test')
+      .send({
+        rating: 5,
+        helpful: true,
+        clear: true,
+        personalized: true,
+        comment: 'Fue concreto y útil.',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ accepted: true });
+    expect(prisma.aiMessage.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8' },
+        data: expect.objectContaining({ feedbackRating: 5 }),
+      }),
+    );
   });
 
   it('POST /api/ai/chat → 403 when body userId does not match JWT user', async () => {

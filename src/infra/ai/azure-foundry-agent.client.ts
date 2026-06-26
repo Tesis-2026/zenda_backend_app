@@ -43,6 +43,18 @@ export interface RagAgentResponse {
   };
 }
 
+export function sanitizeAgentVisibleCitations(value: string): string {
+  return value
+    .replace(/\s*【[^】]*(?:source|fuente|citation|cita|†)[^】]*】/gi, '')
+    .replace(/\s*\[[^\]\n]*(?:\.md|\.pdf|\.docx|\.txt)[^\]\n]*\]/gi, '')
+    .replace(/\s*\[\s*(?:source|fuente|citation|cita)\s*[:\d\w ._-]*\]/gi, '')
+    .replace(/[ \t]+([.,;:!?])/g, '$1')
+    .replace(/\(\s*\)/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export class AzureFoundryAgentConfigurationError extends Error {
   constructor(message: string) {
     super(message);
@@ -281,9 +293,16 @@ export class AzureFoundryAgentClient {
   private defaultTaskInstructions(): string {
     return [
       'Usa la base documental de Zenda y el contexto financiero del usuario para responder de forma educativa, segura y personalizada.',
+      'Responde en espanol claro con 100 a 150 palabras como maximo. Si el tema es complejo, resume lo esencial y ofrece continuar.',
+      'Usa parrafos cortos o hasta 3 bullets. Evita respuestas largas, listas extensas y explicaciones enciclopedicas.',
+      'No incluyas citas visibles, nombres de archivos, marcadores entre corchetes ni referencias tipo [1:archivo.md] en el texto. Las fuentes se devuelven solo como metadata.',
       'No solicites datos sensibles. No recomiendes inversiones especificas ni promesas de ganancia rapida.',
       'Si la pregunta es de inversion riesgosa o enriquecimiento rapido, rechaza la recomendacion especifica y orienta a educacion financiera general.',
     ].join('\n');
+  }
+
+  private sanitizeAgentAnswer(value: string): string {
+    return sanitizeAgentVisibleCitations(value);
   }
 
   private safeHistoryText(value: string): string {
@@ -328,7 +347,7 @@ export class AzureFoundryAgentClient {
       (part): part is MessageTextContent => part.type === 'text',
     );
 
-    const answer = textParts.map((part) => part.text.value).join('\n').trim();
+    const answer = this.sanitizeAgentAnswer(textParts.map((part) => part.text.value).join('\n'));
     const sources = textParts.flatMap((part) =>
       part.text.annotations.flatMap((annotation) => this.toSource(annotation)),
     );
@@ -358,7 +377,7 @@ export class AzureFoundryAgentClient {
     const textParts = Array.isArray(output)
       ? output.flatMap((item) => this.extractResponseTextParts(item))
       : [];
-    const answer = (outputText || textParts.map((part) => part.text).join('\n')).trim();
+    const answer = this.sanitizeAgentAnswer(outputText || textParts.map((part) => part.text).join('\n'));
     const sources = textParts.flatMap((part) =>
       part.annotations.flatMap((annotation) => this.toFoundrySource(annotation)),
     );

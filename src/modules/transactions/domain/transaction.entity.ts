@@ -7,7 +7,9 @@ export class TransactionEntity {
   constructor(
     readonly id: string,
     readonly userId: string,
-    readonly categoryId: string,
+    readonly categoryId: string | null,
+    readonly accountId: string | null,
+    readonly toAccountId: string | null,
     readonly type: TransactionType,
     readonly amount: number,
     readonly currency: string,
@@ -25,7 +27,9 @@ export class TransactionEntity {
   static reconstitute(params: {
     id: string;
     userId: string;
-    categoryId: string;
+    categoryId: string | null;
+    accountId: string | null;
+    toAccountId: string | null;
     type: TransactionType;
     amount: number;
     currency: string;
@@ -42,6 +46,8 @@ export class TransactionEntity {
       params.id,
       params.userId,
       params.categoryId,
+      params.accountId,
+      params.toAccountId,
       params.type,
       params.amount,
       params.currency,

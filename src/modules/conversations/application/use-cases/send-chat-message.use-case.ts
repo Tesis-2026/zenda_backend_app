@@ -5,6 +5,7 @@ import { FinancialContextService } from '../services/financial-context.service';
 
 export interface ChatReply {
   conversationId: string;
+  assistantMessageId: string;
   reply: string;
   answer: string;
   sources: RagAgentSource[];
@@ -47,7 +48,11 @@ export class SendChatMessageUseCase {
         })),
       });
 
-      await this.repo.appendMessage(conversation.id, 'assistant', ragResponse.answer);
+      const assistantMessage = await this.repo.appendMessage(
+        conversation.id,
+        'assistant',
+        ragResponse.answer,
+      );
       this.logger.log(
         JSON.stringify({
           userId,
@@ -60,6 +65,7 @@ export class SendChatMessageUseCase {
 
       return {
         conversationId: conversation.id,
+        assistantMessageId: assistantMessage.id,
         reply: ragResponse.answer,
         answer: ragResponse.answer,
         sources: ragResponse.sources,

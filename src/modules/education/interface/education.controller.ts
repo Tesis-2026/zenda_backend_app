@@ -10,10 +10,12 @@ import { MarkReadTopicUseCase } from '../application/use-cases/mark-read-topic.u
 import { GetQuizUseCase } from '../application/use-cases/get-quiz.use-case';
 import { SubmitQuizUseCase } from '../application/use-cases/submit-quiz.use-case';
 import { GetPersonalizedQuizUseCase } from '../application/use-cases/get-personalized-quiz.use-case';
+import { GetPersonalizedLearningPathUseCase } from '../application/use-cases/get-personalized-learning-path.use-case';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { TopicResponseDto } from './dto/topic.response.dto';
 import { QuizResponseDto, QuizSubmitResponseDto } from './dto/quiz-response.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
+import { PersonalizedLearningPathResponseDto } from './dto/learning-path-response.dto';
 
 @ApiTags('Education')
 @ApiBearerAuth()
@@ -149,5 +151,38 @@ export class PersonalizedQuizController {
     const result = await this.submitQuiz.execute({ topicId: 'personalized', answers: dto.answers });
     this.analytics.track(userId, 'submit_quiz_personalized', { score: result.score });
     return result;
+  }
+}
+
+@ApiTags('Education')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('education/learning-path')
+export class PersonalizedLearningPathController {
+  constructor(
+    private readonly getPersonalizedLearningPath: GetPersonalizedLearningPathUseCase,
+    private readonly analytics: AnalyticsService,
+  ) {}
+
+  @Get('personalized')
+  @ApiOperation({ summary: 'Generate a personalized learning path with app topics and AI quiz steps' })
+  @ApiQuery({ name: 'language', required: false, enum: ['en', 'es'] })
+  @ApiOk(PersonalizedLearningPathResponseDto, 'Personalized learning path')
+  @ApiAuthErrors()
+  async personalized(
+    @UserId() userId: string,
+    @Query('language') language = 'es',
+  ): Promise<PersonalizedLearningPathResponseDto> {
+    const lang = language === 'en' ? 'en' : 'es';
+    const result = await this.getPersonalizedLearningPath.execute({
+      userId,
+      language: lang,
+    });
+    this.analytics.track(userId, 'learning_path_personalized', {
+      language: lang,
+      source: result.source,
+      steps: result.steps.length,
+    });
+    return PersonalizedLearningPathResponseDto.from(result);
   }
 }

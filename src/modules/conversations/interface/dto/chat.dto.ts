@@ -1,5 +1,15 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { ApiHideProperty, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { sanitizeAgentVisibleCitations } from '../../../../infra/ai/azure-foundry-agent.client';
 import { ChatMessageEntity, ConversationEntity } from '../../domain/conversation.entity';
 
 export class SendChatMessageDto {
@@ -36,7 +46,10 @@ export class ChatMessageResponseDto {
     return {
       id: message.id,
       role: message.role,
-      content: message.content,
+      content:
+        message.role === 'assistant'
+          ? sanitizeAgentVisibleCitations(message.content)
+          : message.content,
       createdAt: message.createdAt.toISOString(),
     };
   }
@@ -81,6 +94,12 @@ export class ChatReplyResponseDto {
   @ApiProperty()
   conversationId!: string;
 
+  @ApiProperty({
+    description:
+      'Persisted assistant message id, used to evaluate the AI answer',
+  })
+  assistantMessageId!: string;
+
   @ApiProperty({ description: 'The assistant reply' })
   reply!: string;
 
@@ -111,4 +130,43 @@ export class ChatReplyResponseDto {
     responseId?: string;
     remoteConversationId?: string;
   };
+}
+
+export class SubmitChatFeedbackDto {
+  @ApiProperty({
+    description: 'User rating for the assistant answer, from 1 to 5',
+    minimum: 1,
+    maximum: 5,
+    example: 4,
+  })
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating!: number;
+
+  @ApiPropertyOptional({ description: 'Whether the answer was useful' })
+  @IsOptional()
+  @IsBoolean()
+  helpful?: boolean;
+
+  @ApiPropertyOptional({ description: 'Whether the answer was clear' })
+  @IsOptional()
+  @IsBoolean()
+  clear?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether the answer felt personalized to the user context',
+  })
+  @IsOptional()
+  @IsBoolean()
+  personalized?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Optional qualitative comment for the research pilot',
+    maxLength: 1000,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  comment?: string;
 }

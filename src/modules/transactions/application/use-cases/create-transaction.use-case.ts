@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { BadgesFacade } from '../../../badges/application/facades/badges.facade';
 import { ChallengesFacade } from '../../../challenges/application/facades/challenges.facade';
 import { CategoriesFacade } from '../../../categories/application/facades/categories.facade';
+import { AccountsService } from '../../../accounts/application/accounts.service';
 import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 import { deriveCategorySource } from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
@@ -10,6 +11,7 @@ import { ITransactionRepository, TransactionWithCategory } from '../../domain/po
 export interface CreateTransactionCommand {
   userId: string;
   categoryId?: string;
+  accountId?: string;
   budgetId?: string;
   newCategoryName?: string;
   amount: number;
@@ -31,6 +33,7 @@ export class CreateTransactionUseCase {
   constructor(
     private readonly repo: ITransactionRepository,
     private readonly categories: CategoriesFacade,
+    private readonly accounts: AccountsService,
     private readonly badges: BadgesFacade,
     private readonly challenges: ChallengesFacade,
     private readonly auditLog: AuditLogService,
@@ -54,11 +57,23 @@ export class CreateTransactionUseCase {
       throw new BadRequestException('aiConfidence must be between 0 and 1');
     }
 
-    const category = await this.categories.resolve({
-      userId: cmd.userId,
-      categoryId: cmd.categoryId,
-      newCategoryName: cmd.newCategoryName,
-    });
+    if (cmd.type === TransactionType.TRANSFER) {
+      throw new BadRequestException('Use /accounts/transfer to move money between accounts');
+    }
+
+    const [category, account] = await Promise.all([
+      this.categories.resolve({
+        userId: cmd.userId,
+        categoryId: cmd.categoryId,
+        newCategoryName: cmd.newCategoryName,
+      }),
+      this.accounts.resolveAccountForTransaction({
+        userId: cmd.userId,
+        accountId: cmd.accountId,
+        type: cmd.type,
+        description: cmd.description,
+      }),
+    ]);
 
     const categorySource = deriveCategorySource({
       suggestedCategoryId: cmd.suggestedCategoryId,
@@ -74,6 +89,7 @@ export class CreateTransactionUseCase {
     const tx = await this.repo.create({
       userId: cmd.userId,
       categoryId: category.id,
+      accountId: account.id,
       budgetId,
       type: cmd.type,
       amount: cmd.amount,
@@ -105,6 +121,7 @@ export class CreateTransactionUseCase {
         amount: tx.amount,
         currency: tx.currency,
         categoryId: tx.categoryId,
+        accountId: tx.accountId,
         categorySource: tx.categorySource,
         occurredAt: tx.occurredAt.toISOString(),
       },

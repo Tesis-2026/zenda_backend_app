@@ -8,9 +8,9 @@ import {
   NOTIFICATION_USER_PORT,
 } from '../domain/ports/notification-user.port';
 
-// Default time-of-day when a user has not set `dailyReminderAt`. Kept in 24h
-// HH format because the hourly cron runs at minute 0.
-const DEFAULT_DAILY_HOUR = 20;
+// Default time-of-day when a user has not set `dailyReminderAt`.
+// Stored and compared as HH:mm in the server's local timezone.
+const DEFAULT_DAILY_REMINDER_AT = '21:30';
 
 // Reads either `durationDays` or `periodDays` from a Challenge.criteriaJson
 // payload (B36 derivation rule). Returns null when neither is a positive number.
@@ -41,20 +41,21 @@ export class NotificationsScheduleService {
   ) {}
 
   // ── DAILY_REMINDER ─────────────────────────────────────────────────────────
-  // Runs every hour at :00. Each invocation finds users whose `dailyReminderAt`
-  // matches the current hour (or default 20:00 when unset) AND have not
+  // Runs every minute. Each invocation finds users whose `dailyReminderAt`
+  // matches the current HH:mm (or default 21:30 when unset) AND have not
   // recorded a transaction today, then sends one reminder.
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_MINUTE)
   async runDailyReminder(): Promise<void> {
     const now = new Date();
-    const currentHourStr = String(now.getHours()).padStart(2, '0') + ':00';
-    const isDefaultHour = now.getHours() === DEFAULT_DAILY_HOUR;
+    const currentTimeStr =
+      String(now.getHours()).padStart(2, '0') +
+      ':' +
+      String(now.getMinutes()).padStart(2, '0');
 
     const eligible = await this.userPort.listEligibleUsers({ type: 'DAILY_REMINDER' });
 
     const targetUsers = eligible.filter((u) => {
-      if (u.dailyReminderAt) return u.dailyReminderAt === currentHourStr;
-      return isDefaultHour;
+      return (u.dailyReminderAt ?? DEFAULT_DAILY_REMINDER_AT) === currentTimeStr;
     });
 
     if (targetUsers.length === 0) return;

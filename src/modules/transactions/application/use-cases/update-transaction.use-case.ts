@@ -3,6 +3,7 @@ import { ITransactionRepository, TransactionWithCategory, UpdateTransactionParam
 import { CategorySource, deriveCategorySource } from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { CategoriesFacade } from '../../../categories/application/facades/categories.facade';
+import { AccountsService } from '../../../accounts/application/accounts.service';
 import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 
 export interface UpdateTransactionCommand {
@@ -10,6 +11,7 @@ export interface UpdateTransactionCommand {
   userId: string;
   categoryId?: string;
   newCategoryName?: string;
+  accountId?: string;
   type?: TransactionType;
   amount?: number;
   currency?: string;
@@ -22,6 +24,7 @@ export class UpdateTransactionUseCase {
   constructor(
     private readonly repo: ITransactionRepository,
     private readonly categories: CategoriesFacade,
+    private readonly accounts: AccountsService,
     private readonly auditLog: AuditLogService,
   ) {}
 
@@ -62,10 +65,23 @@ export class UpdateTransactionUseCase {
     // makes the transaction an income (or it already is one), clear any
     // (possibly stale) budget link so income is never coupled to a budget.
     const effectiveType = cmd.type ?? existing.type;
+    if (effectiveType === TransactionType.TRANSFER) {
+      throw new BadRequestException('Transfers must be updated through account-specific flow');
+    }
     const clearBudget = effectiveType === TransactionType.INCOME;
+
+    const account = cmd.accountId
+      ? await this.accounts.resolveAccountForTransaction({
+          userId: cmd.userId,
+          accountId: cmd.accountId,
+          type: effectiveType,
+          description: cmd.description ?? existing.description,
+        })
+      : undefined;
 
     const params: UpdateTransactionParams = {
       categoryId,
+      accountId: account?.id,
       type: cmd.type,
       amount: cmd.amount,
       currency: cmd.currency,

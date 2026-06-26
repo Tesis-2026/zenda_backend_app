@@ -1,4 +1,5 @@
 export type NotificationKind =
+  | 'TRANSACTION_RECORDED'
   | 'BUDGET_ALERT'
   | 'ANOMALY_ALERT'
   | 'PREDICTION_READY'
@@ -7,6 +8,7 @@ export type NotificationKind =
   | 'BADGE_EARNED';
 
 export const ALL_NOTIFICATION_KINDS: readonly NotificationKind[] = [
+  'TRANSACTION_RECORDED',
   'BUDGET_ALERT',
   'ANOMALY_ALERT',
   'PREDICTION_READY',
