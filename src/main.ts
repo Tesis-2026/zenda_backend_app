@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AppLogger } from './shared/logger/app-logger.service';
+import { assignCleanOperationIds } from './shared/swagger/operation-id';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -60,6 +61,7 @@ async function bootstrap() {
       .addBearerAuth()
       .build(),
   );
+  assignCleanOperationIds(document);
   SwaggerModule.setup('api/docs', app, document);
 
   // Azure App Service (Windows/iisnode) injects PORT as a named pipe string
