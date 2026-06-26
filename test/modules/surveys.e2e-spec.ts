@@ -24,7 +24,9 @@ describe('Surveys (contract — mocked, no DB)', () => {
 
   it('GET /api/surveys/pre without a token → 401', async () => {
     ({ app } = await createTestApp());
-    expect((await request(app.getHttpServer()).get('/api/surveys/pre')).status).toBe(401);
+    expect(
+      (await request(app.getHttpServer()).get('/api/surveys/pre')).status,
+    ).toBe(401);
   });
 
   it('GET /api/surveys/pre → 404 when the pre-survey is not seeded', async () => {
@@ -45,7 +47,11 @@ describe('Surveys (contract — mocked, no DB)', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ type: 'PRE' });
     expect(res.body.questions).toHaveLength(2);
-    expect(res.body.questions[0]).toMatchObject({ id: 'sq1', order: 1, text: expect.any(String) });
+    expect(res.body.questions[0]).toMatchObject({
+      id: 'sq1',
+      order: 1,
+      text: expect.any(String),
+    });
     // The answer key is never leaked to the client.
     expect(res.body.questions[0]).not.toHaveProperty('correctAnswer');
   });
@@ -91,6 +97,112 @@ describe('Surveys (contract — mocked, no DB)', () => {
     expect(res.body).toHaveProperty('susScore');
     expect(res.body).toHaveProperty('grade');
     expect(typeof res.body.susScore).toBe('number');
+  });
+
+  it('GET /api/surveys/satisfaction → 200 with Likert and open questions', async () => {
+    await bootAuthed();
+    prisma.survey.findFirst.mockResolvedValue(
+      makeSurvey('SATISFACTION', {
+        questionsJson: [
+          {
+            id: 'sat1',
+            order: 1,
+            text: 'La app me ayudó a entender mejor mis gastos.',
+            options: ['1', '2', '3', '4', '5'],
+            correctAnswer: null,
+          },
+          {
+            id: 'sat8',
+            order: 8,
+            text: '¿Qué funcionalidad te ayudó más?',
+            options: [],
+            correctAnswer: null,
+          },
+        ],
+      }),
+    );
+
+    const res = await request(app.getHttpServer())
+      .get('/api/surveys/satisfaction')
+      .set('Authorization', 'Bearer test');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ type: 'SATISFACTION' });
+    expect(res.body.questions).toHaveLength(2);
+    expect(res.body.questions[0].options).toEqual(['1', '2', '3', '4', '5']);
+    expect(res.body.questions[1].options).toEqual([]);
+  });
+
+  it('POST /api/surveys/satisfaction/response → 201 with normalized score', async () => {
+    await bootAuthed();
+    prisma.survey.findFirst.mockResolvedValue(
+      makeSurvey('SATISFACTION', {
+        questionsJson: [
+          {
+            id: 'sat1',
+            order: 1,
+            text: 'La app me ayudó a entender mejor mis gastos.',
+            options: ['1', '2', '3', '4', '5'],
+            correctAnswer: null,
+          },
+          {
+            id: 'sat2',
+            order: 2,
+            text: 'El asistente IA fue claro.',
+            options: ['1', '2', '3', '4', '5'],
+            correctAnswer: null,
+          },
+          {
+            id: 'sat8',
+            order: 8,
+            text: '¿Qué funcionalidad te ayudó más?',
+            options: [],
+            correctAnswer: null,
+          },
+        ],
+      }),
+    );
+    prisma.surveyResponse.findUnique.mockResolvedValue(null);
+
+    const res = await request(app.getHttpServer())
+      .post('/api/surveys/satisfaction/response')
+      .set('Authorization', 'Bearer test')
+      .send({ answers: { sat1: '5', sat2: '4', sat8: 'Chat IA' } });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({
+      score: 88,
+      averageLikert: 4.5,
+      likertCount: 2,
+    });
+    expect(prisma.surveyResponse.create).toHaveBeenCalled();
+  });
+
+  it('GET /api/surveys/sus/status returns eligible after enough usage', async () => {
+    await bootAuthed();
+    prisma.survey.findFirst.mockResolvedValue(makeSurvey('SUS'));
+    prisma.surveyResponse.findUnique.mockResolvedValue(null);
+    prisma.analyticsEvent.count
+      .mockResolvedValueOnce(3)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0);
+    prisma.analyticsEvent.findFirst
+      .mockResolvedValueOnce({
+        createdAt: new Date('2026-05-28T12:00:00.000Z'),
+      })
+      .mockResolvedValueOnce(null);
+
+    const res = await request(app.getHttpServer())
+      .get('/api/surveys/sus/status')
+      .set('Authorization', 'Bearer test');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      completed: false,
+      shouldPrompt: true,
+      reason: 'eligible',
+    });
+    expect(res.body.metrics.sessionsCount).toBe(3);
   });
 
   it('GET /api/surveys/comparison → 200 with {preScore, postScore, improvementPercentage}', async () => {

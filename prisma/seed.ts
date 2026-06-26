@@ -229,6 +229,7 @@ const SURVEYS = [
   { type: SurveyType.PRE },
   { type: SurveyType.POST },
   { type: SurveyType.SUS },
+  { type: SurveyType.SATISFACTION },
 ];
 
 const SURVEY_QUESTIONS: Array<{
@@ -563,6 +564,19 @@ const SURVEY_QUESTIONS: Array<{
   { surveyType: SurveyType.SUS, order: 8,  text: 'Encontré la aplicación muy difícil de usar.',                                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
   { surveyType: SurveyType.SUS, order: 9,  text: 'Me sentí muy seguro/a usando la aplicación.',                                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
   { surveyType: SurveyType.SUS, order: 10, text: 'Necesité aprender muchas cosas antes de poder comenzar a usar esta aplicación.',                               options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+
+  // Final satisfaction survey for the thesis pilot: Likert 1-5 + qualitative feedback.
+  { surveyType: SurveyType.SATISFACTION, order: 1,  text: 'La app me ayudó a entender mejor mis gastos.',                                      options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 2,  text: 'La app me ayudó a controlar mejor mi presupuesto.',                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 3,  text: 'Las recomendaciones fueron útiles.',                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 4,  text: 'El asistente IA fue claro.',                                                         options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 5,  text: 'El asistente IA fue personalizado.',                                                 options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 6,  text: 'Me gustaría seguir usando la app.',                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 7,  text: 'Recomendaría esta app a otros estudiantes.',                                        options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 8,  text: '¿Qué funcionalidad te ayudó más?',                                                   options: [], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 9,  text: '¿Qué mejorarías?',                                                                  options: [], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 10, text: '¿Qué recomendación del asistente te pareció más útil?',                            options: [], correctAnswer: null as unknown as string },
+  { surveyType: SurveyType.SATISFACTION, order: 11, text: '¿Qué parte fue confusa?',                                                           options: [], correctAnswer: null as unknown as string },
 ];
 
 // ─────────────────────────────────────────────────────────────────
