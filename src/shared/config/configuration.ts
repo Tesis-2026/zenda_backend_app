@@ -54,6 +54,9 @@ export default () => ({
       process.env.AZURE_DOCUMENT_INTELLIGENCE_TIMEOUT_MS ?? 30000,
     ),
   },
+  researchDashboard: {
+    token: process.env.RESEARCH_DASHBOARD_TOKEN ?? '',
+  },
   email: {
     host: process.env.SMTP_HOST ?? 'smtp.example.com',
     port: Number(process.env.SMTP_PORT ?? 587),

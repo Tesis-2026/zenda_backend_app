@@ -142,6 +142,10 @@ export class EnvSchema {
   @Max(120000)
   AZURE_DOCUMENT_INTELLIGENCE_TIMEOUT_MS?: number;
 
+  @IsOptional()
+  @IsString()
+  RESEARCH_DASHBOARD_TOKEN?: string;
+
   // ── SMTP (optional in dev/test; required-shape only when set) ────
   @IsOptional()
   @IsString()

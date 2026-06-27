@@ -27,6 +27,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PredictionsModule } from './modules/predictions/predictions.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { ReceiptsModule } from './modules/receipts/receipts.module';
+import { ResearchDashboardModule } from './modules/research-dashboard/research-dashboard.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { EducationModule } from './modules/education/education.module';
 import { SurveysModule } from './modules/surveys/surveys.module';
@@ -67,6 +68,7 @@ import { UsersModule } from './modules/users/users.module';
     PredictionsModule,
     RecommendationsModule,
     ReceiptsModule,
+    ResearchDashboardModule,
     ConversationsModule,
     EducationModule,
     SurveysModule,

@@ -27,7 +27,52 @@ GET  /api/surveys/satisfaction/status
 POST /api/surveys/satisfaction/response
 POST /api/ai/chat/messages/:id/feedback
 POST /api/analytics/events
+GET  /api/research-dashboard
+GET  /api/research-dashboard/summary
+GET  /api/research-dashboard/export.json
+GET  /api/research-dashboard/export.csv
 ```
+
+## Research dashboard
+
+The pilot analytics core lives in Zenda's production database, not in Firebase.
+Firebase App Distribution is useful for delivery/download visibility, but the
+paper metrics are computed from:
+
+- `User` profile fields.
+- `AnalyticsEvent` usage logs.
+- `Transaction`, `Budget`, `SavingsGoal`, and `Account`.
+- `AiConversation`, `AiMessage`, and AI answer feedback.
+- `SurveyResponse` for PRE, POST, SUS, and SATISFACTION.
+- Qualitative `Feedback`.
+
+Configure a private token in production:
+
+```text
+RESEARCH_DASHBOARD_TOKEN="<strong-random-token>"
+```
+
+Open the dashboard:
+
+```text
+https://<backend-host>/api/research-dashboard?token=<strong-random-token>
+```
+
+Useful exports:
+
+```text
+https://<backend-host>/api/research-dashboard/export.csv?token=<strong-random-token>
+https://<backend-host>/api/research-dashboard/export.json?token=<strong-random-token>
+```
+
+Optional date filters:
+
+```text
+https://<backend-host>/api/research-dashboard?token=<token>&from=2026-06-01&to=2026-06-30
+```
+
+The dashboard intentionally shows aggregated values and qualitative samples
+without emails or direct user identifiers.
 
 ## Local setup
 
