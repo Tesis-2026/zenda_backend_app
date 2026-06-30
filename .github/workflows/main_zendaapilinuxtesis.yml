@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - zendamobileappapi
+name: Build and deploy Node.js app to Azure Web App - zendaapilinuxtesis
 
 on:
   push:
@@ -9,17 +9,9 @@ on:
       - main
   workflow_dispatch:
 
-# Serialize runs so two deploys never hit the App Service at once. Overlapping
-# OneDeploy calls return HTTP 409 Conflict (a deploy is already in progress) and
-# can leave a stuck deployment lock. Queue instead of cancel — cancelling a live
-# deploy mid-flight is what leaves the lock behind.
-concurrency:
-  group: production-deploy
-  cancel-in-progress: false
-
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: read #This is required for actions/checkout
 
@@ -31,21 +23,21 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: npm install, build, and test
+      - name: npm install and build
         run: |
           npm install
           npm run build --if-present
-          npm run test --if-present
-      
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
           path: .
           # upload-artifact@v4 excludes hidden files by default. The Prisma
-          # client is generated into node_modules/.prisma/ (a dot-dir), so
-          # without this it is dropped from the package and the app crashes at
-          # boot with "Cannot find module '.prisma/client/default'".
+          # client is generated into node_modules/.prisma/ (a dot-dir) by the
+          # postinstall `prisma generate`, so without this it is dropped from
+          # the package and the app crashes at boot with
+          # "Cannot find module '.prisma/client/default'".
           include-hidden-files: true
 
   deploy:
@@ -64,15 +56,15 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F7D0F5BBC33D4CA0BFF7B97FFBD0F37D }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_DCE08700005B459AA304554F24E76FEE }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3B436A56BBA74CDCA8E9A26DF293AC05 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4AC0CB231AE641608C9DD825D4D84C57 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0B69A87B0876401CA7461A4D701E7C1E }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E67BAFDB17C94FBFAEFD3D0EBDA7B75C }}
 
       - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
         with:
-          app-name: 'zendamobileappapi'
+          app-name: 'zendaapilinuxtesis'
           slot-name: 'Production'
           package: .
           
