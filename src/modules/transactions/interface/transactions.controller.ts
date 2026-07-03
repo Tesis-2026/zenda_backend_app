@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Delete,
@@ -30,7 +30,10 @@ import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { BudgetsFacade } from '../../budgets/application/budgets.facade';
 import { SendNotificationUseCase } from '../../notifications/application/use-cases/send-notification.use-case';
-import { CreateTransactionResult, CreateTransactionUseCase } from '../application/use-cases/create-transaction.use-case';
+import {
+  CreateTransactionResult,
+  CreateTransactionUseCase,
+} from '../application/use-cases/create-transaction.use-case';
 import { ListTransactionsUseCase } from '../application/use-cases/list-transactions.use-case';
 import { DeleteTransactionUseCase } from '../application/use-cases/delete-transaction.use-case';
 import { GetTransactionUseCase } from '../application/use-cases/get-transaction.use-case';
@@ -72,14 +75,19 @@ export class TransactionsController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'AI-classify a transaction description (US-0702)' })
-  @ApiOk(TransactionResponseDto, 'Classification result with suggested category and confidence')
+  @ApiOk(
+    TransactionResponseDto,
+    'Classification result with suggested category and confidence',
+  )
   @ApiValidationError()
   @ApiAuthErrors()
   async classify(
     @UserId() userId: string,
     @Body() dto: ClassifyTransactionDto,
   ): Promise<{ categoryName: string; confidence: number }> {
-    this.analytics.track(userId, 'classify_transaction', { description: dto.description });
+    this.analytics.track(userId, 'classify_transaction', {
+      description: dto.description,
+    });
     return this.ai.classifyTransaction(dto.description, dto.amount);
   }
 
@@ -142,7 +150,7 @@ export class TransactionsController {
         : null;
 
     // Dispatch persistent notifications + push (US-016 ANOMALY + US-020 BUDGET).
-    // Both fire-and-forget — failures must not roll back the transaction. The
+    // Both fire-and-forget; failures must not roll back the transaction. The
     // monthly idempotency window means each alert is sent at most once per
     // (category|budget) per month, even if 100 transactions cross the threshold.
     if (dto.type === TransactionType.EXPENSE && result.categoryId) {
@@ -159,8 +167,15 @@ export class TransactionsController {
             userId,
             type: 'ANOMALY_ALERT',
             title: 'Gasto inusual detectado',
-            body: `Tu gasto en ${anomalyAlert.categoryName} este mes está ${pctOver}% por encima de tu promedio.`,
-            data: { categoryId: result.categoryId, pctOver: String(pctOver) },
+            body: anomalyAlert.explanation,
+            data: {
+              categoryId: result.categoryId,
+              categoryName: anomalyAlert.categoryName,
+              pctOver: String(pctOver),
+              currentTotal: String(anomalyAlert.currentTotal),
+              historicalAverage: String(anomalyAlert.historicalAverage),
+              explanationSource: anomalyAlert.explanationSource,
+            },
             idempotencySince: monthStart,
             idempotencyDataKey: 'categoryId',
             idempotencyDataValue: result.categoryId,
@@ -172,14 +187,17 @@ export class TransactionsController {
         .getSnapshotForCategory(userId, result.categoryId, result.occurredAt)
         .catch(() => null);
       if (budgetSnapshot && budgetSnapshot.percentageUsed >= 80) {
-        const remaining = Math.max(0, budgetSnapshot.amountLimit - budgetSnapshot.currentSpent);
+        const remaining = Math.max(
+          0,
+          budgetSnapshot.amountLimit - budgetSnapshot.currentSpent,
+        );
         const pct = Math.round(budgetSnapshot.percentageUsed);
-        const categoryLabel = budgetSnapshot.categoryName ?? 'esta categoría';
+        const categoryLabel = budgetSnapshot.categoryName ?? 'esta categoria';
         this.sendNotification
           .execute({
             userId,
             type: 'BUDGET_ALERT',
-            title: 'Te acercas al límite de tu presupuesto',
+            title: 'Te acercas al limite de tu presupuesto',
             body: `Has usado el ${pct}% de tu presupuesto en ${categoryLabel}. Te quedan S/${remaining.toFixed(2)} este mes.`,
             data: {
               budgetId: budgetSnapshot.budgetId,
@@ -255,7 +273,9 @@ export class TransactionsController {
     this.analytics.track(userId, 'delete_transaction', { transactionId: id });
   }
 
-  private toResponse(t: TransactionWithCategory | CreateTransactionResult): TransactionResponseDto {
+  private toResponse(
+    t: TransactionWithCategory | CreateTransactionResult,
+  ): TransactionResponseDto {
     return {
       id: t.id,
       userId: t.userId,

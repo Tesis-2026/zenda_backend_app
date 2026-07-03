@@ -10,7 +10,8 @@ class TransactionCategoryDto {
   @ApiPropertyOptional({
     example: 'food',
     nullable: true,
-    description: 'Semantic icon key; null for custom categories (client shows a default icon).',
+    description:
+      'Semantic icon key; null for custom categories (client shows a default icon).',
   })
   icon?: string | null;
 }
@@ -79,14 +80,16 @@ export class TransactionResponseDto {
   toAccount?: TransactionAccountDto | null;
 
   @ApiPropertyOptional({
-    description: 'UUID of the category the AI proposed at create time; null if no AI suggestion was made',
+    description:
+      'UUID of the category the AI proposed at create time; null if no AI suggestion was made',
     example: '8f87bc0f-f046-4e90-bbf9-ed18ed1699a8',
     nullable: true,
   })
   suggestedCategoryId?: string | null;
 
   @ApiPropertyOptional({
-    description: 'AI confidence score (0.00–1.00); null if no AI suggestion was made',
+    description:
+      'AI confidence score (0.00–1.00); null if no AI suggestion was made',
     example: 0.87,
     nullable: true,
   })
@@ -95,13 +98,33 @@ export class TransactionResponseDto {
   @ApiProperty({
     enum: ['AI', 'AI_OVERRIDDEN', 'USER'],
     example: 'AI',
-    description: 'Source of the final category: AI accepted, AI overridden by user, or user-chosen with no AI involvement',
+    description:
+      'Source of the final category: AI accepted, AI overridden by user, or user-chosen with no AI involvement',
   })
   categorySource!: 'AI' | 'AI_OVERRIDDEN' | 'USER';
 
   @ApiPropertyOptional({ type: [String], example: ['Daily Habit Challenge'] })
   newlyCompletedChallenges?: string[];
 
-  @ApiPropertyOptional({ type: Object, nullable: true, example: { categoryName: 'Food', pctOver: 35 } })
-  anomalyAlert?: { categoryName: string; pctOver: number } | null;
+  @ApiPropertyOptional({
+    type: Object,
+    nullable: true,
+    example: {
+      categoryName: 'Food',
+      pctOver: 35,
+      currentTotal: 180,
+      historicalAverage: 133.33,
+      explanation:
+        'Tu gasto en comida subio frente a tu promedio. Revisa delivery y snacks para cuidar tu presupuesto esta semana.',
+      explanationSource: 'rag-agent',
+    },
+  })
+  anomalyAlert?: {
+    categoryName: string;
+    pctOver: number;
+    currentTotal: number;
+    historicalAverage: number;
+    explanation: string;
+    explanationSource: 'rag-agent' | 'local-fallback';
+  } | null;
 }
