@@ -65,6 +65,37 @@ export class EmailService {
     }
   }
 
+  async sendAccountVerificationEmail(to: string, code: string): Promise<void> {
+    const from = this.config.get<string>('email.from');
+    const mailOptions = {
+      from,
+      to,
+      subject: 'Zenda - Verifica tu cuenta',
+      text:
+        `Tu codigo de verificacion de Zenda es: ${code}\n\n` +
+        'Este codigo expira en 15 minutos.\n\n' +
+        'Si no creaste una cuenta en Zenda, ignora este correo.',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <h2 style="color:#10B981">Verifica tu cuenta de Zenda</h2>
+          <p>Ingresa el codigo de 6 digitos en la app para activar tu cuenta.</p>
+          <div style="background:#F0FDF4;border:1px solid #34D399;border-radius:8px;padding:20px;text-align:center;margin:24px 0">
+            <span style="font-size:36px;font-weight:bold;letter-spacing:10px;color:#065F46">${code}</span>
+          </div>
+          <p style="color:#6B7280;font-size:14px">Este codigo expira en <strong>15 minutos</strong>.</p>
+          <p style="color:#6B7280;font-size:14px">Si no creaste una cuenta en Zenda, ignora este correo.</p>
+        </div>
+      `,
+    };
+    try {
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Account verification email sent to ${to}`);
+    } catch (error) {
+      this.logger.error(`Failed to send account verification email to ${to}`, error);
+      throw error;
+    }
+  }
+
   private buildResetEmailText(token: string): string {
     return [
       'You requested a password reset for your Zenda account.',

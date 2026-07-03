@@ -54,6 +54,7 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
     id: string;
     email: string;
     fullName: string;
+    emailVerifiedAt: Date | null;
     age: number | null;
     university: string | null;
     incomeType: string | null;
@@ -74,6 +75,7 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
       id: row.id,
       email: row.email,
       fullName: row.fullName,
+      emailVerifiedAt: row.emailVerifiedAt,
       age: row.age,
       university: row.university,
       incomeType: row.incomeType as IncomeType | null,

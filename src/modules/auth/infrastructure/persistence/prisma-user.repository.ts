@@ -9,6 +9,7 @@ type UserRow = {
   passwordHash: string;
   fullName: string;
   createdAt: Date;
+  emailVerifiedAt: Date | null;
   failedLoginAttempts: number;
   lockedUntil: Date | null;
   tokenVersion: number;
@@ -23,6 +24,7 @@ function toEntity(row: UserRow): UserEntity {
     passwordHash: row.passwordHash,
     fullName: row.fullName,
     createdAt: row.createdAt,
+    emailVerifiedAt: row.emailVerifiedAt,
     failedLoginAttempts: row.failedLoginAttempts,
     lockedUntil: row.lockedUntil,
     tokenVersion: row.tokenVersion,
@@ -62,6 +64,7 @@ export class PrismaUserRepository implements IUserRepository {
     termsVersion: string;
     consentIp: string | null;
     consentUserAgent: string | null;
+    emailVerifiedAt?: Date | null;
   }): Promise<UserEntity> {
     const row = await this.prisma.user.create({
       data: {
@@ -74,7 +77,16 @@ export class PrismaUserRepository implements IUserRepository {
         termsVersion: params.termsVersion,
         consentIp: params.consentIp,
         consentUserAgent: params.consentUserAgent,
+        emailVerifiedAt: params.emailVerifiedAt,
       },
+    });
+    return toEntity(row);
+  }
+
+  async markEmailVerified(userId: string, verifiedAt: Date): Promise<UserEntity> {
+    const row = await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerifiedAt: verifiedAt },
     });
     return toEntity(row);
   }

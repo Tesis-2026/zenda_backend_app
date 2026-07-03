@@ -1,11 +1,12 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { IUserRepository } from '../../domain/ports/user.repository';
-import { IRefreshTokenRepository } from '../../domain/ports/refresh-token.repository';
+import { IEmailVerificationRepository } from '../../domain/ports/email-verification.repository';
+import { EmailService } from '../../../../infra/email/email.service';
 import { AuditLogService } from '../../../../shared/audit/audit-log.service';
+
+const EMAIL_VERIFICATION_EXPIRY_MINUTES = 15;
 
 export interface RegisterCommand {
   email: string;
@@ -20,17 +21,17 @@ export interface RegisterCommand {
 
 export interface RegisterResult {
   userId: string;
-  accessToken: string;
-  refreshToken: string;
+  email: string;
+  requiresEmailVerification: true;
 }
 
 @Injectable()
 export class RegisterUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
-    private readonly jwtService: JwtService,
     private readonly config: ConfigService,
-    private readonly refreshTokenRepository: IRefreshTokenRepository,
+    private readonly emailVerificationRepository: IEmailVerificationRepository,
+    private readonly emailService: EmailService,
     private readonly auditLog: AuditLogService,
   ) {}
 
@@ -53,15 +54,21 @@ export class RegisterUseCase {
       termsVersion: cmd.termsVersion ?? 'terms-2026-07-03',
       consentIp: cmd.consentIp ?? null,
       consentUserAgent: cmd.consentUserAgent ?? null,
+      emailVerifiedAt: null,
     });
 
-    const accessToken = this.jwtService.sign({
-      sub: user.id,
+    await this.emailVerificationRepository.deleteByUserId(user.id);
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(
+      Date.now() + EMAIL_VERIFICATION_EXPIRY_MINUTES * 60 * 1000,
+    );
+    await this.emailVerificationRepository.create({
+      userId: user.id,
       email: user.email,
-      tokenVersion: user.tokenVersion,
-      consentGiven: user.consentGiven,
+      code,
+      expiresAt,
     });
-    const refreshToken = await this._issueRefreshToken(user.id);
+    await this.emailService.sendAccountVerificationEmail(user.email, code);
 
     // Request context's userId isn't populated for register (JWT guard
     // hasn't run yet), so we pass it explicitly via userIdOverride.
@@ -76,17 +83,14 @@ export class RegisterUseCase {
         consentGiven: user.consentGiven,
         privacyPolicyVersion: cmd.privacyPolicyVersion ?? 'privacy-2026-07-03',
         termsVersion: cmd.termsVersion ?? 'terms-2026-07-03',
+        emailVerificationSent: true,
       },
     });
 
-    return { userId: user.id, accessToken, refreshToken };
-  }
-
-  private async _issueRefreshToken(userId: string): Promise<string> {
-    const token = randomBytes(40).toString('hex');
-    const days = this.config.get<number>('auth.refreshTokenExpiresDays') ?? 7;
-    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-    await this.refreshTokenRepository.create({ userId, token, expiresAt });
-    return token;
+    return {
+      userId: user.id,
+      email: user.email,
+      requiresEmailVerification: true,
+    };
   }
 }

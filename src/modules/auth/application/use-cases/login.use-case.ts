@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { AuditStatus } from '@prisma/client';
@@ -90,6 +90,15 @@ export class LoginUseCase {
         failedAttempts: attempts,
         attemptsRemaining: remaining,
         lockedUntil: null,
+      });
+    }
+
+    if (!user.isEmailVerified) {
+      throw new ForbiddenException({
+        message: 'Email not verified.',
+        error: 'Forbidden',
+        code: 'EMAIL_NOT_VERIFIED',
+        email: user.email,
       });
     }
 
