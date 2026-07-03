@@ -64,6 +64,9 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
     createdAt: Date;
     consentGiven: boolean;
     consentAt: Date | null;
+    privacyPolicyVersion: string | null;
+    termsVersion: string | null;
+    dataAnonymizedAt: Date | null;
     failedLoginAttempts: number;
     lockedUntil: Date | null;
   }): UserProfileEntity {
@@ -83,6 +86,9 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
       createdAt: row.createdAt,
       consentGiven: row.consentGiven,
       consentAt: row.consentAt,
+      privacyPolicyVersion: row.privacyPolicyVersion,
+      termsVersion: row.termsVersion,
+      dataAnonymizedAt: row.dataAnonymizedAt,
       failedLoginAttempts: row.failedLoginAttempts,
       lockedUntil: row.lockedUntil,
     });

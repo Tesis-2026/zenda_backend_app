@@ -4,6 +4,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
@@ -19,6 +20,7 @@ import {
 } from '../../../shared/swagger/api-responses.decorator';
 import { ApiResponse } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '../../../shared/swagger/api-error.response.dto';
+import { Request } from 'express';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { RegisterUseCase } from '../application/use-cases/register.use-case';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
@@ -62,9 +64,23 @@ export class AuthController {
   @ApiValidationError()
   @ApiConflictError('Email already registered')
   @ApiResponse({ status: 429, description: 'Too Many Requests', type: ApiErrorResponseDto })
-  async register(@Body() dto: RegisterDto): Promise<AuthTokenResponseDto> {
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() req: Request,
+  ): Promise<AuthTokenResponseDto> {
+    const consentIp =
+      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
+      req.socket.remoteAddress ??
+      null;
+    const consentUserAgent =
+      (req.headers['user-agent'] as string | undefined) ?? null;
+
     const { userId, accessToken, refreshToken } =
-      await this.registerUseCase.execute(dto);
+      await this.registerUseCase.execute({
+        ...dto,
+        consentIp,
+        consentUserAgent,
+      });
     this.analytics.track(userId, 'register');
     return { accessToken, refreshToken };
   }

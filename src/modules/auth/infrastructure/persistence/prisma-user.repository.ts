@@ -56,12 +56,24 @@ export class PrismaUserRepository implements IUserRepository {
     email: string;
     passwordHash: string;
     fullName: string;
+    consentGiven: boolean;
+    consentAt: Date;
+    privacyPolicyVersion: string;
+    termsVersion: string;
+    consentIp: string | null;
+    consentUserAgent: string | null;
   }): Promise<UserEntity> {
     const row = await this.prisma.user.create({
       data: {
         email: params.email,
         passwordHash: params.passwordHash,
         fullName: params.fullName,
+        consentGiven: params.consentGiven,
+        consentAt: params.consentAt,
+        privacyPolicyVersion: params.privacyPolicyVersion,
+        termsVersion: params.termsVersion,
+        consentIp: params.consentIp,
+        consentUserAgent: params.consentUserAgent,
       },
     });
     return toEntity(row);

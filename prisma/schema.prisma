@@ -127,8 +127,14 @@ model User {
   currency               String                  @default("PEN")
 
   // Law 29733 consent (US-1303)
-  consentGiven Boolean   @default(false)
-  consentAt    DateTime?
+  consentGiven         Boolean   @default(false)
+  consentAt            DateTime?
+  privacyPolicyVersion String?
+  termsVersion         String?
+  consentIp            String?
+  consentUserAgent     String?
+  dataAnonymizedAt     DateTime?
+  anonymizationReason  String?
 
   // Login lockout (US-0102)
   failedLoginAttempts Int       @default(0)

@@ -29,6 +29,9 @@ export class UserProfileEntity {
     // of the login flow's 401 body).
     readonly consentGiven: boolean,
     readonly consentAt: Date | null,
+    readonly privacyPolicyVersion: string | null,
+    readonly termsVersion: string | null,
+    readonly dataAnonymizedAt: Date | null,
     readonly failedLoginAttempts: number,
     readonly lockedUntil: Date | null,
   ) {}
@@ -47,6 +50,9 @@ export class UserProfileEntity {
     createdAt: Date;
     consentGiven: boolean;
     consentAt: Date | null;
+    privacyPolicyVersion: string | null;
+    termsVersion: string | null;
+    dataAnonymizedAt: Date | null;
     failedLoginAttempts: number;
     lockedUntil: Date | null;
   }): UserProfileEntity {
@@ -64,6 +70,9 @@ export class UserProfileEntity {
       params.createdAt,
       params.consentGiven,
       params.consentAt,
+      params.privacyPolicyVersion,
+      params.termsVersion,
+      params.dataAnonymizedAt,
       params.failedLoginAttempts,
       params.lockedUntil,
     );

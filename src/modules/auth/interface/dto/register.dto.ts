@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, MaxLength } from 'class-validator';
+import {
+  Equals,
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'user@zenda.pe' })
@@ -16,4 +23,32 @@ export class RegisterDto {
   @IsString()
   @MaxLength(120)
   fullName!: string;
+
+  @ApiProperty({
+    example: true,
+    description:
+      'Must be true. Records explicit acceptance of the privacy notice for Ley 29733 compliance.',
+  })
+  @Equals(true, { message: 'Privacy consent is required to create an account' })
+  consentGiven!: true;
+
+  @ApiProperty({
+    example: 'privacy-2026-07-03',
+    required: false,
+    description: 'Privacy policy version accepted by the user.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  privacyPolicyVersion?: string;
+
+  @ApiProperty({
+    example: 'terms-2026-07-03',
+    required: false,
+    description: 'Terms version accepted by the user.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  termsVersion?: string;
 }

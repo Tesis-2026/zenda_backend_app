@@ -52,6 +52,21 @@ export class UserProfileResponseDto {
   })
   consentAt!: Date | null;
 
+  @ApiPropertyOptional({
+    description: 'Accepted privacy policy version.',
+  })
+  privacyPolicyVersion!: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Accepted terms version.',
+  })
+  termsVersion!: string | null;
+
+  @ApiPropertyOptional({
+    description: 'When the account was anonymized after a deletion request.',
+  })
+  dataAnonymizedAt!: Date | null;
+
   @ApiProperty({
     description:
       'Failed login attempts since the last successful login. Resets to 0 on success.',
