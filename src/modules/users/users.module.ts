@@ -7,6 +7,8 @@ import { PrismaUserProfileRepository } from './infrastructure/persistence/prisma
 import { PrismaNotificationPreferenceRepository } from './infrastructure/persistence/prisma-notification-preference.repository';
 import { GetProfileUseCase } from './application/use-cases/get-profile.use-case';
 import { UpdateProfileUseCase } from './application/use-cases/update-profile.use-case';
+import { ExportUserDataUseCase } from './application/use-cases/export-user-data.use-case';
+import { AnonymizeAccountUseCase } from './application/use-cases/anonymize-account.use-case';
 import { GetNotificationPreferencesUseCase } from './application/use-cases/get-notification-preferences.use-case';
 import { UpdateNotificationPreferenceUseCase } from './application/use-cases/update-notification-preference.use-case';
 import { UsersController } from './interface/users.controller';
@@ -20,6 +22,8 @@ import { NotificationsController } from './interface/notifications.controller';
     { provide: INotificationPreferenceRepository, useClass: PrismaNotificationPreferenceRepository },
     GetProfileUseCase,
     UpdateProfileUseCase,
+    ExportUserDataUseCase,
+    AnonymizeAccountUseCase,
     GetNotificationPreferencesUseCase,
     UpdateNotificationPreferenceUseCase,
   ],

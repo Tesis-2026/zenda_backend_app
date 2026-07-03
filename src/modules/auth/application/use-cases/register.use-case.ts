@@ -11,6 +11,11 @@ export interface RegisterCommand {
   email: string;
   password: string;
   fullName: string;
+  consentGiven: true;
+  privacyPolicyVersion?: string;
+  termsVersion?: string;
+  consentIp?: string | null;
+  consentUserAgent?: string | null;
 }
 
 export interface RegisterResult {
@@ -42,6 +47,12 @@ export class RegisterUseCase {
       email: cmd.email,
       passwordHash,
       fullName: cmd.fullName,
+      consentGiven: cmd.consentGiven,
+      consentAt: new Date(),
+      privacyPolicyVersion: cmd.privacyPolicyVersion ?? 'privacy-2026-07-03',
+      termsVersion: cmd.termsVersion ?? 'terms-2026-07-03',
+      consentIp: cmd.consentIp ?? null,
+      consentUserAgent: cmd.consentUserAgent ?? null,
     });
 
     const accessToken = this.jwtService.sign({
@@ -59,7 +70,13 @@ export class RegisterUseCase {
       resource: 'User',
       resourceId: user.id,
       userIdOverride: user.id,
-      afterJson: { email: user.email, fullName: user.fullName },
+      afterJson: {
+        email: user.email,
+        fullName: user.fullName,
+        consentGiven: user.consentGiven,
+        privacyPolicyVersion: cmd.privacyPolicyVersion ?? 'privacy-2026-07-03',
+        termsVersion: cmd.termsVersion ?? 'terms-2026-07-03',
+      },
     });
 
     return { userId: user.id, accessToken, refreshToken };

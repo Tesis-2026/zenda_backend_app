@@ -7,6 +7,12 @@ export abstract class IUserRepository {
     email: string;
     passwordHash: string;
     fullName: string;
+    consentGiven: boolean;
+    consentAt: Date;
+    privacyPolicyVersion: string;
+    termsVersion: string;
+    consentIp: string | null;
+    consentUserAgent: string | null;
   }): Promise<UserEntity>;
   abstract updatePasswordHash(userId: string, passwordHash: string): Promise<void>;
   abstract incrementFailedLogin(userId: string): Promise<number>;
