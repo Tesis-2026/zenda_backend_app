@@ -30,6 +30,8 @@ import { RefreshAccessTokenUseCase } from '../application/use-cases/refresh-acce
 import { LogoutUseCase } from '../application/use-cases/logout.use-case';
 import { SendOtpUseCase } from '../application/use-cases/send-otp.use-case';
 import { VerifyOtpUseCase } from '../application/use-cases/verify-otp.use-case';
+import { VerifyEmailUseCase } from '../application/use-cases/verify-email.use-case';
+import { ResendEmailVerificationUseCase } from '../application/use-cases/resend-email-verification.use-case';
 import { JwtAuthGuard } from '../infrastructure/jwt-auth.guard';
 import { UserId } from './decorators/user-id.decorator';
 import { RegisterDto } from './dto/register.dto';
@@ -39,7 +41,9 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import { AuthTokenResponseDto } from './dto/auth-token.response.dto';
+import { RegisterPendingVerificationResponseDto } from './dto/register-pending-verification.response.dto';
 import { LoginErrorResponseDto } from './dto/login-error.response.dto';
 
 @ApiTags('Auth')
@@ -54,20 +58,22 @@ export class AuthController {
     private readonly logoutUseCase: LogoutUseCase,
     private readonly sendOtpUseCase: SendOtpUseCase,
     private readonly verifyOtpUseCase: VerifyOtpUseCase,
+    private readonly verifyEmailUseCase: VerifyEmailUseCase,
+    private readonly resendEmailVerificationUseCase: ResendEmailVerificationUseCase,
     private readonly analytics: AnalyticsService,
   ) {}
 
   @Post('register')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @ApiOperation({ summary: 'Register a new user — returns access + refresh tokens' })
-  @ApiCreated(AuthTokenResponseDto, 'User created and signed in')
+  @ApiOperation({ summary: 'Register a new user and send email verification code' })
+  @ApiCreated(RegisterPendingVerificationResponseDto, 'User created; email verification required')
   @ApiValidationError()
   @ApiConflictError('Email already registered')
   @ApiResponse({ status: 429, description: 'Too Many Requests', type: ApiErrorResponseDto })
   async register(
     @Body() dto: RegisterDto,
     @Req() req: Request,
-  ): Promise<AuthTokenResponseDto> {
+  ): Promise<RegisterPendingVerificationResponseDto> {
     const consentIp =
       (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
       req.socket.remoteAddress ??
@@ -75,14 +81,14 @@ export class AuthController {
     const consentUserAgent =
       (req.headers['user-agent'] as string | undefined) ?? null;
 
-    const { userId, accessToken, refreshToken } =
+    const result =
       await this.registerUseCase.execute({
         ...dto,
         consentIp,
         consentUserAgent,
       });
-    this.analytics.track(userId, 'register');
-    return { accessToken, refreshToken };
+    this.analytics.track(result.userId, 'register_pending_email_verification');
+    return result;
   }
 
   @Post('login')
@@ -159,6 +165,32 @@ export class AuthController {
   @ApiResponse({ status: 429, description: 'Too Many Requests', type: ApiErrorResponseDto })
   verifyOtp(@Body() dto: VerifyOtpDto): Promise<{ resetToken: string }> {
     return this.verifyOtpUseCase.execute(dto.email, dto.code);
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Verify registration email code and create a session' })
+  @ApiOk(AuthTokenResponseDto, 'Email verified; signed in')
+  @ApiValidationError()
+  @ApiResponse({ status: 400, description: 'Verification code invalid or expired', type: ApiErrorResponseDto })
+  @ApiResponse({ status: 429, description: 'Too Many Requests', type: ApiErrorResponseDto })
+  async verifyEmail(@Body() dto: VerifyEmailDto): Promise<AuthTokenResponseDto> {
+    const { userId, accessToken, refreshToken } =
+      await this.verifyEmailUseCase.execute(dto.email, dto.code);
+    this.analytics.track(userId, 'register_email_verified');
+    return { accessToken, refreshToken };
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Resend registration email verification code' })
+  @ApiNoContent('Verification code enqueued when account exists and is pending verification')
+  @ApiValidationError()
+  @ApiResponse({ status: 429, description: 'Too Many Requests', type: ApiErrorResponseDto })
+  async resendVerification(@Body() dto: SendOtpDto): Promise<void> {
+    await this.resendEmailVerificationUseCase.execute(dto.email);
   }
 
   @Post('reset-password')

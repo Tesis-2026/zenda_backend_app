@@ -1,0 +1,8 @@
+ALTER TYPE "AuthChallengeKind" ADD VALUE IF NOT EXISTS 'EMAIL_VERIFICATION_OTP';
+
+ALTER TABLE "User"
+ADD COLUMN IF NOT EXISTS "emailVerifiedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;
+
+UPDATE "User"
+SET "emailVerifiedAt" = COALESCE("emailVerifiedAt", "createdAt")
+WHERE "emailVerifiedAt" IS NULL;

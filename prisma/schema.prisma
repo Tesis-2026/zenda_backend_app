@@ -105,6 +105,7 @@ enum AuditStatus {
 enum AuthChallengeKind {
   RESET_TOKEN
   OTP
+  EMAIL_VERIFICATION_OTP
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -116,6 +117,7 @@ model User {
   email        String @unique
   passwordHash String
   fullName     String
+  emailVerifiedAt DateTime? @default(now())
 
   // Profile fields collected during onboarding (US-0105)
   age                    Int?

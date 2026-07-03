@@ -7,10 +7,12 @@ import { EmailModule } from '../../infra/email/email.module';
 import { IUserRepository } from './domain/ports/user.repository';
 import { IPasswordResetTokenRepository } from './domain/ports/password-reset-token.repository';
 import { IPasswordResetOtpRepository } from './domain/ports/password-reset-otp.repository';
+import { IEmailVerificationRepository } from './domain/ports/email-verification.repository';
 import { IRefreshTokenRepository } from './domain/ports/refresh-token.repository';
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
 import { PrismaPasswordResetRepository } from './infrastructure/persistence/prisma-password-reset.repository';
 import { PrismaPasswordResetOtpRepository } from './infrastructure/persistence/prisma-password-reset-otp.repository';
+import { PrismaEmailVerificationRepository } from './infrastructure/persistence/prisma-email-verification.repository';
 import { PrismaRefreshTokenRepository } from './infrastructure/persistence/prisma-refresh-token.repository';
 import { RegisterUseCase } from './application/use-cases/register.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
@@ -20,6 +22,8 @@ import { RefreshAccessTokenUseCase } from './application/use-cases/refresh-acces
 import { LogoutUseCase } from './application/use-cases/logout.use-case';
 import { SendOtpUseCase } from './application/use-cases/send-otp.use-case';
 import { VerifyOtpUseCase } from './application/use-cases/verify-otp.use-case';
+import { VerifyEmailUseCase } from './application/use-cases/verify-email.use-case';
+import { ResendEmailVerificationUseCase } from './application/use-cases/resend-email-verification.use-case';
 import { JwtStrategy } from './infrastructure/jwt.strategy';
 import { AuthController } from './interface/auth.controller';
 
@@ -44,6 +48,7 @@ import { AuthController } from './interface/auth.controller';
     { provide: IUserRepository, useClass: PrismaUserRepository },
     { provide: IPasswordResetTokenRepository, useClass: PrismaPasswordResetRepository },
     { provide: IPasswordResetOtpRepository, useClass: PrismaPasswordResetOtpRepository },
+    { provide: IEmailVerificationRepository, useClass: PrismaEmailVerificationRepository },
     { provide: IRefreshTokenRepository, useClass: PrismaRefreshTokenRepository },
     RegisterUseCase,
     LoginUseCase,
@@ -53,6 +58,8 @@ import { AuthController } from './interface/auth.controller';
     LogoutUseCase,
     SendOtpUseCase,
     VerifyOtpUseCase,
+    VerifyEmailUseCase,
+    ResendEmailVerificationUseCase,
     JwtStrategy,
   ],
   exports: [JwtModule, IUserRepository],

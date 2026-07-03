@@ -11,6 +11,12 @@ export class UserProfileResponseDto {
   @ApiProperty()
   fullName!: string;
 
+  @ApiPropertyOptional({
+    description:
+      'When the email address was verified. Null means the account is pending verification.',
+  })
+  emailVerifiedAt!: Date | null;
+
   @ApiPropertyOptional()
   age!: number | null;
 

@@ -16,6 +16,7 @@ export class UserProfileEntity {
     readonly id: string,
     readonly email: string,
     readonly fullName: string,
+    readonly emailVerifiedAt: Date | null,
     readonly age: number | null,
     readonly university: string | null,
     readonly incomeType: IncomeType | null,
@@ -40,6 +41,7 @@ export class UserProfileEntity {
     id: string;
     email: string;
     fullName: string;
+    emailVerifiedAt: Date | null;
     age: number | null;
     university: string | null;
     incomeType: IncomeType | null;
@@ -60,6 +62,7 @@ export class UserProfileEntity {
       params.id,
       params.email,
       params.fullName,
+      params.emailVerifiedAt,
       params.age,
       params.university,
       params.incomeType,
