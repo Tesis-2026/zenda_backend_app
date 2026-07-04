@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
 import { EducationTopicEntity } from '../../domain/education-topic.entity';
 import { QuizDifficulty, QuizQuestionEntity } from '../../domain/quiz-question.entity';
 import { IEducationRepository, PersonalizedQuestionInput } from '../../domain/ports/education.repository';
+import { DEFAULT_EDUCATION_TOPICS, defaultQuizQuestionsForTopic } from '../../domain/default-education-catalog';
 
 // Mirrors POOL_SIZES in get-quiz.use-case.ts — the fixed number of questions a
 // topic quiz serves per difficulty. Used so the topic card's question count
@@ -18,6 +20,7 @@ export class PrismaEducationRepository implements IEducationRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async listTopics(userId: string): Promise<EducationTopicEntity[]> {
+    await this.ensureDefaultCatalog();
     const topics = await this.prisma.educationalTopic.findMany({ orderBy: { order: 'asc' } });
     const progress = await this.prisma.userTopicProgress.findMany({ where: { userId } });
     const progressByTopic = new Map(progress.map((p) => [p.topicId, p]));
@@ -52,6 +55,7 @@ export class PrismaEducationRepository implements IEducationRepository {
   }
 
   async getTopicById(id: string, userId: string): Promise<EducationTopicEntity | null> {
+    await this.ensureDefaultCatalog();
     const t = await this.prisma.educationalTopic.findUnique({ where: { id } });
     if (!t) return null;
     const progress = await this.prisma.userTopicProgress.findUnique({ where: { userId_topicId: { userId, topicId: id } } });
@@ -107,6 +111,7 @@ export class PrismaEducationRepository implements IEducationRepository {
   }
 
   async getQuizPool(topicId: string, language: string): Promise<QuizQuestionEntity[]> {
+    await this.ensureDefaultCatalog();
     const rows = await this.prisma.quizQuestion.findMany({
       where: { topicId, language },
       orderBy: { difficulty: 'asc' },
@@ -171,5 +176,44 @@ export class PrismaEducationRepository implements IEducationRepository {
           r.correctAnswer,
         ),
     );
+  }
+
+  private async ensureDefaultCatalog(): Promise<void> {
+    for (const topic of DEFAULT_EDUCATION_TOPICS) {
+      const existing = await this.prisma.educationalTopic.findFirst({
+        where: { title: topic.title },
+        select: { id: true },
+      });
+      const record = existing
+        ? await this.prisma.educationalTopic.update({
+            where: { id: existing.id },
+            data: {
+              content: topic.content,
+              difficulty: topic.difficulty,
+              order: topic.order,
+              category: topic.category,
+            },
+          })
+        : await this.prisma.educationalTopic.create({ data: topic });
+
+      const existingQuizCount = await this.prisma.quizQuestion.count({
+        where: { topicId: record.id, language: 'es' },
+      });
+      if (existingQuizCount > 0) continue;
+
+      const questions = defaultQuizQuestionsForTopic(topic.title);
+      await this.prisma.quizQuestion.createMany({
+        data: questions.map((question) => ({
+          topicId: record.id,
+          questionGroupKey: question.questionGroupKey,
+          language: question.language,
+          difficulty: question.difficulty,
+          text: question.text,
+          options: question.options as unknown as Prisma.InputJsonValue,
+          correctAnswer: question.correctAnswer,
+        })),
+        skipDuplicates: true,
+      });
+    }
   }
 }

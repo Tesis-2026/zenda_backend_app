@@ -500,9 +500,23 @@ export class SurveysController {
 
   private async findSurveyOrThrow(type: SurveyType): Promise<Survey> {
     const survey = await this.prisma.survey.findFirst({ where: { type } });
-    if (survey) return survey;
-
     const questions = defaultQuestionsForSurveyType(type);
+    if (survey) {
+      if (
+        questions.length > 0 &&
+        this.isDefaultManagedSurvey(survey.questionsJson, questions)
+      ) {
+        return this.prisma.survey.update({
+          where: { id: survey.id },
+          data: {
+            questionsJson: questions as unknown as Prisma.InputJsonValue,
+          },
+        });
+      }
+
+      return survey;
+    }
+
     if (questions.length === 0) {
       throw new NotFoundException(`${type} survey not configured`);
     }
@@ -513,6 +527,17 @@ export class SurveysController {
         questionsJson: questions as unknown as Prisma.InputJsonValue,
       },
     });
+  }
+
+  private isDefaultManagedSurvey(
+    rawQuestions: Prisma.JsonValue,
+    defaultQuestions: SurveyQuestionJson[],
+  ): boolean {
+    const questions = parseSurveyQuestions(rawQuestions);
+    if (questions.length === 0) return true;
+
+    const defaultIds = new Set(defaultQuestions.map((question) => question.id));
+    return questions.every((question) => defaultIds.has(question.id));
   }
 
   private async getSurveyByType(type: SurveyType): Promise<object> {

@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import {
   CategoryType,
@@ -11,6 +10,7 @@ import {
   TopicDifficulty,
   TransactionType,
 } from '@prisma/client';
+import { defaultQuestionsForSurveyType } from '../src/modules/surveys/domain/default-surveys';
 
 type QuizDifficulty = TopicDifficulty;
 
@@ -700,10 +700,9 @@ async function seedSurveys(): Promise<void> {
     const existingQuestions = parseEmbeddedQuestions(record?.questionsJson);
     const existingByOrder = new Map(existingQuestions.map((q) => [q.order, q.id]));
 
-    const questions = SURVEY_QUESTIONS
-      .filter((q) => q.surveyType === survey.type)
+    const questions = defaultQuestionsForSurveyType(survey.type)
       .map((q) => ({
-        id: existingByOrder.get(q.order) ?? randomUUID(),
+        id: existingByOrder.get(q.order) ?? q.id,
         order: q.order,
         text: q.text,
         options: q.options,
