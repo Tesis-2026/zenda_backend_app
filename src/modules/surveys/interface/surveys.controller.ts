@@ -22,7 +22,12 @@ import {
   ApiNotFoundError,
   ApiValidationError,
 } from '../../../shared/swagger/api-responses.decorator';
-import { FinancialLiteracyLevel, Survey, SurveyType } from '@prisma/client';
+import {
+  FinancialLiteracyLevel,
+  Prisma,
+  Survey,
+  SurveyType,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
@@ -34,6 +39,7 @@ import {
   parseSurveyQuestions,
   SurveyQuestionJson,
 } from '../domain/survey-question.types';
+import { defaultQuestionsForSurveyType } from '../domain/default-surveys';
 
 @ApiTags('Surveys')
 @ApiBearerAuth()
@@ -405,9 +411,7 @@ export class SurveysController {
       where: { userId_surveyId: { userId, surveyId: survey.id } },
     });
     if (existing) {
-      throw new ConflictException(
-        'Satisfaction survey already submitted',
-      );
+      throw new ConflictException('Satisfaction survey already submitted');
     }
 
     const likertQuestions = questions.filter((q) => q.options.length > 0);
@@ -496,8 +500,19 @@ export class SurveysController {
 
   private async findSurveyOrThrow(type: SurveyType): Promise<Survey> {
     const survey = await this.prisma.survey.findFirst({ where: { type } });
-    if (!survey) throw new NotFoundException(`${type} survey not configured`);
-    return survey;
+    if (survey) return survey;
+
+    const questions = defaultQuestionsForSurveyType(type);
+    if (questions.length === 0) {
+      throw new NotFoundException(`${type} survey not configured`);
+    }
+
+    return this.prisma.survey.create({
+      data: {
+        type,
+        questionsJson: questions as unknown as Prisma.InputJsonValue,
+      },
+    });
   }
 
   private async getSurveyByType(type: SurveyType): Promise<object> {
