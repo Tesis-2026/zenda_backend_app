@@ -293,6 +293,7 @@ export class AzureFoundryAgentClient {
   private defaultTaskInstructions(): string {
     return [
       'Usa la base documental de Zenda y el contexto financiero del usuario para responder de forma educativa, segura y personalizada.',
+      'Si el usuario pregunta por funciones de la app, usa la guia de funcionalidades reales incluida en el contexto antes de responder.',
       'Responde en espanol claro con 100 a 150 palabras como maximo. Si el tema es complejo, resume lo esencial y ofrece continuar.',
       'Usa parrafos cortos o hasta 3 bullets. Evita respuestas largas, listas extensas y explicaciones enciclopedicas.',
       'No incluyas citas visibles, nombres de archivos, marcadores entre corchetes ni referencias tipo [1:archivo.md] en el texto. Las fuentes se devuelven solo como metadata.',
