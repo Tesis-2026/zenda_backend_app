@@ -8,5 +8,30 @@
   "testEnvironment": "node",
   "setupFiles": ["<rootDir>/test/support/setup-env.ts"],
   "testTimeout": 30000,
-  "moduleNameMapper": {}
+  "moduleNameMapper": {},
+  "collectCoverageFrom": [
+    "src/**/*.ts",
+    "!src/**/*.module.ts",
+    "!src/**/*.dto.ts",
+    "!src/**/dto/**",
+    "!src/**/*.entity.ts",
+    "!src/**/index.ts",
+    "!src/main.ts"
+  ],
+  "coverageDirectory": "<rootDir>/coverage",
+  "coverageReporters": ["html", "text-summary", "lcov"],
+  "reporters": [
+    "default",
+    [
+      "jest-html-reporters",
+      {
+        "publicPath": "<rootDir>/test-report",
+        "filename": "index.html",
+        "pageTitle": "Zenda Backend — Informe de Pruebas",
+        "expand": true,
+        "hideIcon": false,
+        "enableMergeData": false
+      }
+    ]
+  ]
 }
