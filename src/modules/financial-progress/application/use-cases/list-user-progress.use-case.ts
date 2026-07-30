@@ -16,13 +16,13 @@ export class ListUserProgressUseCase {
 
   async execute(query: ListUserProgressQuery): Promise<FinancialProgressEntity[]> {
     if (query.from !== undefined && !PERIOD_PATTERN.test(query.from)) {
-      throw new BadRequestException('from must match YYYY-MM');
+      throw new BadRequestException('from debe tener el formato YYYY-MM');
     }
     if (query.to !== undefined && !PERIOD_PATTERN.test(query.to)) {
-      throw new BadRequestException('to must match YYYY-MM');
+      throw new BadRequestException('to debe tener el formato YYYY-MM');
     }
     if (query.from && query.to && query.from > query.to) {
-      throw new BadRequestException('from must be <= to');
+      throw new BadRequestException('from debe ser <= to');
     }
 
     return this.repo.findByUser({

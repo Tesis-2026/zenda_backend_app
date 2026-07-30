@@ -26,7 +26,7 @@ export class VerifyOtpUseCase {
         status: AuditStatus.FAILURE,
         metadata: { reason: 'invalid_or_expired', email: email.toLowerCase() },
       });
-      throw new BadRequestException('Invalid or expired code.');
+      throw new BadRequestException('Codigo invalido o expirado.');
     }
 
     await this.otpRepository.markUsed(otp.id);

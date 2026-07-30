@@ -19,7 +19,7 @@ export class UpdateBudgetUseCase {
 
   async execute(cmd: UpdateBudgetCommand): Promise<BudgetEntity> {
     const existing = await this.repo.findById(cmd.budgetId, cmd.userId);
-    if (!existing) throw new NotFoundException('Budget not found');
+    if (!existing) throw new NotFoundException('Presupuesto no encontrado');
     const updated = await this.repo.update(cmd.budgetId, cmd.userId, {
       amountLimit: cmd.amountLimit,
       name: cmd.name,

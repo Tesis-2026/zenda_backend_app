@@ -11,7 +11,7 @@ export class DeleteBudgetUseCase {
 
   async execute(userId: string, budgetId: string): Promise<void> {
     const existing = await this.repo.findById(budgetId, userId);
-    if (!existing) throw new NotFoundException('Budget not found');
+    if (!existing) throw new NotFoundException('Presupuesto no encontrado');
     await this.repo.softDelete(budgetId, userId);
     this.auditLog.record({
       action: 'DELETE_BUDGET',

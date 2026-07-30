@@ -42,7 +42,7 @@ export class CreateTransactionUseCase {
   async execute(cmd: CreateTransactionCommand): Promise<CreateTransactionResult> {
     const occurredAt = cmd.occurredAt ? new Date(cmd.occurredAt) : new Date();
     if (occurredAt > new Date()) {
-      throw new BadRequestException('occurredAt cannot be in the future');
+      throw new BadRequestException('La fecha de la transaccion no puede estar en el futuro');
     }
 
     // AI fields are paired: either both or neither.
@@ -54,11 +54,11 @@ export class CreateTransactionUseCase {
       );
     }
     if (hasConfidence && (cmd.aiConfidence! < 0 || cmd.aiConfidence! > 1)) {
-      throw new BadRequestException('aiConfidence must be between 0 and 1');
+      throw new BadRequestException('aiConfidence debe estar entre 0 y 1');
     }
 
     if (cmd.type === TransactionType.TRANSFER) {
-      throw new BadRequestException('Use /accounts/transfer to move money between accounts');
+      throw new BadRequestException('Usa /accounts/transfer para mover dinero entre cuentas');
     }
 
     const [category, account] = await Promise.all([

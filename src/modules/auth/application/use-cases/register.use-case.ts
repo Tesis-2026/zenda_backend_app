@@ -38,7 +38,7 @@ export class RegisterUseCase {
   async execute(cmd: RegisterCommand): Promise<RegisterResult> {
     const existing = await this.userRepository.findByEmail(cmd.email);
     if (existing) {
-      throw new ConflictException('Email already registered');
+      throw new ConflictException('El correo ya esta registrado');
     }
 
     const rounds = this.config.get<number>('auth.bcryptRounds') ?? 12;

@@ -14,7 +14,7 @@ export class CompleteGoalUseCase {
 
   async execute(userId: string, goalId: string): Promise<SavingsGoalEntity> {
     const goal = await this.repo.findById(goalId, userId);
-    if (!goal) throw new NotFoundException('Goal not found');
+    if (!goal) throw new NotFoundException('Meta no encontrada');
 
     const updated = await this.repo.complete(goalId);
     await this.badges.awardIfNotEarned(userId, 'Goal Achieved');

@@ -74,7 +74,7 @@ export class PrismaRecommendationRepository implements IRecommendationRepository
       where: { id, userId },
       data: { feedbackAccepted: accepted, feedbackAt: new Date() },
     });
-    if (updated.count === 0) throw new NotFoundException('Recommendation not found');
+    if (updated.count === 0) throw new NotFoundException('Recomendacion no encontrada');
   }
 
   async getStats(userId: string): Promise<{ total: number; accepted: number; acceptanceRate: number }> {

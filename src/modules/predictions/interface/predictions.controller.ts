@@ -66,7 +66,7 @@ export class PredictionsController {
 
     const prediction = await this.predictionRepository.findByUserAndPeriod(userId, period, 'EXPENSE');
     if (!prediction) {
-      throw new NotFoundException(`No stored prediction found for period ${period}`);
+      throw new NotFoundException(`No hay prediccion guardada para el periodo ${period}`);
     }
 
     const from = new Date(year, month - 1, 1);

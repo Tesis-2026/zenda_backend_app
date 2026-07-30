@@ -13,7 +13,7 @@ export class ListGoalContributionsUseCase {
   async execute(query: ListGoalContributionsQuery): Promise<GoalContributionRecord[]> {
     // Verify ownership before returning contributions
     const goal = await this.repo.findById(query.goalId, query.userId);
-    if (!goal) throw new NotFoundException('Goal not found');
+    if (!goal) throw new NotFoundException('Meta no encontrada');
 
     return this.repo.findContributions(query.goalId);
   }

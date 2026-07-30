@@ -42,10 +42,10 @@ export class GeneratePdfReportUseCase {
     const toIndex = toYear * 12 + (toMonth - 1);
     const spanMonths = toIndex - fromIndex + 1;
     if (spanMonths < 1) {
-      throw new BadRequestException('The start of the range must not be after its end');
+      throw new BadRequestException('El inicio del rango no puede ser posterior al fin');
     }
     if (spanMonths > MAX_RANGE_MONTHS) {
-      throw new BadRequestException(`The range cannot exceed ${MAX_RANGE_MONTHS} months`);
+      throw new BadRequestException(`El rango no puede exceder ${MAX_RANGE_MONTHS} meses`);
     }
 
     const from = new Date(fromYear, fromMonth - 1, 1);

@@ -25,7 +25,7 @@ export class EmailService {
     const mailOptions = {
       from,
       to,
-      subject: 'Zenda — Reset your password',
+      subject: 'Zenda - Restablece tu contrasena',
       text: this.buildResetEmailText(token),
       html: this.buildResetEmailHtml(token),
     };
@@ -43,17 +43,17 @@ export class EmailService {
     const mailOptions = {
       from,
       to,
-      subject: 'Zenda — Your verification code',
-      text: `Your Zenda verification code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you did not request this, ignore this email.`,
+      subject: 'Zenda - Tu codigo de verificacion',
+      text: `Tu codigo de verificacion de Zenda es: ${code}\n\nEste codigo expira en 15 minutos.\n\nSi no solicitaste este codigo, ignora este correo.`,
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
-          <h2 style="color:#10B981">Your Zenda verification code</h2>
-          <p>Enter the 6-digit code below to reset your password.</p>
+          <h2 style="color:#10B981">Tu codigo de verificacion de Zenda</h2>
+          <p>Ingresa el codigo de 6 digitos para restablecer tu contrasena.</p>
           <div style="background:#F0FDF4;border:1px solid #34D399;border-radius:8px;padding:20px;text-align:center;margin:24px 0">
             <span style="font-size:36px;font-weight:bold;letter-spacing:10px;color:#065F46">${code}</span>
           </div>
-          <p style="color:#6B7280;font-size:14px">This code expires in <strong>15 minutes</strong>.</p>
-          <p style="color:#6B7280;font-size:14px">If you did not request this, ignore this email — your account is safe.</p>
+          <p style="color:#6B7280;font-size:14px">Este codigo expira en <strong>15 minutos</strong>.</p>
+          <p style="color:#6B7280;font-size:14px">Si no solicitaste este codigo, ignora este correo — tu cuenta esta segura.</p>
         </div>
       `,
     };
@@ -98,27 +98,27 @@ export class EmailService {
 
   private buildResetEmailText(token: string): string {
     return [
-      'You requested a password reset for your Zenda account.',
+      'Solicitaste restablecer la contrasena de tu cuenta de Zenda.',
       '',
-      `Your reset code is: ${token}`,
+      `Tu codigo de restablecimiento es: ${token}`,
       '',
-      'Enter this code in the Zenda app on the "Reset Password" screen.',
-      'This code expires in 1 hour.',
+      'Ingresa este codigo en la app de Zenda, en la pantalla "Restablecer contrasena".',
+      'Este codigo expira en 1 hora.',
       '',
-      'If you did not request this, ignore this email — your account is safe.',
+      'Si no solicitaste este cambio, ignora este correo — tu cuenta esta segura.',
     ].join('\n');
   }
 
   private buildResetEmailHtml(token: string): string {
     return `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
-        <h2 style="color:#10B981">Reset your Zenda password</h2>
-        <p>You requested a password reset. Enter the code below in the Zenda app.</p>
+        <h2 style="color:#10B981">Restablece tu contrasena de Zenda</h2>
+        <p>Solicitaste restablecer tu contrasena. Ingresa el siguiente codigo en la app de Zenda.</p>
         <div style="background:#F0FDF4;border:1px solid #34D399;border-radius:8px;padding:20px;text-align:center;margin:24px 0">
           <span style="font-size:28px;font-weight:bold;letter-spacing:6px;color:#065F46">${token}</span>
         </div>
-        <p style="color:#6B7280;font-size:14px">This code expires in <strong>1 hour</strong>.</p>
-        <p style="color:#6B7280;font-size:14px">If you did not request this, ignore this email — your account is safe.</p>
+        <p style="color:#6B7280;font-size:14px">Este codigo expira en <strong>1 hora</strong>.</p>
+        <p style="color:#6B7280;font-size:14px">Si no solicitaste este cambio, ignora este correo — tu cuenta esta segura.</p>
       </div>
     `;
   }

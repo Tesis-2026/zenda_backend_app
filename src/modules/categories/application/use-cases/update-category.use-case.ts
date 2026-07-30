@@ -19,16 +19,16 @@ export class UpdateCategoryUseCase {
   async execute(cmd: UpdateCategoryCommand): Promise<CategoryEntity> {
     const category = await this.repo.findById(cmd.categoryId, cmd.userId);
     if (!category) {
-      throw new NotFoundException('Category not found');
+      throw new NotFoundException('Categoria no encontrada');
     }
     if (!category.isOwnedBy(cmd.userId)) {
-      throw new ForbiddenException('Cannot rename system categories');
+      throw new ForbiddenException('No se pueden renombrar las categorias del sistema');
     }
 
     const trimmed = cmd.name.trim();
     const existing = await this.repo.findByNameForUser(trimmed, cmd.userId);
     if (existing && existing.id !== cmd.categoryId) {
-      throw new ConflictException(`Category "${trimmed}" already exists`);
+      throw new ConflictException(`La categoria "${trimmed}" ya existe`);
     }
 
     const updated = await this.repo.update(cmd.categoryId, trimmed);

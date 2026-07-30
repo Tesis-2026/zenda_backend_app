@@ -13,7 +13,7 @@ export class GetMonthComparisonUseCase {
   async execute(query: GetMonthComparisonQuery): Promise<MonthComparisonEntry[]> {
     const { userId, months } = query;
     if (months < 2) {
-      throw new BadRequestException('At least 2 months of data are required for comparison');
+      throw new BadRequestException('Se necesitan al menos 2 meses de datos para comparar');
     }
     return this.repo.getMonthComparison(userId, months);
   }

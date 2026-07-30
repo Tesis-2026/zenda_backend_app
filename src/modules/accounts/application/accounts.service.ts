@@ -95,14 +95,14 @@ export class AccountsService {
     description?: string | null;
   }): Promise<AccountSummary> {
     if (params.type === TransactionType.TRANSFER) {
-      throw new BadRequestException('Use the transfer endpoint for account transfers');
+      throw new BadRequestException('Usa el endpoint de transferencias para mover dinero entre cuentas');
     }
 
     const accounts = await this.ensureDefaultAccounts(params.userId);
     if (params.accountId) {
       const explicit = accounts.find((account) => account.id === params.accountId);
       if (!explicit) {
-        throw new BadRequestException('Account not found or not accessible');
+        throw new BadRequestException('Cuenta no encontrada o no accesible');
       }
       return this.toSummary(explicit, this.emptyTotals());
     }
@@ -134,7 +134,7 @@ export class AccountsService {
     toAccountId: string;
   }> {
     if (dto.fromAccountId === dto.toAccountId) {
-      throw new BadRequestException('Source and destination accounts must be different');
+      throw new BadRequestException('La cuenta de origen y la de destino deben ser diferentes');
     }
 
     const [from, to] = await Promise.all([
@@ -143,12 +143,12 @@ export class AccountsService {
     ]);
 
     if (from.type === AccountType.CREDIT_CARD) {
-      throw new BadRequestException('Credit cards cannot be used as transfer source in this MVP');
+      throw new BadRequestException('Las tarjetas de credito no pueden usarse como origen de transferencias en este MVP');
     }
 
     const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : new Date();
     if (occurredAt > new Date()) {
-      throw new BadRequestException('occurredAt cannot be in the future');
+      throw new BadRequestException('La fecha de la transaccion no puede estar en el futuro');
     }
 
     const row = await this.prisma.transaction.create({
@@ -252,7 +252,7 @@ export class AccountsService {
       where: { id, userId, deletedAt: null },
     });
     if (!account) {
-      throw new NotFoundException('Account not found or not accessible');
+      throw new NotFoundException('Cuenta no encontrada o no accesible');
     }
     return account;
   }

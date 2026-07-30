@@ -30,7 +30,7 @@ export class ExportUserDataUseCase {
       },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('Usuario no encontrado');
 
     const [
       accounts,

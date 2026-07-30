@@ -25,10 +25,10 @@ export class UpdateGoalUseCase {
   async execute(cmd: UpdateGoalCommand): Promise<SavingsGoalEntity> {
     // findById filters by userId → enforces ownership before the bare update.
     const existing = await this.repo.findById(cmd.goalId, cmd.userId);
-    if (!existing) throw new NotFoundException('Goal not found');
+    if (!existing) throw new NotFoundException('Meta no encontrada');
 
     if (cmd.dueDate && cmd.dueDate <= new Date()) {
-      throw new BadRequestException('dueDate must be a future date');
+      throw new BadRequestException('La fecha limite debe ser una fecha futura');
     }
     if (
       cmd.targetAmount !== undefined &&

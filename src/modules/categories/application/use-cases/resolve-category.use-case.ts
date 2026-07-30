@@ -20,15 +20,15 @@ export class ResolveCategoryUseCase {
     const { userId, categoryId, newCategoryName } = cmd;
 
     if (categoryId && newCategoryName) {
-      throw new BadRequestException('Provide categoryId or newCategoryName, not both');
+      throw new BadRequestException('Envia categoryId o newCategoryName, no ambos');
     }
     if (!categoryId && !newCategoryName) {
-      throw new BadRequestException('Provide either categoryId or newCategoryName');
+      throw new BadRequestException('Envia categoryId o newCategoryName');
     }
 
     if (categoryId) {
       const category = await this.repo.findById(categoryId, userId);
-      if (!category) throw new BadRequestException('Category not found or not accessible');
+      if (!category) throw new BadRequestException('Categoria no encontrada o no accesible');
       return category;
     }
 

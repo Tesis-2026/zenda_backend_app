@@ -21,7 +21,7 @@ export class AnonymizeAccountUseCase {
       },
     });
 
-    if (!existing) throw new NotFoundException('User not found');
+    if (!existing) throw new NotFoundException('Usuario no encontrado');
 
     const now = new Date();
     const anonymizedEmail = `deleted-${userId}@zenda.anonymized.local`;

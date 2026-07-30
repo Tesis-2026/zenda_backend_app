@@ -15,7 +15,7 @@ export class MarkReadUseCase {
   async execute(id: string, userId: string): Promise<NotificationEntity> {
     const result = await this.repo.markRead(id, userId);
     if (!result) {
-      throw new NotFoundException('Notification not found');
+      throw new NotFoundException('Notificacion no encontrada');
     }
     return result;
   }

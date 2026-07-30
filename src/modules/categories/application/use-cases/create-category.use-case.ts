@@ -19,7 +19,7 @@ export class CreateCategoryUseCase {
     const trimmed = cmd.name.trim();
     const existing = await this.repo.findByNameForUser(trimmed, cmd.userId);
     if (existing) {
-      throw new ConflictException(`Category "${trimmed}" already exists`);
+      throw new ConflictException(`La categoria "${trimmed}" ya existe`);
     }
     const created = await this.repo.create({ name: trimmed, userId: cmd.userId });
     this.auditLog.record({

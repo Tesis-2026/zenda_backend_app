@@ -35,7 +35,7 @@ export class GetQuizUseCase {
     const pool = await this.repo.getQuizPool(cmd.topicId, lang);
 
     if (pool.length === 0) {
-      throw new NotFoundException('No quiz questions available for this topic');
+      throw new NotFoundException('No hay preguntas de quiz disponibles para este tema');
     }
 
     const selected = this._selectQuestions(pool);

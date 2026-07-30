@@ -39,11 +39,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const user = await this.userRepository.findById(payload.sub);
     if (!user || user.isDeleted) {
-      throw new UnauthorizedException('Account is no longer active');
+      throw new UnauthorizedException('La cuenta ya no esta activa');
     }
 
     if (user.tokenVersion !== payload.tokenVersion) {
-      throw new UnauthorizedException('Session has been revoked, please sign in again');
+      throw new UnauthorizedException('La sesion fue revocada, inicia sesion nuevamente');
     }
 
     // Return the JWT payload augmented with the freshest consentGiven

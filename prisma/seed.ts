@@ -222,7 +222,8 @@ const EDUCATIONAL_TOPICS = [
 ];
 
 // ─────────────────────────────────────────────────────────────────
-// SURVEYS — financial literacy knowledge questions (US-1201/1202)
+// SURVEYS (US-1201/1202) — question content lives in
+// src/modules/surveys/domain/default-surveys.ts (Spanish, single source)
 // ─────────────────────────────────────────────────────────────────
 
 const SURVEYS = [
@@ -230,353 +231,6 @@ const SURVEYS = [
   { type: SurveyType.POST },
   { type: SurveyType.SUS },
   { type: SurveyType.SATISFACTION },
-];
-
-const SURVEY_QUESTIONS: Array<{
-  surveyType: SurveyType;
-  order: number;
-  text: string;
-  options: string[];
-  correctAnswer: string;
-}> = [
-  // PRE-survey questions
-  {
-    surveyType: SurveyType.PRE,
-    order: 1,
-    text: 'What does the 50/30/20 budget rule mean?',
-    options: [
-      '50% needs, 30% wants, 20% savings',
-      '50% savings, 30% needs, 20% wants',
-      '50% wants, 30% savings, 20% needs',
-      'It refers to tax brackets in Peru',
-    ],
-    correctAnswer: '50% needs, 30% wants, 20% savings',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 2,
-    text: 'What is TEA (Tasa Efectiva Anual)?',
-    options: [
-      'The nominal annual interest rate without compounding',
-      'The effective annual rate that accounts for compounding',
-      'A government tax on bank accounts',
-      'A metric for inflation in Peru',
-    ],
-    correctAnswer: 'The effective annual rate that accounts for compounding',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 3,
-    text: 'Which of the following is considered a "need" in the 50/30/20 rule?',
-    options: ['Netflix subscription', 'Rent or housing payment', 'Dining out with friends', 'New sneakers'],
-    correctAnswer: 'Rent or housing payment',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 4,
-    text: 'What does "pay yourself first" mean?',
-    options: [
-      'Spend on luxuries before paying bills',
-      'Save a portion of your income before spending on anything else',
-      'Pay your debts before saving',
-      'Give yourself a weekly allowance',
-    ],
-    correctAnswer: 'Save a portion of your income before spending on anything else',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 5,
-    text: 'If you save S/10 per week, approximately how much will you have saved after one year?',
-    options: ['S/240', 'S/520', 'S/1,200', 'S/50'],
-    correctAnswer: 'S/520',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 6,
-    text: 'What is the "Rule of 72" used for?',
-    options: [
-      'Calculating monthly loan payments',
-      'Estimating how many years it takes to double an investment',
-      'Determining the optimal credit card limit',
-      'Computing inflation-adjusted savings',
-    ],
-    correctAnswer: 'Estimating how many years it takes to double an investment',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 7,
-    text: 'Which digital wallet is associated with Banco de Crédito del Perú (BCP)?',
-    options: ['Plin', 'Yape', 'Tunki', 'Lukita'],
-    correctAnswer: 'Yape',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 8,
-    text: 'What is inflation?',
-    options: [
-      'A decrease in the purchasing power of money over time',
-      'An increase in personal savings rates',
-      'The interest rate on government bonds',
-      'A tax on imported goods',
-    ],
-    correctAnswer: 'A decrease in the purchasing power of money over time',
-  },
-  // POST-survey questions (same questions, tests improvement)
-  {
-    surveyType: SurveyType.POST,
-    order: 1,
-    text: 'What does the 50/30/20 budget rule mean?',
-    options: [
-      '50% needs, 30% wants, 20% savings',
-      '50% savings, 30% needs, 20% wants',
-      '50% wants, 30% savings, 20% needs',
-      'It refers to tax brackets in Peru',
-    ],
-    correctAnswer: '50% needs, 30% wants, 20% savings',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 2,
-    text: 'What is TEA (Tasa Efectiva Anual)?',
-    options: [
-      'The nominal annual interest rate without compounding',
-      'The effective annual rate that accounts for compounding',
-      'A government tax on bank accounts',
-      'A metric for inflation in Peru',
-    ],
-    correctAnswer: 'The effective annual rate that accounts for compounding',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 3,
-    text: 'Which of the following is considered a "need" in the 50/30/20 rule?',
-    options: ['Netflix subscription', 'Rent or housing payment', 'Dining out with friends', 'New sneakers'],
-    correctAnswer: 'Rent or housing payment',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 4,
-    text: 'What does "pay yourself first" mean?',
-    options: [
-      'Spend on luxuries before paying bills',
-      'Save a portion of your income before spending on anything else',
-      'Pay your debts before saving',
-      'Give yourself a weekly allowance',
-    ],
-    correctAnswer: 'Save a portion of your income before spending on anything else',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 5,
-    text: 'If you save S/10 per week, approximately how much will you have saved after one year?',
-    options: ['S/240', 'S/520', 'S/1,200', 'S/50'],
-    correctAnswer: 'S/520',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 6,
-    text: 'What is the "Rule of 72" used for?',
-    options: [
-      'Calculating monthly loan payments',
-      'Estimating how many years it takes to double an investment',
-      'Determining the optimal credit card limit',
-      'Computing inflation-adjusted savings',
-    ],
-    correctAnswer: 'Estimating how many years it takes to double an investment',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 7,
-    text: 'Which digital wallet is associated with Banco de Crédito del Perú (BCP)?',
-    options: ['Plin', 'Yape', 'Tunki', 'Lukita'],
-    correctAnswer: 'Yape',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 8,
-    text: 'What is inflation?',
-    options: [
-      'A decrease in the purchasing power of money over time',
-      'An increase in personal savings rates',
-      'The interest rate on government bonds',
-      'A tax on imported goods',
-    ],
-    correctAnswer: 'A decrease in the purchasing power of money over time',
-  },
-  // PRE questions 9–15
-  {
-    surveyType: SurveyType.PRE,
-    order: 9,
-    text: 'How many months of expenses should an emergency fund ideally cover?',
-    options: ['1 month', '2 months', '3 to 6 months', '12 months'],
-    correctAnswer: '3 to 6 months',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 10,
-    text: 'If you do not pay your full credit card balance, interest is charged on:',
-    options: [
-      'Only the new purchases made that month',
-      'The unpaid balance, compounding each billing cycle',
-      'Only the minimum payment amount',
-      'Nothing — credit cards are interest-free if you pay the minimum',
-    ],
-    correctAnswer: 'The unpaid balance, compounding each billing cycle',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 11,
-    text: 'If inflation is 6% and your savings account earns 3%, what happens to the real value of your savings?',
-    options: [
-      'It grows at 9%',
-      'It stays the same',
-      'It decreases — your purchasing power falls by approximately 3% per year',
-      'It depends on the bank',
-    ],
-    correctAnswer: 'It decreases — your purchasing power falls by approximately 3% per year',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 12,
-    text: 'What is "opportunity cost"?',
-    options: [
-      'The discount you receive when buying in bulk',
-      'The value of the next-best alternative you give up when making a choice',
-      'The extra cost of buying on credit instead of cash',
-      'A government subsidy for low-income students',
-    ],
-    correctAnswer: 'The value of the next-best alternative you give up when making a choice',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 13,
-    text: 'What is the main difference between a debit card and a credit card?',
-    options: [
-      'Debit cards charge interest; credit cards do not',
-      'Debit cards spend your own money; credit cards borrow money you must repay',
-      'Credit cards can only be used online; debit cards only in stores',
-      'There is no difference — both draw from your bank account',
-    ],
-    correctAnswer: 'Debit cards spend your own money; credit cards borrow money you must repay',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 14,
-    text: 'In Peru\'s AFP pension system, which fund type is recommended for young workers (under 30)?',
-    options: ['Fondo 0 (capital preservation)', 'Fondo 1 (conservative bonds)', 'Fondo 2 (balanced)', 'Fondo 3 (aggressive growth)'],
-    correctAnswer: 'Fondo 3 (aggressive growth)',
-  },
-  {
-    surveyType: SurveyType.PRE,
-    order: 15,
-    text: 'What is dollar cost averaging (DCA)?',
-    options: [
-      'Exchanging soles to dollars to protect against inflation',
-      'Investing a fixed amount regularly regardless of market price to reduce timing risk',
-      'Buying assets only when prices are at their lowest',
-      'A strategy used only by professional investors',
-    ],
-    correctAnswer: 'Investing a fixed amount regularly regardless of market price to reduce timing risk',
-  },
-  // POST questions 9–15 (same concepts, different phrasing)
-  {
-    surveyType: SurveyType.POST,
-    order: 9,
-    text: 'Financial experts recommend saving at least how many months of living expenses as an emergency fund?',
-    options: ['1 month', '2 months', '3 to 6 months', '18 months'],
-    correctAnswer: '3 to 6 months',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 10,
-    text: 'A Scotiabank credit card has a 60% TEA. You carry a S/500 balance for one year without paying. Approximately how much will you owe?',
-    options: ['S/530', 'S/600', 'S/800', 'S/1,050'],
-    correctAnswer: 'S/800',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 11,
-    text: 'Peru\'s BCRP targets annual inflation at approximately 2%. If your salary stays the same but prices rise 2%, your real purchasing power:',
-    options: [
-      'Increases by 2%',
-      'Stays exactly the same',
-      'Decreases by approximately 2%',
-      'Depends entirely on the dollar exchange rate',
-    ],
-    correctAnswer: 'Decreases by approximately 2%',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 12,
-    text: 'You spend S/300 on a new phone instead of contributing to your emergency fund. The S/300 of savings you forgo is called:',
-    options: [
-      'A sunk cost',
-      'The opportunity cost of buying the phone',
-      'A fixed cost',
-      'A discretionary expense',
-    ],
-    correctAnswer: 'The opportunity cost of buying the phone',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 13,
-    text: 'You pay for groceries with your Interbank debit card. The money comes from:',
-    options: [
-      'A line of credit you repay next month',
-      'Your own bank account balance immediately',
-      'A loan from Interbank at the prevailing TEA',
-      'A government subsidy for essential purchases',
-    ],
-    correctAnswer: 'Your own bank account balance immediately',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 14,
-    text: 'Between 2020 and 2022, Congress allowed Peruvians to withdraw AFP funds. What long-term risk does this create for young workers who withdrew?',
-    options: [
-      'No risk — the AFP refills balances automatically',
-      'Loss of decades of compound growth in their retirement fund',
-      'The withdrawn amount counts as taxable income at 29.5%',
-      'They lose access to future AFP Fondo 3',
-    ],
-    correctAnswer: 'Loss of decades of compound growth in their retirement fund',
-  },
-  {
-    surveyType: SurveyType.POST,
-    order: 15,
-    text: 'A university student invests S/100 every month in a fondo mutuo regardless of whether the market is up or down. This strategy is called:',
-    options: [
-      'Market timing',
-      'Dollar cost averaging',
-      'Hedging',
-      'Arbitrage',
-    ],
-    correctAnswer: 'Dollar cost averaging',
-  },
-  // SUS survey — 10 standard Likert-scale questions (no correctAnswer; scored by formula)
-  { surveyType: SurveyType.SUS, order: 1,  text: 'Creo que me gustaría usar esta aplicación con frecuencia.',                                                    options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SUS, order: 2,  text: 'Encontré la aplicación innecesariamente compleja.',                                                            options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SUS, order: 3,  text: 'Pensé que la aplicación era fácil de usar.',                                                                   options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SUS, order: 4,  text: 'Creo que necesitaría el apoyo de una persona técnica para poder usar esta aplicación.',                         options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SUS, order: 5,  text: 'Encontré que las distintas funciones de la aplicación estaban bien integradas.',                               options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SUS, order: 6,  text: 'Pensé que había demasiada inconsistencia en esta aplicación.',                                                 options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SUS, order: 7,  text: 'Imagino que la mayoría de personas aprendería a usar esta aplicación muy rápidamente.',                        options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SUS, order: 8,  text: 'Encontré la aplicación muy difícil de usar.',                                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SUS, order: 9,  text: 'Me sentí muy seguro/a usando la aplicación.',                                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SUS, order: 10, text: 'Necesité aprender muchas cosas antes de poder comenzar a usar esta aplicación.',                               options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-
-  // Final satisfaction survey for the thesis pilot: Likert 1-5 + qualitative feedback.
-  { surveyType: SurveyType.SATISFACTION, order: 1,  text: 'La app me ayudó a entender mejor mis gastos.',                                      options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 2,  text: 'La app me ayudó a controlar mejor mi presupuesto.',                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 3,  text: 'Las recomendaciones fueron útiles.',                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 4,  text: 'El asistente IA fue claro.',                                                         options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 5,  text: 'El asistente IA fue personalizado.',                                                 options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 6,  text: 'Me gustaría seguir usando la app.',                                                  options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 7,  text: 'Recomendaría esta app a otros estudiantes.',                                        options: ['1','2','3','4','5'], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 8,  text: '¿Qué funcionalidad te ayudó más?',                                                   options: [], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 9,  text: '¿Qué mejorarías?',                                                                  options: [], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 10, text: '¿Qué recomendación del asistente te pareció más útil?',                            options: [], correctAnswer: null as unknown as string },
-  { surveyType: SurveyType.SATISFACTION, order: 11, text: '¿Qué parte fue confusa?',                                                           options: [], correctAnswer: null as unknown as string },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -954,8 +608,8 @@ async function seedPilotUsers(): Promise<void> {
     await completeTopics(user.id, ['Presupuesto personal', 'Hábitos de ahorro', 'Inflación']);
     if (preSurvey) await createSurveyResponse(user.id, preSurvey.id, 60);
     await createRecommendations(user.id, [
-      { type: RecommendationType.SAVINGS, message: 'You\'re spending 42% on needs. Try allocating 8% more to savings to reach the 20% target.', suggestedAction: 'Set a savings goal of S/130 this month.' },
-      { type: RecommendationType.BUDGET, message: 'Your entertainment budget is at 78%. You have S/33 left this month.', suggestedAction: 'Limit entertainment outings to 2 this week.' },
+      { type: RecommendationType.SAVINGS, message: 'Estás gastando 42% en necesidades. Intenta destinar 8% más al ahorro para llegar a la meta del 20%.', suggestedAction: 'Ponte una meta de ahorro de S/130 este mes.' },
+      { type: RecommendationType.BUDGET, message: 'Tu presupuesto de entretenimiento está al 78%. Te quedan S/33 este mes.', suggestedAction: 'Limita las salidas de entretenimiento a 2 esta semana.' },
     ]);
 
     console.log('✓ User 1 seeded: demo@zenda.app / Demo1234!Zenda');
@@ -1030,8 +684,8 @@ async function seedPilotUsers(): Promise<void> {
     if (preSurvey) await createSurveyResponse(user.id, preSurvey.id, 80);
     if (postSurvey) await createSurveyResponse(user.id, postSurvey.id, 95);
     await createRecommendations(user.id, [
-      { type: RecommendationType.GOAL, message: 'You\'re 60% towards your Colombia trip! At your current pace you\'ll reach it in 2 months.', suggestedAction: 'Increase your monthly contribution to S/350 to reach the goal one month early.' },
-      { type: RecommendationType.SAVINGS, message: 'You consistently save over 20% each month. Consider opening a savings account to earn interest.', suggestedAction: 'Research high-yield savings options available to students in Peru.' },
+      { type: RecommendationType.GOAL, message: '¡Ya tienes el 60% de tu Viaje a Colombia! A tu ritmo actual la alcanzarás en 2 meses.', suggestedAction: 'Sube tu aporte mensual a S/350 para llegar a la meta un mes antes.' },
+      { type: RecommendationType.SAVINGS, message: 'Ahorras de forma constante más del 20% cada mes. Considera abrir una cuenta de ahorros que genere intereses.', suggestedAction: 'Investiga opciones de ahorro con buen rendimiento para estudiantes en Perú.' },
     ]);
 
     console.log('✓ User 2 seeded: ana.garcia@zenda.app / Demo1234!Zenda');
@@ -1110,8 +764,8 @@ async function seedPilotUsers(): Promise<void> {
     await awardBadges(user.id, ['First Transaction']);
     // No challenges accepted, no education progress, no survey
     await createRecommendations(user.id, [
-      { type: RecommendationType.BUDGET, message: 'You\'ve exceeded your Food budget by over 40% this month. That\'s S/80 over your S/200 limit.', suggestedAction: 'Cook at home at least 3 days this week to cut food costs.' },
-      { type: RecommendationType.BUDGET, message: 'Entertainment spending is 180% of your monthly budget. Consider a no-spend weekend.', suggestedAction: 'Look for free events on campus this weekend.' },
+      { type: RecommendationType.BUDGET, message: 'Superaste tu presupuesto de Comida en más del 40% este mes. Son S/80 por encima de tu límite de S/200.', suggestedAction: 'Cocina en casa al menos 3 días esta semana para reducir gastos de comida.' },
+      { type: RecommendationType.BUDGET, message: 'Tu gasto en entretenimiento llegó al 180% de tu presupuesto mensual. Considera un fin de semana sin gastos.', suggestedAction: 'Busca eventos gratuitos en tu campus este fin de semana.' },
     ]);
 
     console.log('✓ User 3 seeded: carlos.mendoza@zenda.app / Demo1234!Zenda');
@@ -1160,7 +814,7 @@ async function seedPilotUsers(): Promise<void> {
 
     // No challenges, no badges, no education, no survey responses
     await createRecommendations(user.id, [
-      { type: RecommendationType.SAVINGS, message: 'Great start! You\'ve recorded 3 weeks of expenses. Try setting a savings goal to build your financial habits.', suggestedAction: 'Set aside S/50 this month for your textbooks goal.' },
+      { type: RecommendationType.SAVINGS, message: '¡Buen comienzo! Llevas 3 semanas registrando gastos. Ponte una meta de ahorro para reforzar tus hábitos financieros.', suggestedAction: 'Separa S/50 este mes para tu meta de libros.' },
     ]);
 
     console.log('✓ User 4 seeded: lucia.torres@zenda.app / Demo1234!Zenda');
@@ -1270,9 +924,9 @@ async function seedPilotUsers(): Promise<void> {
     if (postSurvey) await createSurveyResponse(user.id, postSurvey.id, 90);
 
     await createRecommendations(user.id, [
-      { type: RecommendationType.GOAL, message: 'You\'re 37.5% toward your Masters Fund. Increasing monthly contributions by S/100 would shave 4 months off the timeline.', suggestedAction: 'Review non-essential subscriptions and redirect savings to this goal.' },
-      { type: RecommendationType.SAVINGS, message: 'You\'ve saved consistently for 6 months. Your savings rate is 22% — right on target with the 50/30/20 rule.', suggestedAction: 'Consider low-risk investment options to make your savings work harder.' },
-      { type: RecommendationType.BUDGET, message: 'Your Shopping category is at 68% this month with 10 days remaining. Good control.', suggestedAction: 'You have S/96 left in your shopping budget — hold off on non-essentials until next month.' },
+      { type: RecommendationType.GOAL, message: 'Llevas el 37.5% de tu Fondo Maestría. Subir tu aporte mensual en S/100 recortaría 4 meses del plazo.', suggestedAction: 'Revisa tus suscripciones no esenciales y redirige ese ahorro a esta meta.' },
+      { type: RecommendationType.SAVINGS, message: 'Has ahorrado de forma constante durante 6 meses. Tu tasa de ahorro es 22% — justo en la meta de la regla 50/30/20.', suggestedAction: 'Considera opciones de inversión de bajo riesgo para hacer crecer tu ahorro.' },
+      { type: RecommendationType.BUDGET, message: 'Tu categoría de Compras está al 68% este mes y quedan 10 días. Buen control.', suggestedAction: 'Te quedan S/96 en tu presupuesto de compras — pospón lo no esencial hasta el próximo mes.' },
     ]);
 
     console.log('✓ User 5 seeded: miguel.rios@zenda.app / Demo1234!Zenda');

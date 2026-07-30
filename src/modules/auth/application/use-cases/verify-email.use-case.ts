@@ -37,7 +37,7 @@ export class VerifyEmailUseCase {
         status: AuditStatus.FAILURE,
         metadata: { reason: 'invalid_or_expired', email: email.toLowerCase() },
       });
-      throw new BadRequestException('Invalid or expired verification code.');
+      throw new BadRequestException('Codigo de verificacion invalido o expirado.');
     }
 
     await this.emailVerificationRepository.markUsed(challenge.id);

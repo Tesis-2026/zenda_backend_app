@@ -25,13 +25,13 @@ export class ResetPasswordUseCase {
     const record = await this.tokenRepository.findByToken(cmd.token);
 
     if (!record) {
-      throw new NotFoundException('Invalid or expired reset token');
+      throw new NotFoundException('Codigo de restablecimiento invalido o expirado');
     }
     if (record.usedAt !== null) {
-      throw new BadRequestException('Reset token has already been used');
+      throw new BadRequestException('El codigo de restablecimiento ya fue usado');
     }
     if (record.expiresAt < new Date()) {
-      throw new BadRequestException('Reset token has expired');
+      throw new BadRequestException('El codigo de restablecimiento ha expirado');
     }
 
     const rounds = this.config.get<number>('auth.bcryptRounds') ?? 12;

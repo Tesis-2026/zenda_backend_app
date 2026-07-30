@@ -24,7 +24,7 @@ export class ContributeToGoalUseCase {
 
   async execute(cmd: ContributeToGoalCommand): Promise<SavingsGoalEntity> {
     const goal = await this.repo.findById(cmd.goalId, cmd.userId);
-    if (!goal) throw new NotFoundException('Goal not found');
+    if (!goal) throw new NotFoundException('Meta no encontrada');
 
     const newAmount = goal.contribute(cmd.amount);
     const [intermediate] = await Promise.all([

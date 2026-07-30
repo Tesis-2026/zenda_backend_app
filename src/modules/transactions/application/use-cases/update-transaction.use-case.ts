@@ -30,7 +30,7 @@ export class UpdateTransactionUseCase {
 
   async execute(cmd: UpdateTransactionCommand): Promise<TransactionWithCategory> {
     const existing = await this.repo.findByIdWithCategory(cmd.id, cmd.userId);
-    if (!existing) throw new NotFoundException('Transaction not found');
+    if (!existing) throw new NotFoundException('Transaccion no encontrada');
 
     let categoryId: string | undefined;
     if (cmd.categoryId || cmd.newCategoryName) {
@@ -46,7 +46,7 @@ export class UpdateTransactionUseCase {
     if (cmd.occurredAt) {
       occurredAt = new Date(cmd.occurredAt);
       if (occurredAt > new Date()) {
-        throw new BadRequestException('occurredAt cannot be in the future');
+        throw new BadRequestException('La fecha de la transaccion no puede estar en el futuro');
       }
     }
 
@@ -66,7 +66,7 @@ export class UpdateTransactionUseCase {
     // (possibly stale) budget link so income is never coupled to a budget.
     const effectiveType = cmd.type ?? existing.type;
     if (effectiveType === TransactionType.TRANSFER) {
-      throw new BadRequestException('Transfers must be updated through account-specific flow');
+      throw new BadRequestException('Las transferencias se actualizan desde el flujo de cuentas');
     }
     const clearBudget = effectiveType === TransactionType.INCOME;
 

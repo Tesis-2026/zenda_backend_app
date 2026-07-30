@@ -29,7 +29,7 @@ export class RegisterDto {
     description:
       'Must be true. Records explicit acceptance of the privacy notice for Ley 29733 compliance.',
   })
-  @Equals(true, { message: 'Privacy consent is required to create an account' })
+  @Equals(true, { message: 'Debes aceptar la politica de privacidad para crear una cuenta' })
   consentGiven!: true;
 
   @ApiProperty({

@@ -46,7 +46,7 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
       data: updateData,
     });
 
-    if (!row) throw new NotFoundException('User not found');
+    if (!row) throw new NotFoundException('Usuario no encontrado');
     return this.toEntity(row);
   }
 

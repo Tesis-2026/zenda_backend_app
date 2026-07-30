@@ -305,7 +305,7 @@ export class SurveysController {
     const existing = await this.prisma.surveyResponse.findUnique({
       where: { userId_surveyId: { userId, surveyId: survey.id } },
     });
-    if (existing) throw new ConflictException('SUS survey already submitted');
+    if (existing) throw new ConflictException('La encuesta SUS ya fue enviada');
 
     // Standard SUS scoring formula over 10 Likert items
     this.assertCompleteAnswers(questions, dto.answers);
@@ -411,7 +411,7 @@ export class SurveysController {
       where: { userId_surveyId: { userId, surveyId: survey.id } },
     });
     if (existing) {
-      throw new ConflictException('Satisfaction survey already submitted');
+      throw new ConflictException('La encuesta de satisfaccion ya fue enviada');
     }
 
     const likertQuestions = questions.filter((q) => q.options.length > 0);
@@ -569,7 +569,7 @@ export class SurveysController {
       where: { userId_surveyId: { userId, surveyId: survey.id } },
     });
     if (existing) {
-      throw new ConflictException('Survey response already submitted');
+      throw new ConflictException('Esta encuesta ya fue enviada');
     }
 
     await this.prisma.surveyResponse.create({
@@ -611,7 +611,7 @@ export class SurveysController {
       (question) => !answers[question.id]?.trim(),
     );
     if (missing.length > 0) {
-      throw new BadRequestException('All survey questions must be answered');
+      throw new BadRequestException('Debes responder todas las preguntas de la encuesta');
     }
   }
 
@@ -624,7 +624,7 @@ export class SurveysController {
       return !Number.isFinite(raw) || raw < 1 || raw > 5;
     });
     if (invalid.length > 0) {
-      throw new BadRequestException('Likert answers must be between 1 and 5');
+      throw new BadRequestException('Las respuestas deben estar entre 1 y 5');
     }
   }
 }

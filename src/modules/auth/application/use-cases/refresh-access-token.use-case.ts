@@ -22,13 +22,13 @@ export class RefreshAccessTokenUseCase {
     if (!record || record.expiresAt < new Date()) {
       // Delete stale record if it exists
       if (record) await this.refreshTokenRepository.deleteByToken(incomingToken);
-      throw new UnauthorizedException('Refresh token invalid or expired');
+      throw new UnauthorizedException('Sesion expirada, inicia sesion nuevamente');
     }
 
     const user = await this.userRepository.findById(record.userId);
     if (!user) {
       await this.refreshTokenRepository.deleteByToken(incomingToken);
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Usuario no encontrado');
     }
 
     // Rotate: delete old token before issuing new one

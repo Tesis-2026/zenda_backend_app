@@ -112,7 +112,7 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
 
   async complete(id: string): Promise<SavingsGoalEntity> {
     const goal = await this.prisma.savingsGoal.findUnique({ where: { id } });
-    if (!goal) throw new Error('Goal not found');
+    if (!goal) throw new Error('Meta no encontrada');
     const row = await this.prisma.savingsGoal.update({
       where: { id },
       data: {

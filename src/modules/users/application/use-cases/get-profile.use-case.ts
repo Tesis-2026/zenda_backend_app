@@ -8,7 +8,7 @@ export class GetProfileUseCase {
 
   async execute(userId: string): Promise<UserProfileEntity> {
     const profile = await this.userProfileRepository.findById(userId);
-    if (!profile) throw new NotFoundException('User not found');
+    if (!profile) throw new NotFoundException('Usuario no encontrado');
     return profile;
   }
 }

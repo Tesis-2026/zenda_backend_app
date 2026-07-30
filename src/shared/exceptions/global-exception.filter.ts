@@ -83,7 +83,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof Prisma.PrismaClientValidationError) {
       return {
         statusCode: HttpStatus.BAD_REQUEST,
-        message: 'Invalid query parameters',
+        message: 'Parametros de consulta invalidos',
         error: 'BadRequest',
       };
     }
@@ -91,7 +91,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // 4) Anything else — generic 500. Do NOT leak the internal message.
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error',
+      message: 'Error interno del servidor',
       error: 'InternalServerError',
     };
   }
@@ -114,14 +114,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       case 'P2003':
         return {
           statusCode: HttpStatus.BAD_REQUEST,
-          message: 'Invalid reference: a related resource does not exist',
+          message: 'Referencia invalida: un recurso relacionado no existe',
           error: 'BadRequest',
         };
       // Record not found (update/delete on missing row)
       case 'P2025':
         return {
           statusCode: HttpStatus.NOT_FOUND,
-          message: 'Resource not found',
+          message: 'Recurso no encontrado',
           error: 'NotFound',
         };
       // Anything else — keep as 500 but include the Prisma code so the

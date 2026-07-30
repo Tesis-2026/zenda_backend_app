@@ -36,7 +36,7 @@ export class PrismaChallengeRepository implements IChallengeRepository {
 
   async accept(challengeId: string, userId: string): Promise<ChallengeEntity> {
     const challenge = await this.prisma.challenge.findUnique({ where: { id: challengeId } });
-    if (!challenge) throw new NotFoundException('Challenge not found');
+    if (!challenge) throw new NotFoundException('Reto no encontrado');
 
     const uc = await this.prisma.userChallenge.upsert({
       where: { userId_challengeId: { userId, challengeId } },
@@ -59,7 +59,7 @@ export class PrismaChallengeRepository implements IChallengeRepository {
 
   async complete(challengeId: string, userId: string): Promise<ChallengeEntity> {
     const challenge = await this.prisma.challenge.findUnique({ where: { id: challengeId } });
-    if (!challenge) throw new NotFoundException('Challenge not found');
+    if (!challenge) throw new NotFoundException('Reto no encontrado');
 
     const now = new Date();
     const uc = await this.prisma.userChallenge.upsert({

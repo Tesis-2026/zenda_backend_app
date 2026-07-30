@@ -15,11 +15,11 @@ export class DeleteCategoryUseCase {
       throw new NotFoundException('Category not found');
     }
     if (!category.isOwnedBy(userId)) {
-      throw new ForbiddenException('Cannot delete system categories');
+      throw new ForbiddenException('No se pueden eliminar las categorias del sistema');
     }
     const hasTx = await this.repo.hasTransactions(categoryId);
     if (hasTx) {
-      throw new ConflictException('Cannot delete a category that has existing transactions');
+      throw new ConflictException('No se puede eliminar una categoria con transacciones registradas');
     }
     await this.repo.softDelete(categoryId);
     this.auditLog.record({

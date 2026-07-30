@@ -49,7 +49,7 @@ export class EducationController {
   @ApiAuthErrors()
   async detail(@Param('id', ParseUUIDPipe) id: string, @UserId() userId: string): Promise<TopicResponseDto> {
     const topic = await this.getTopic.execute(id, userId);
-    if (!topic) throw new NotFoundException('Topic not found');
+    if (!topic) throw new NotFoundException('Tema no encontrado');
     this.analytics.track(userId, 'view_topic', { topicId: id });
     return TopicResponseDto.from(topic);
   }

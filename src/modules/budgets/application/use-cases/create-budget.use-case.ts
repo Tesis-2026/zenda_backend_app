@@ -41,7 +41,7 @@ export class CreateBudgetUseCase {
     );
     if (activeCount >= MAX_BUDGETS_PER_PERIOD) {
       throw new BadRequestException(
-        `Budget limit reached: a maximum of ${MAX_BUDGETS_PER_PERIOD} budgets per period is allowed`,
+        `Limite de presupuestos alcanzado: se permite un maximo de ${MAX_BUDGETS_PER_PERIOD} presupuestos por periodo`,
       );
     }
 
@@ -56,7 +56,7 @@ export class CreateBudgetUseCase {
       );
       if (existing) {
         throw new ConflictException(
-          'A global budget for this period already exists',
+          'Ya existe un presupuesto global para este periodo',
         );
       }
     }
@@ -91,7 +91,7 @@ export class CreateBudgetUseCase {
         (err as { code: string }).code === 'P2002'
       ) {
         throw new ConflictException(
-          'A budget for this category and period already exists',
+          'Ya existe un presupuesto para esta categoria y periodo',
         );
       }
       throw err;

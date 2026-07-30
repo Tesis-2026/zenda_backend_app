@@ -21,7 +21,7 @@ export class SubmitQuizUseCase {
   async execute(cmd: SubmitQuizCommand): Promise<QuizSubmitResult> {
     const questionIds = Object.keys(cmd.answers);
     if (questionIds.length === 0) {
-      throw new NotFoundException('No answers provided');
+      throw new NotFoundException('No se enviaron respuestas');
     }
 
     const questions = await this.repo.getQuizQuestionsByIds(questionIds);

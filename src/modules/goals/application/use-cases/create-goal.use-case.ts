@@ -19,7 +19,7 @@ export class CreateGoalUseCase {
 
   async execute(cmd: CreateGoalCommand): Promise<SavingsGoalEntity> {
     if (cmd.dueDate && cmd.dueDate <= new Date()) {
-      throw new BadRequestException('dueDate must be a future date');
+      throw new BadRequestException('La fecha limite debe ser una fecha futura');
     }
     const created = await this.repo.create({
       userId: cmd.userId,
