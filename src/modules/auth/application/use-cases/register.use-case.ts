@@ -1,5 +1,6 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { IUserRepository } from '../../domain/ports/user.repository';
 import { IEmailVerificationRepository } from '../../domain/ports/email-verification.repository';
@@ -58,7 +59,7 @@ export class RegisterUseCase {
     });
 
     await this.emailVerificationRepository.deleteByUserId(user.id);
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = randomInt(100000, 1000000).toString();
     const expiresAt = new Date(
       Date.now() + EMAIL_VERIFICATION_EXPIRY_MINUTES * 60 * 1000,
     );

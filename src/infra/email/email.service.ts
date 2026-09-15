@@ -33,7 +33,7 @@ export class EmailService {
     try {
       await this.transporter.sendMail(mailOptions);
     } catch (error) {
-      this.logger.error(`Failed to send password reset email to ${to}`, error);
+      this.logger.error('Password reset delivery failed');
       throw error;
     }
   }
@@ -60,7 +60,7 @@ export class EmailService {
     try {
       await this.transporter.sendMail(mailOptions);
     } catch (error) {
-      this.logger.error(`Failed to send OTP email to ${to}`, error);
+      this.logger.error('OTP delivery failed');
       throw error;
     }
   }
@@ -89,9 +89,9 @@ export class EmailService {
     };
     try {
       await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Account verification email sent to ${to}`);
+      this.logger.log('Account verification email sent');
     } catch (error) {
-      this.logger.error(`Failed to send account verification email to ${to}`, error);
+      this.logger.error('Account verification delivery failed');
       throw error;
     }
   }

@@ -1,11 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
-import { ISavingsGoalRepository, GoalContributionRecord } from '../../domain/ports/savings-goal.repository';
+import {
+  ISavingsGoalRepository,
+  GoalContributionRecord,
+} from '../../domain/ports/savings-goal.repository';
 import { SavingsGoalEntity } from '../../domain/savings-goal.entity';
 
 @Injectable()
 export class PrismaGoalsRepository implements ISavingsGoalRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async contributeAtomically(
+    userId: string,
+    goalId: string,
+    amount: number,
+  ): Promise<SavingsGoalEntity> {
+    return this.prisma.$transaction(async (tx) => {
+      const row = await tx.savingsGoal.update({
+        where: { id: goalId, userId, deletedAt: null, completedAt: null },
+        data: { currentAmount: { increment: amount } },
+      });
+      await tx.goalContribution.create({ data: { goalId, amount } });
+      return this.toEntity(row);
+    });
+  }
 
   private toEntity(row: any): SavingsGoalEntity {
     return SavingsGoalEntity.create({
@@ -56,14 +74,20 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
     return rows.map((r) => this.toEntity(r));
   }
 
-  async findById(id: string, userId: string): Promise<SavingsGoalEntity | null> {
+  async findById(
+    id: string,
+    userId: string,
+  ): Promise<SavingsGoalEntity | null> {
     const row = await this.prisma.savingsGoal.findFirst({
       where: { id, userId, deletedAt: null },
     });
     return row ? this.toEntity(row) : null;
   }
 
-  async updateCurrentAmount(id: string, newAmount: number): Promise<SavingsGoalEntity> {
+  async updateCurrentAmount(
+    id: string,
+    newAmount: number,
+  ): Promise<SavingsGoalEntity> {
     const row = await this.prisma.savingsGoal.update({
       where: { id },
       data: { currentAmount: newAmount },
@@ -95,7 +119,10 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
     });
   }
 
-  async addContribution(goalId: string, amount: number): Promise<GoalContributionRecord> {
+  async addContribution(
+    goalId: string,
+    amount: number,
+  ): Promise<GoalContributionRecord> {
     const row = await this.prisma.goalContribution.create({
       data: { goalId, amount },
     });
@@ -116,7 +143,6 @@ export class PrismaGoalsRepository implements ISavingsGoalRepository {
     const row = await this.prisma.savingsGoal.update({
       where: { id },
       data: {
-        currentAmount: goal.targetAmount,
         completedAt: goal.completedAt ?? new Date(),
       },
     });

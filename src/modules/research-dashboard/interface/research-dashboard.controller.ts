@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash, timingSafeEqual } from 'crypto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ResearchDashboardService } from '../application/research-dashboard.service';
 import { ResearchDashboardData } from '../application/research-dashboard.types';
@@ -51,7 +52,10 @@ export class ResearchDashboardController {
   }
 
   @Get('export.json')
-  @Header('Content-Disposition', 'attachment; filename="zenda-research-dashboard.json"')
+  @Header(
+    'Content-Disposition',
+    'attachment; filename="zenda-research-dashboard.json"',
+  )
   @ApiOperation({ summary: 'Export aggregated research metrics as JSON' })
   async exportJson(
     @Query() query: ResearchDashboardQueryDto,
@@ -63,7 +67,10 @@ export class ResearchDashboardController {
 
   @Get('export.csv')
   @Header('Content-Type', 'text/csv; charset=utf-8')
-  @Header('Content-Disposition', 'attachment; filename="zenda-research-dashboard.csv"')
+  @Header(
+    'Content-Disposition',
+    'attachment; filename="zenda-research-dashboard.csv"',
+  )
   @ApiOperation({ summary: 'Export thesis pilot metrics as CSV' })
   async exportCsv(
     @Query() query: ResearchDashboardQueryDto,
@@ -77,9 +84,6 @@ export class ResearchDashboardController {
   private assertAccess(queryToken?: string, headerToken?: string): void {
     const configuredToken =
       this.config.get<string>('researchDashboard.token')?.trim() ?? '';
-    const nodeEnv = this.config.get<string>('app.nodeEnv') ?? 'development';
-
-    if (!configuredToken && nodeEnv !== 'production') return;
 
     if (!configuredToken) {
       throw new ServiceUnavailableException(
@@ -88,14 +92,20 @@ export class ResearchDashboardController {
     }
 
     const providedToken = (headerToken ?? queryToken ?? '').trim();
-    if (providedToken !== configuredToken) {
+    const digest = (value: string) =>
+      createHash('sha256').update(value).digest();
+    if (!timingSafeEqual(digest(providedToken), digest(configuredToken))) {
       throw new UnauthorizedException('Invalid research dashboard token');
     }
   }
 
   private toCsv(data: ResearchDashboardData): string {
     const rows: string[][] = [['section', 'metric', 'value']];
-    const add = (section: string, metric: string, value: string | number | null) => {
+    const add = (
+      section: string,
+      metric: string,
+      value: string | number | null,
+    ) => {
       rows.push([section, metric, value === null ? '' : String(value)]);
     };
 
@@ -104,7 +114,11 @@ export class ResearchDashboardController {
     add('period', 'label', data.period.label);
     add('participants', 'total_users', data.participants.totalUsers);
     add('participants', 'active_users', data.participants.activeUsers);
-    add('participants', 'profile_completed', data.participants.profileCompleted);
+    add(
+      'participants',
+      'profile_completed',
+      data.participants.profileCompleted,
+    );
     add('participants', 'consent_given', data.participants.consentGiven);
     add('participants', 'average_age', data.participants.averageAge);
     add(
@@ -114,9 +128,17 @@ export class ResearchDashboardController {
     );
     add('usage', 'total_events', data.usage.totalEvents);
     add('usage', 'sessions', data.usage.sessions);
-    add('usage', 'daily_active_users_average', data.usage.dailyActiveUsersAverage);
+    add(
+      'usage',
+      'daily_active_users_average',
+      data.usage.dailyActiveUsersAverage,
+    );
     add('finance', 'transactions', data.finance.transactions);
-    add('finance', 'users_with_transactions', data.finance.usersWithTransactions);
+    add(
+      'finance',
+      'users_with_transactions',
+      data.finance.usersWithTransactions,
+    );
     add('finance', 'income_count', data.finance.incomeCount);
     add('finance', 'expense_count', data.finance.expenseCount);
     add('finance', 'transfer_count', data.finance.transferCount);
@@ -124,7 +146,11 @@ export class ResearchDashboardController {
     add('finance', 'total_expense', data.finance.totalExpense);
     add('finance', 'budgets', data.finance.budgets);
     add('finance', 'goals', data.finance.goals);
-    add('finance', 'ai_categorized_transactions', data.finance.aiCategorizedTransactions);
+    add(
+      'finance',
+      'ai_categorized_transactions',
+      data.finance.aiCategorizedTransactions,
+    );
     add('finance', 'ai_category_share', data.finance.aiCategoryShare);
     add('ai', 'conversations', data.ai.conversations);
     add('ai', 'users_with_conversations', data.ai.usersWithConversations);
@@ -161,7 +187,14 @@ export class ResearchDashboardController {
     );
 
     rows.push([]);
-    rows.push(['daily', 'date', 'active_users', 'events', 'transactions', 'chat_messages']);
+    rows.push([
+      'daily',
+      'date',
+      'active_users',
+      'events',
+      'transactions',
+      'chat_messages',
+    ]);
     for (const day of data.usage.daily) {
       rows.push([
         'daily',
@@ -176,11 +209,22 @@ export class ResearchDashboardController {
     rows.push([]);
     rows.push(['event_type', 'label', 'count', 'percentage']);
     for (const item of data.usage.eventsByType) {
-      rows.push(['event_type', item.label, String(item.count), String(item.percentage)]);
+      rows.push([
+        'event_type',
+        item.label,
+        String(item.count),
+        String(item.percentage),
+      ]);
     }
 
     rows.push([]);
-    rows.push(['satisfaction_likert', 'order', 'question', 'average', 'responses']);
+    rows.push([
+      'satisfaction_likert',
+      'order',
+      'question',
+      'average',
+      'responses',
+    ]);
     for (const item of data.surveys.satisfactionLikert) {
       rows.push([
         'satisfaction_likert',
@@ -197,10 +241,13 @@ export class ResearchDashboardController {
       rows.push(['open_answer', item.question, item.answer]);
     }
 
-    return rows.map((row) => row.map((cell) => this.csvCell(cell)).join(',')).join('\n');
+    return rows
+      .map((row) => row.map((cell) => this.csvCell(cell)).join(','))
+      .join('\n');
   }
 
   private csvCell(value: string): string {
+    if (/^[\s]*[=+\-@\t\r]/.test(value)) value = `'${value}`;
     if (/[",\n\r]/.test(value)) {
       return `"${value.replace(/"/g, '""')}"`;
     }

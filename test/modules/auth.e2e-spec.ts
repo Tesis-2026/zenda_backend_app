@@ -25,6 +25,8 @@ function makeUserEntity(overrides: Record<string, unknown> = {}) {
     consentGiven: false,
     isLocked: false,
     lockedUntil: null,
+    emailVerifiedAt: new Date('2026-01-01T00:00:00Z'),
+    isEmailVerified: true,
     ...overrides,
   };
 }
@@ -88,7 +90,9 @@ describe('Auth (contract pilot — mocked ports, no DB)', () => {
   // ── Error contract ───────────────────────────────────────────────────────
 
   it('POST /api/auth/login → 401 for a non-existent user', async () => {
-    await boot(fakeUserRepo({ findByEmail: jest.fn().mockResolvedValue(null) }));
+    await boot(
+      fakeUserRepo({ findByEmail: jest.fn().mockResolvedValue(null) }),
+    );
     const res = await request(app.getHttpServer())
       .post('/api/auth/login')
       .send({ email: 'ghost@test.com', password: PASSWORD });
@@ -97,7 +101,7 @@ describe('Auth (contract pilot — mocked ports, no DB)', () => {
 
   // ── Success contract (response shape the Flutter app parses) ──────────────
 
-  it('POST /api/auth/register → 201 with {accessToken, refreshToken}', async () => {
+  it('POST /api/auth/register → 201 pending verification, without session tokens', async () => {
     const created = makeUserEntity();
     await boot(
       fakeUserRepo({
@@ -108,12 +112,18 @@ describe('Auth (contract pilot — mocked ports, no DB)', () => {
 
     const res = await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email: 'ana@test.com', password: PASSWORD, fullName: 'Ana Pérez' });
+      .send({
+        email: 'ana@test.com',
+        password: PASSWORD,
+        fullName: 'Ana Pérez',
+        consentGiven: true,
+      });
 
     expect(res.status).toBe(201);
     expect(res.body).toEqual({
-      accessToken: expect.any(String),
-      refreshToken: expect.any(String),
+      userId: 'user-1',
+      email: 'ana@test.com',
+      requiresEmailVerification: true,
     });
   });
 

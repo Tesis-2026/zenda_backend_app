@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionType } from '@prisma/client';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
+import { financialMonthBounds } from '../../../../shared/finance/financial-period';
 import { IBudgetRepository } from '../../domain/ports/budget.repository';
 import { BudgetEntity } from '../../domain/budget.entity';
 
@@ -8,28 +9,29 @@ import { BudgetEntity } from '../../domain/budget.entity';
 export class PrismaBudgetsRepository implements IBudgetRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async toEntity(
-    row: {
-      id: string;
-      userId: string;
-      categoryId: string | null;
-      name: string | null;
-      amountLimit: { toNumber: () => number };
-      month: number;
-      year: number;
-      createdAt: Date;
-      updatedAt: Date;
-      deletedAt: Date | null;
-      category?: { name: string } | null;
-    },
-  ): Promise<BudgetEntity> {
+  private async toEntity(row: {
+    id: string;
+    userId: string;
+    categoryId: string | null;
+    name: string | null;
+    amountLimit: { toNumber: () => number };
+    month: number;
+    year: number;
+    createdAt: Date;
+    updatedAt: Date;
+    deletedAt: Date | null;
+    category?: { name: string } | null;
+  }): Promise<BudgetEntity> {
     // Expenses explicitly linked to THIS budget reduce its remaining limit.
     // A budget is a pure spending limit — income never inflates it
     // (see docs/income-as-first-class-concept.md).
+    const { from, to } = financialMonthBounds(row.year, row.month);
     const spentAgg = await this.prisma.transaction.aggregate({
       _sum: { amount: true },
       where: {
         budgetId: row.id,
+        userId: row.userId,
+        occurredAt: { gte: from, lte: to },
         type: TransactionType.EXPENSE,
         deletedAt: null,
       },
@@ -134,7 +136,9 @@ export class PrismaBudgetsRepository implements IBudgetRepository {
     const row = await this.prisma.budget.update({
       where: { id, userId },
       data: {
-        ...(params.amountLimit !== undefined ? { amountLimit: params.amountLimit } : {}),
+        ...(params.amountLimit !== undefined
+          ? { amountLimit: params.amountLimit }
+          : {}),
         ...(params.name !== undefined ? { name: params.name } : {}),
       },
       include: { category: true },

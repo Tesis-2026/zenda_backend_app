@@ -50,7 +50,9 @@ describe('Users (contract — mocked, no DB)', () => {
 
   it('GET /api/users/me without a token → 401', async () => {
     ({ app } = await createTestApp());
-    expect((await request(app.getHttpServer()).get('/api/users/me')).status).toBe(401);
+    expect(
+      (await request(app.getHttpServer()).get('/api/users/me')).status,
+    ).toBe(401);
   });
 
   it('GET /api/users/me → 200 with full profile incl. consent + lockout fields', async () => {
@@ -72,7 +74,9 @@ describe('Users (contract — mocked, no DB)', () => {
   });
 
   it('PUT /api/users/me → 200 with the updated profile', async () => {
-    updateProfile.execute.mockResolvedValue(makeProfile({ fullName: 'Ana María' }));
+    updateProfile.execute.mockResolvedValue(
+      makeProfile({ fullName: 'Ana María' }),
+    );
     await bootAuthed();
     const res = await request(app.getHttpServer())
       .put('/api/users/me')
@@ -93,11 +97,23 @@ describe('Users (contract — mocked, no DB)', () => {
 
   it('DELETE /api/users/me → 204 (audit + delete run in one transaction)', async () => {
     await bootAuthed();
+    prisma.user.findUnique.mockResolvedValue(makeProfile());
     const res = await request(app.getHttpServer())
       .delete('/api/users/me')
       .set('Authorization', 'Bearer test');
     expect(res.status).toBe(204);
     expect(prisma.auditLog.create).toHaveBeenCalled();
-    expect(prisma.user.delete).toHaveBeenCalled();
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          deletedAt: expect.any(Date),
+          consentGiven: false,
+        }),
+      }),
+    );
+    expect(
+      prisma.auditLog.create.mock.calls[0][0].data.beforeJson,
+    ).not.toHaveProperty('email');
   });
 });
