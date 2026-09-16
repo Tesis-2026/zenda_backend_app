@@ -87,16 +87,34 @@ describe('Surveys (contract — mocked, no DB)', () => {
 
   it('POST /api/surveys/sus/response → 201 with {susScore, grade}', async () => {
     await bootAuthed();
-    prisma.survey.findFirst.mockResolvedValue(makeSurvey('SUS'));
+    prisma.survey.findFirst.mockResolvedValue(
+      makeSurvey('SUS', {
+        questionsJson: Array.from({ length: 10 }, (_, i) => ({
+          id: `sq${i + 1}`,
+          order: i + 1,
+          text: `Synthetic ${i + 1}`,
+          options: ['1', '2', '3', '4', '5'],
+          correctAnswer: null,
+        })),
+      }),
+    );
     prisma.surveyResponse.findUnique.mockResolvedValue(null);
     const res = await request(app.getHttpServer())
       .post('/api/surveys/sus/response')
       .set('Authorization', 'Bearer test')
-      .send({ answers: { sq1: '5', sq2: '1' } });
+      .send({
+        answers: Object.fromEntries(
+          Array.from({ length: 10 }, (_, i) => [
+            `sq${i + 1}`,
+            i === 0 ? '4' : i % 2 === 0 ? '5' : '1',
+          ]),
+        ),
+      });
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty('susScore');
     expect(res.body).toHaveProperty('grade');
     expect(typeof res.body.susScore).toBe('number');
+    expect(res.body.susScore).toBe(97.5);
   });
 
   it('GET /api/surveys/satisfaction → 200 with Likert and open questions', async () => {

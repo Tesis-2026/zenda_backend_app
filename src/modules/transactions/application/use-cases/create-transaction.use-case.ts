@@ -3,10 +3,14 @@ import { BadgesFacade } from '../../../badges/application/facades/badges.facade'
 import { ChallengesFacade } from '../../../challenges/application/facades/challenges.facade';
 import { CategoriesFacade } from '../../../categories/application/facades/categories.facade';
 import { AccountsService } from '../../../accounts/application/accounts.service';
+import { BudgetsFacade } from '../../../budgets/application/budgets.facade';
 import { AuditLogService } from '../../../../shared/audit/audit-log.service';
 import { deriveCategorySource } from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
-import { ITransactionRepository, TransactionWithCategory } from '../../domain/ports/transaction.repository';
+import {
+  ITransactionRepository,
+  TransactionWithCategory,
+} from '../../domain/ports/transaction.repository';
 
 export interface CreateTransactionCommand {
   userId: string;
@@ -37,9 +41,12 @@ export class CreateTransactionUseCase {
     private readonly badges: BadgesFacade,
     private readonly challenges: ChallengesFacade,
     private readonly auditLog: AuditLogService,
+    private readonly budgets: BudgetsFacade,
   ) {}
 
-  async execute(cmd: CreateTransactionCommand): Promise<CreateTransactionResult> {
+  async execute(
+    cmd: CreateTransactionCommand,
+  ): Promise<CreateTransactionResult> {
     const occurredAt = cmd.occurredAt ? new Date(cmd.occurredAt) : new Date();
     if (occurredAt > new Date()) {
       throw new BadRequestException('La fecha de la transaccion no puede estar en el futuro');
@@ -61,6 +68,20 @@ export class CreateTransactionUseCase {
       throw new BadRequestException('Usa /accounts/transfer para mover dinero entre cuentas');
     }
 
+    if (cmd.type === TransactionType.EXPENSE && cmd.budgetId) {
+      await this.budgets.assertAccessibleForDate(
+        cmd.userId,
+        cmd.budgetId,
+        occurredAt,
+      );
+    }
+    if (cmd.suggestedCategoryId) {
+      await this.categories.resolve({
+        userId: cmd.userId,
+        categoryId: cmd.suggestedCategoryId,
+      });
+    }
+
     const [category, account] = await Promise.all([
       this.categories.resolve({
         userId: cmd.userId,
@@ -74,6 +95,17 @@ export class CreateTransactionUseCase {
         description: cmd.description,
       }),
     ]);
+
+    if (category.transactionType && category.transactionType !== cmd.type) {
+      throw new BadRequestException(
+        'Category is not available for this transaction type',
+      );
+    }
+    if (cmd.currency && cmd.currency !== account.currency) {
+      throw new BadRequestException(
+        'Transaction currency must match the account currency',
+      );
+    }
 
     const categorySource = deriveCategorySource({
       suggestedCategoryId: cmd.suggestedCategoryId,
@@ -93,7 +125,7 @@ export class CreateTransactionUseCase {
       budgetId,
       type: cmd.type,
       amount: cmd.amount,
-      currency: cmd.currency ?? 'PEN',
+      currency: cmd.currency ?? account.currency,
       description: cmd.description,
       occurredAt,
       suggestedCategoryId: cmd.suggestedCategoryId ?? null,

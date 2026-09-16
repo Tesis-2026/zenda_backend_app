@@ -1,6 +1,17 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ITransactionRepository, TransactionWithCategory, UpdateTransactionParams } from '../../domain/ports/transaction.repository';
-import { CategorySource, deriveCategorySource } from '../../domain/category-source.enum';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  ITransactionRepository,
+  TransactionWithCategory,
+  UpdateTransactionParams,
+} from '../../domain/ports/transaction.repository';
+import {
+  CategorySource,
+  deriveCategorySource,
+} from '../../domain/category-source.enum';
 import { TransactionType } from '../../domain/transaction-type.enum';
 import { CategoriesFacade } from '../../../categories/application/facades/categories.facade';
 import { AccountsService } from '../../../accounts/application/accounts.service';
@@ -28,9 +39,13 @@ export class UpdateTransactionUseCase {
     private readonly auditLog: AuditLogService,
   ) {}
 
-  async execute(cmd: UpdateTransactionCommand): Promise<TransactionWithCategory> {
+  async execute(
+    cmd: UpdateTransactionCommand,
+  ): Promise<TransactionWithCategory> {
     const existing = await this.repo.findByIdWithCategory(cmd.id, cmd.userId);
     if (!existing) throw new NotFoundException('Transaccion no encontrada');
+    if (existing.type === TransactionType.TRANSFER)
+      throw new BadRequestException('No se permite editar transferencias');
 
     let categoryId: string | undefined;
     if (cmd.categoryId || cmd.newCategoryName) {

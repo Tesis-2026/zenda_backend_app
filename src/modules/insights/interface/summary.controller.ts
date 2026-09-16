@@ -1,8 +1,17 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ApiAuthErrors, ApiOk, ApiValidationError } from '../../../shared/swagger/api-responses.decorator';
+import {
+  ApiAuthErrors,
+  ApiOk,
+  ApiValidationError,
+} from '../../../shared/swagger/api-responses.decorator';
 import { TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import {
+  financialMonth,
+  financialMonthBounds,
+  moneyDifference,
+} from '../../../shared/finance/financial-period';
 import { JwtAuthGuard } from '../../auth/infrastructure/jwt-auth.guard';
 import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
@@ -33,14 +42,21 @@ export class SummaryController {
 
   @Get('month')
   @ApiOperation({ summary: 'Get income/expense summary for a given month' })
-  @ApiOk(MonthSummaryResponseDto, 'Aggregated income/expense + top categories for the month')
+  @ApiOk(
+    MonthSummaryResponseDto,
+    'Aggregated income/expense + top categories for the month',
+  )
   @ApiValidationError()
   @ApiAuthErrors()
   getMonth(
     @UserId() userId: string,
     @Query() query: MonthSummaryDto,
   ): Promise<MonthSummaryResponseDto> {
-    return this.getMonthSummary.execute({ userId, year: query.year, month: query.month });
+    return this.getMonthSummary.execute({
+      userId,
+      year: query.year,
+      month: query.month,
+    });
   }
 
   @Get('week')
@@ -52,11 +68,17 @@ export class SummaryController {
     @UserId() userId: string,
     @Query() query: WeekSummaryDto,
   ): Promise<MonthSummaryResponseDto> {
-    return this.getWeekSummary.execute({ userId, year: query.year, week: query.week });
+    return this.getWeekSummary.execute({
+      userId,
+      year: query.year,
+      week: query.week,
+    });
   }
 
   @Get('day')
-  @ApiOperation({ summary: 'Get income/expense summary for a given day (YYYY-MM-DD)' })
+  @ApiOperation({
+    summary: 'Get income/expense summary for a given day (YYYY-MM-DD)',
+  })
   @ApiOk(MonthSummaryResponseDto, 'Aggregated income/expense for the day')
   @ApiValidationError()
   @ApiAuthErrors()
@@ -80,40 +102,72 @@ export class SummaryController {
   }
 
   @Get('progress')
-  @ApiOperation({ summary: 'Get current vs previous month financial progress (US-0407)' })
-  @ApiOk(ProgressResponseDto, 'Totals for the current + previous month with month-over-month percent changes')
+  @ApiOperation({
+    summary: 'Get current vs previous month financial progress (US-0407)',
+  })
+  @ApiOk(
+    ProgressResponseDto,
+    'Totals for the current + previous month with month-over-month percent changes',
+  )
   @ApiAuthErrors()
   async getProgress(@UserId() userId: string): Promise<ProgressResponseDto> {
-    const now = new Date();
-    const [curFrom, curTo, prevFrom, prevTo] = [
-      new Date(now.getFullYear(), now.getMonth(), 1),
-      new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
-      new Date(now.getFullYear(), now.getMonth() - 1, 1),
-      new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999),
-    ];
+    const now = financialMonth();
+    const { from: curFrom, to: curTo } = financialMonthBounds(
+      now.year,
+      now.month,
+    );
+    const { from: prevFrom, to: prevTo } = financialMonthBounds(
+      now.year,
+      now.month - 1,
+    );
 
     const agg = async (from: Date, to: Date, type: TransactionType) =>
       this.prisma.transaction
-        .aggregate({ where: { userId, type, occurredAt: { gte: from, lte: to }, deletedAt: null }, _sum: { amount: true } })
+        .aggregate({
+          where: {
+            userId,
+            type,
+            occurredAt: { gte: from, lte: to },
+            deletedAt: null,
+          },
+          _sum: { amount: true },
+        })
         .then((r) => (r._sum.amount ?? new Decimal(0)).toNumber());
 
-    const [curIncome, curExpenses, prevIncome, prevExpenses] = await Promise.all([
-      agg(curFrom, curTo, TransactionType.INCOME),
-      agg(curFrom, curTo, TransactionType.EXPENSE),
-      agg(prevFrom, prevTo, TransactionType.INCOME),
-      agg(prevFrom, prevTo, TransactionType.EXPENSE),
-    ]);
+    const [curIncome, curExpenses, prevIncome, prevExpenses] =
+      await Promise.all([
+        agg(curFrom, curTo, TransactionType.INCOME),
+        agg(curFrom, curTo, TransactionType.EXPENSE),
+        agg(prevFrom, prevTo, TransactionType.INCOME),
+        agg(prevFrom, prevTo, TransactionType.EXPENSE),
+      ]);
 
     const pct = (cur: number, prev: number) =>
-      prev === 0 ? null : Number(((cur - prev) / prev * 100).toFixed(2));
+      prev === 0 ? null : Number((((cur - prev) / prev) * 100).toFixed(2));
 
     return {
-      currentMonth: { income: curIncome, expenses: curExpenses, balance: curIncome - curExpenses, savings: Math.max(0, curIncome - curExpenses) },
-      previousMonth: { income: prevIncome, expenses: prevExpenses, balance: prevIncome - prevExpenses, savings: Math.max(0, prevIncome - prevExpenses) },
+      currentMonth: {
+        income: curIncome,
+        expenses: curExpenses,
+        balance: moneyDifference(curIncome, curExpenses),
+        savings: Math.max(0, moneyDifference(curIncome, curExpenses)),
+      },
+      previousMonth: {
+        income: prevIncome,
+        expenses: prevExpenses,
+        balance: moneyDifference(prevIncome, prevExpenses),
+        savings: Math.max(0, moneyDifference(prevIncome, prevExpenses)),
+      },
       changes: {
         expensesChangePercent: pct(curExpenses, prevExpenses),
-        savingsChangePercent: pct(Math.max(0, curIncome - curExpenses), Math.max(0, prevIncome - prevExpenses)),
-        balanceChangePercent: pct(curIncome - curExpenses, prevIncome - prevExpenses),
+        savingsChangePercent: pct(
+          Math.max(0, curIncome - curExpenses),
+          Math.max(0, prevIncome - prevExpenses),
+        ),
+        balanceChangePercent: pct(
+          curIncome - curExpenses,
+          prevIncome - prevExpenses,
+        ),
       },
     };
   }

@@ -12,8 +12,6 @@ export class AnonymizeAccountUseCase {
       where: { id: userId, deletedAt: null },
       select: {
         id: true,
-        email: true,
-        fullName: true,
         consentGiven: true,
         consentAt: true,
         privacyPolicyVersion: true,
@@ -35,8 +33,6 @@ export class AnonymizeAccountUseCase {
           resource: 'User',
           resourceId: userId,
           beforeJson: {
-            email: existing.email,
-            fullName: existing.fullName,
             consentGiven: existing.consentGiven,
             consentAt: existing.consentAt,
             privacyPolicyVersion: existing.privacyPolicyVersion,

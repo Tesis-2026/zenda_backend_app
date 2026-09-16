@@ -1,7 +1,20 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Account, AccountType, CategorySource, TransactionType } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  Account,
+  AccountType,
+  CategorySource,
+  TransactionType,
+} from '@prisma/client';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
-import { detectAccountFromText, DetectedAccount } from '../domain/account-detection';
+import { financialMonthBounds } from '../../../shared/finance/financial-period';
+import {
+  detectAccountFromText,
+  DetectedAccount,
+} from '../domain/account-detection';
 import { CreateAccountDto } from '../interface/dto/create-account.dto';
 import { TransferAccountsDto } from '../interface/dto/transfer-accounts.dto';
 
@@ -44,7 +57,11 @@ const DEFAULT_ACCOUNTS: Array<{
   { name: 'Efectivo', type: AccountType.CASH, isDefault: true },
   { name: 'Yape / Plin', type: AccountType.DIGITAL_WALLET, isDefault: false },
   { name: 'Cuenta bancaria', type: AccountType.BANK_ACCOUNT, isDefault: false },
-  { name: 'Tarjeta de credito', type: AccountType.CREDIT_CARD, isDefault: false },
+  {
+    name: 'Tarjeta de credito',
+    type: AccountType.CREDIT_CARD,
+    isDefault: false,
+  },
 ];
 
 @Injectable()
@@ -61,7 +78,9 @@ export class AccountsService {
       userId,
       accounts.map((account) => account.id),
     );
-    return accounts.map((account) => this.toSummary(account, allTime.get(account.id)));
+    return accounts.map((account) =>
+      this.toSummary(account, allTime.get(account.id)),
+    );
   }
 
   async create(userId: string, dto: CreateAccountDto): Promise<AccountSummary> {
@@ -100,7 +119,9 @@ export class AccountsService {
 
     const accounts = await this.ensureDefaultAccounts(params.userId);
     if (params.accountId) {
-      const explicit = accounts.find((account) => account.id === params.accountId);
+      const explicit = accounts.find(
+        (account) => account.id === params.accountId,
+      );
       if (!explicit) {
         throw new BadRequestException('Cuenta no encontrada o no accesible');
       }
@@ -122,7 +143,10 @@ export class AccountsService {
     return this.toSummary(account, this.emptyTotals());
   }
 
-  async transfer(userId: string, dto: TransferAccountsDto): Promise<{
+  async transfer(
+    userId: string,
+    dto: TransferAccountsDto,
+  ): Promise<{
     id: string;
     userId: string;
     type: 'transfer';
@@ -144,6 +168,11 @@ export class AccountsService {
 
     if (from.type === AccountType.CREDIT_CARD) {
       throw new BadRequestException('Las tarjetas de credito no pueden usarse como origen de transferencias en este MVP');
+    }
+    if (from.currency !== to.currency) {
+      throw new BadRequestException(
+        'Las transferencias requieren cuentas con la misma moneda',
+      );
     }
 
     const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : new Date();
@@ -180,7 +209,10 @@ export class AccountsService {
     };
   }
 
-  async report(userId: string, params: { month?: number; year?: number }): Promise<AccountReport> {
+  async report(
+    userId: string,
+    params: { month?: number; year?: number },
+  ): Promise<AccountReport> {
     const accounts = await this.ensureDefaultAccounts(userId);
     const accountIds = accounts.map((account) => account.id);
     const allTime = await this.computeTotals(userId, accountIds);
@@ -196,7 +228,10 @@ export class AccountsService {
         netChange:
           account.type === AccountType.CREDIT_CARD
             ? totals.expenses - totals.transferIn
-            : totals.income + totals.transferIn - totals.expenses - totals.transferOut,
+            : totals.income +
+              totals.transferIn -
+              totals.expenses -
+              totals.transferOut,
       };
     });
 
@@ -222,7 +257,9 @@ export class AccountsService {
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
     });
     const existingTypes = new Set(existing.map((account) => account.type));
-    const missing = DEFAULT_ACCOUNTS.filter((item) => !existingTypes.has(item.type));
+    const missing = DEFAULT_ACCOUNTS.filter(
+      (item) => !existingTypes.has(item.type),
+    );
     if (missing.length === 0) return existing;
 
     const user = await this.prisma.user.findUnique({
@@ -237,7 +274,8 @@ export class AccountsService {
         name: account.name,
         type: account.type,
         currency,
-        isDefault: account.isDefault && !existing.some((item) => item.isDefault),
+        isDefault:
+          account.isDefault && !existing.some((item) => item.isDefault),
       })),
     });
 
@@ -273,7 +311,7 @@ export class AccountsService {
           ? {
               occurredAt: {
                 gte: period.from,
-                lt: period.to,
+                lte: period.to,
               },
             }
           : {}),
@@ -315,17 +353,31 @@ export class AccountsService {
     return totals;
   }
 
-  private toSummary(account: Account, totals = this.emptyTotals()): AccountSummary {
+  private toSummary(
+    account: Account,
+    totals = this.emptyTotals(),
+  ): AccountSummary {
     const openingBalance = this.toNumber(account.openingBalance);
-    const creditLimit = account.creditLimit === null ? null : this.toNumber(account.creditLimit);
+    const creditLimit =
+      account.creditLimit === null ? null : this.toNumber(account.creditLimit);
     const debt =
       account.type === AccountType.CREDIT_CARD
-        ? Math.max(0, openingBalance + totals.expenses - totals.transferIn - totals.income)
+        ? Math.max(
+            0,
+            openingBalance +
+              totals.expenses -
+              totals.transferIn -
+              totals.income,
+          )
         : 0;
     const currentBalance =
       account.type === AccountType.CREDIT_CARD
         ? -debt
-        : openingBalance + totals.income + totals.transferIn - totals.expenses - totals.transferOut;
+        : openingBalance +
+          totals.income +
+          totals.transferIn -
+          totals.expenses -
+          totals.transferOut;
 
     return {
       id: account.id,
@@ -347,12 +399,16 @@ export class AccountsService {
       .filter((item) => item.expenses > 0)
       .sort((a, b) => b.expenses - a.expenses)[0];
     if (topSpending) {
-      insights.push(`Gastaste mas desde ${topSpending.name}: S/${topSpending.expenses.toFixed(2)}.`);
+      insights.push(
+        `Gastaste mas desde ${topSpending.name}: S/${topSpending.expenses.toFixed(2)}.`,
+      );
     }
 
     const cash = items.find((item) => item.type === AccountType.CASH);
     if (cash && cash.netChange < 0) {
-      insights.push(`Tu efectivo bajo S/${Math.abs(cash.netChange).toFixed(2)} en este periodo.`);
+      insights.push(
+        `Tu efectivo bajo S/${Math.abs(cash.netChange).toFixed(2)} en este periodo.`,
+      );
     }
 
     const creditDebt = items
@@ -365,15 +421,15 @@ export class AccountsService {
     return insights;
   }
 
-  private periodBounds(params: { month?: number; year?: number }): { from: Date; to: Date } | undefined {
+  private periodBounds(params: {
+    month?: number;
+    year?: number;
+  }): { from: Date; to: Date } | undefined {
     if (!params.month || !params.year) return undefined;
     if (params.month < 1 || params.month > 12) {
       throw new BadRequestException('month must be between 1 and 12');
     }
-    return {
-      from: new Date(Date.UTC(params.year, params.month - 1, 1)),
-      to: new Date(Date.UTC(params.year, params.month, 1)),
-    };
+    return financialMonthBounds(params.year, params.month);
   }
 
   private emptyTotals(): AccountTotals {

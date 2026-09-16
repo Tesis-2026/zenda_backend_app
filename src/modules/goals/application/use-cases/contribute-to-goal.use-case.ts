@@ -26,11 +26,12 @@ export class ContributeToGoalUseCase {
     const goal = await this.repo.findById(cmd.goalId, cmd.userId);
     if (!goal) throw new NotFoundException('Meta no encontrada');
 
-    const newAmount = goal.contribute(cmd.amount);
-    const [intermediate] = await Promise.all([
-      this.repo.updateCurrentAmount(cmd.goalId, newAmount),
-      this.repo.addContribution(cmd.goalId, cmd.amount),
-    ]);
+    goal.contribute(cmd.amount);
+    const intermediate = await this.repo.contributeAtomically(
+      cmd.userId,
+      cmd.goalId,
+      cmd.amount,
+    );
 
     // Auto-finalise once the contribution closes the gap (US-045). Keeps the
     // explicit completedAt semantics consistent whether the user reaches the
@@ -42,7 +43,10 @@ export class ContributeToGoalUseCase {
     }
 
     this.challenges.verifyForUser(cmd.userId).catch((err: unknown) => {
-      this.logger.warn('Challenge verification failed after goal contribution', err);
+      this.logger.warn(
+        'Challenge verification failed after goal contribution',
+        err,
+      );
     });
 
     this.auditLog.record({
@@ -50,7 +54,10 @@ export class ContributeToGoalUseCase {
       resource: 'SavingsGoal',
       resourceId: cmd.goalId,
       beforeJson: { currentAmount: goal.currentAmount },
-      afterJson: { currentAmount: updated.currentAmount, contribution: cmd.amount },
+      afterJson: {
+        currentAmount: updated.currentAmount,
+        contribution: cmd.amount,
+      },
     });
 
     return updated;

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { BadgesFacade } from '../../../badges/application/facades/badges.facade';
 import { ISavingsGoalRepository } from '../../domain/ports/savings-goal.repository';
 import { SavingsGoalEntity } from '../../domain/savings-goal.entity';
@@ -15,6 +19,8 @@ export class CompleteGoalUseCase {
   async execute(userId: string, goalId: string): Promise<SavingsGoalEntity> {
     const goal = await this.repo.findById(goalId, userId);
     if (!goal) throw new NotFoundException('Meta no encontrada');
+    if (goal.currentAmount < goal.targetAmount)
+      throw new BadRequestException('No se ha alcanzado la meta de ahorro');
 
     const updated = await this.repo.complete(goalId);
     await this.badges.awardIfNotEarned(userId, 'Goal Achieved');
@@ -23,8 +29,14 @@ export class CompleteGoalUseCase {
       action: 'COMPLETE_GOAL',
       resource: 'SavingsGoal',
       resourceId: goalId,
-      beforeJson: { currentAmount: goal.currentAmount, targetAmount: goal.targetAmount },
-      afterJson: { currentAmount: updated.currentAmount, targetAmount: updated.targetAmount },
+      beforeJson: {
+        currentAmount: goal.currentAmount,
+        targetAmount: goal.targetAmount,
+      },
+      afterJson: {
+        currentAmount: updated.currentAmount,
+        targetAmount: updated.targetAmount,
+      },
     });
     return updated;
   }

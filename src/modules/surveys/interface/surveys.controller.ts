@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   NotFoundException,
+  ServiceUnavailableException,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -308,6 +309,12 @@ export class SurveysController {
     if (existing) throw new ConflictException('La encuesta SUS ya fue enviada');
 
     // Standard SUS scoring formula over 10 Likert items
+    if (
+      questions.length !== 10 ||
+      questions.some((q, i) => q.order !== i + 1)
+    ) {
+      throw new ServiceUnavailableException('SUS requires ten ordered items');
+    }
     this.assertCompleteAnswers(questions, dto.answers);
     this.assertValidLikertAnswers(questions, dto.answers);
     let contributionSum = 0;
@@ -316,7 +323,7 @@ export class SurveysController {
       const contribution = question.order % 2 !== 0 ? raw - 1 : 5 - raw;
       contributionSum += contribution;
     }
-    const susScore = Math.round(contributionSum * 2.5);
+    const susScore = contributionSum * 2.5;
 
     await this.prisma.surveyResponse.create({
       data: {
@@ -563,6 +570,14 @@ export class SurveysController {
     const survey = await this.findSurveyOrThrow(type);
     const questions = parseSurveyQuestions(survey.questionsJson);
 
+    this.assertCompleteAnswers(questions, answers);
+    if (
+      questions.some(
+        (q) => q.options.length > 0 && !q.options.includes(answers[q.id]),
+      )
+    ) {
+      throw new BadRequestException('Answer must match a survey option');
+    }
     const score = this.scoreAnswers(questions, answers);
 
     const existing = await this.prisma.surveyResponse.findUnique({
@@ -607,10 +622,22 @@ export class SurveysController {
     questions: SurveyQuestionJson[],
     answers: Record<string, string>,
   ): void {
+    if (
+      questions.length === 0 ||
+      new Set(questions.map((q) => q.id)).size !== questions.length
+    ) {
+      throw new ServiceUnavailableException('Survey definition is invalid');
+    }
     const missing = questions.filter(
-      (question) => !answers[question.id]?.trim(),
+      (question) =>
+        typeof answers[question.id] !== 'string' ||
+        !answers[question.id].trim() ||
+        answers[question.id].length > 4000,
     );
-    if (missing.length > 0) {
+    if (
+      missing.length > 0 ||
+      Object.keys(answers).some((id) => !questions.some((q) => q.id === id))
+    ) {
       throw new BadRequestException('Debes responder todas las preguntas de la encuesta');
     }
   }
@@ -620,8 +647,7 @@ export class SurveysController {
     answers: Record<string, string>,
   ): void {
     const invalid = questions.filter((question) => {
-      const raw = parseInt(answers[question.id] ?? '', 10);
-      return !Number.isFinite(raw) || raw < 1 || raw > 5;
+      return !/^[1-5]$/.test(answers[question.id]);
     });
     if (invalid.length > 0) {
       throw new BadRequestException('Las respuestas deben estar entre 1 y 5');

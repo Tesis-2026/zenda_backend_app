@@ -2,6 +2,7 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
+  HttpException,
   NestInterceptor,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
@@ -21,8 +22,16 @@ type RequestWithMetadata = Request & {
 // Query-string keys whose VALUES should be masked before logging.
 // Matches the parameter name case-insensitively.
 const SENSITIVE_QUERY_KEYS = new Set(
-  ['password', 'token', 'code', 'otp', 'secret', 'apikey', 'access_token', 'refresh_token']
-    .map((k) => k.toLowerCase()),
+  [
+    'password',
+    'token',
+    'code',
+    'otp',
+    'secret',
+    'apikey',
+    'access_token',
+    'refresh_token',
+  ].map((k) => k.toLowerCase()),
 );
 
 // Replace the value of any sensitive query param with `***`.
@@ -39,7 +48,13 @@ export function redactSensitiveQuery(url: string): string {
     const eqIndex = pair.indexOf('=');
     if (eqIndex === -1) return pair;
     const key = pair.slice(0, eqIndex);
-    if (SENSITIVE_QUERY_KEYS.has(decodeURIComponent(key).toLowerCase())) {
+    let decodedKey: string;
+    try {
+      decodedKey = decodeURIComponent(key).toLowerCase();
+    } catch {
+      return '[invalid_query]';
+    }
+    if (SENSITIVE_QUERY_KEYS.has(decodedKey)) {
       return `${key}=***`;
     }
     return pair;
@@ -67,14 +82,14 @@ export class RequestLoggingInterceptor implements NestInterceptor {
       const payload: Record<string, unknown> = {
         requestId: request.requestId,
         method: request.method,
-        path: redactSensitiveQuery(request.url),
+        path: request.route?.path ?? request.path,
         status,
-        userId: request.user?.sub,
         durationMs,
       };
       if (error instanceof Error) {
         payload.errorName = error.name;
-        payload.errorMessage = error.message;
+        const code = (error as { code?: string }).code;
+        if (code && /^[A-Z0-9_]{1,30}$/.test(code)) payload.errorCode = code;
       }
       this.logger.log(JSON.stringify(payload), 'HTTP');
     };
@@ -86,9 +101,12 @@ export class RequestLoggingInterceptor implements NestInterceptor {
           // For HttpException Nest sets the status before reaching here in
           // the global filter; we fall back to the response status if set,
           // otherwise mark as 500 (unhandled).
-          const status = response.statusCode && response.statusCode >= 400
-            ? response.statusCode
-            : 500;
+          const status =
+            err instanceof HttpException
+              ? err.getStatus()
+              : response.statusCode && response.statusCode >= 400
+                ? response.statusCode
+                : 500;
           emit(status, err);
         },
       }),

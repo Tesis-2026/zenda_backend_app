@@ -110,7 +110,10 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         ...(filters.type && { type: filters.type as PrismaTransactionType }),
         ...(filters.categoryId && { categoryId: filters.categoryId }),
         ...(filters.accountId && {
-          OR: [{ accountId: filters.accountId }, { toAccountId: filters.accountId }],
+          OR: [
+            { accountId: filters.accountId },
+            { toAccountId: filters.accountId },
+          ],
         }),
         ...(filters.from || filters.to
           ? {
@@ -123,16 +126,26 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         ...(filters.minAmount !== undefined || filters.maxAmount !== undefined
           ? {
               amount: {
-                ...(filters.minAmount !== undefined && { gte: filters.minAmount }),
-                ...(filters.maxAmount !== undefined && { lte: filters.maxAmount }),
+                ...(filters.minAmount !== undefined && {
+                  gte: filters.minAmount,
+                }),
+                ...(filters.maxAmount !== undefined && {
+                  lte: filters.maxAmount,
+                }),
               },
             }
           : {}),
         ...(filters.search && {
-          description: { contains: filters.search, mode: 'insensitive' as const },
+          description: {
+            contains: filters.search,
+            mode: 'insensitive' as const,
+          },
         }),
       },
-      orderBy: { occurredAt: filters.sort === 'asc' ? 'asc' : 'desc' },
+      orderBy: [
+        { occurredAt: filters.sort === 'asc' ? 'asc' : 'desc' },
+        { id: 'asc' },
+      ],
       include: this.transactionInclude(),
       ...(filters.skip !== undefined && { skip: filters.skip }),
       take: filters.take ?? 100,
@@ -140,14 +153,20 @@ export class PrismaTransactionRepository implements ITransactionRepository {
     return rows.map((r) => this.toTransactionWithCategory(r));
   }
 
-  async findById(id: string, userId: string): Promise<TransactionEntity | null> {
+  async findById(
+    id: string,
+    userId: string,
+  ): Promise<TransactionEntity | null> {
     const row = await this.prisma.transaction.findFirst({
       where: { id, userId, deletedAt: null },
     });
     return row ? this.toEntity(row) : null;
   }
 
-  async findByIdWithCategory(id: string, userId: string): Promise<TransactionWithCategory | null> {
+  async findByIdWithCategory(
+    id: string,
+    userId: string,
+  ): Promise<TransactionWithCategory | null> {
     const row = await this.prisma.transaction.findFirst({
       where: { id, userId, deletedAt: null },
       include: this.transactionInclude(),
@@ -155,7 +174,11 @@ export class PrismaTransactionRepository implements ITransactionRepository {
     return row ? this.toTransactionWithCategory(row) : null;
   }
 
-  async update(id: string, userId: string, params: UpdateTransactionParams): Promise<TransactionWithCategory> {
+  async update(
+    id: string,
+    userId: string,
+    params: UpdateTransactionParams,
+  ): Promise<TransactionWithCategory> {
     const existing = await this.prisma.transaction.findFirst({
       where: { id, userId, deletedAt: null },
     });
@@ -164,14 +187,24 @@ export class PrismaTransactionRepository implements ITransactionRepository {
     const row = await this.prisma.transaction.update({
       where: { id },
       data: {
-        ...(params.categoryId !== undefined && { categoryId: params.categoryId }),
+        ...(params.categoryId !== undefined && {
+          categoryId: params.categoryId,
+        }),
         ...(params.accountId !== undefined && { accountId: params.accountId }),
-        ...(params.toAccountId !== undefined && { toAccountId: params.toAccountId }),
-        ...(params.type !== undefined && { type: params.type as PrismaTransactionType }),
+        ...(params.toAccountId !== undefined && {
+          toAccountId: params.toAccountId,
+        }),
+        ...(params.type !== undefined && {
+          type: params.type as PrismaTransactionType,
+        }),
         ...(params.amount !== undefined && { amount: params.amount }),
         ...(params.currency !== undefined && { currency: params.currency }),
-        ...(params.description !== undefined && { description: params.description }),
-        ...(params.occurredAt !== undefined && { occurredAt: params.occurredAt }),
+        ...(params.description !== undefined && {
+          description: params.description,
+        }),
+        ...(params.occurredAt !== undefined && {
+          occurredAt: params.occurredAt,
+        }),
         ...(params.budgetId !== undefined && { budgetId: params.budgetId }),
         ...(params.categorySource !== undefined && {
           categorySource: params.categorySource as PrismaCategorySource,
@@ -191,12 +224,18 @@ export class PrismaTransactionRepository implements ITransactionRepository {
 
   async hasConsecutiveDays(userId: string, days: number): Promise<boolean> {
     const now = new Date();
-    const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days + 1);
+    const from = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - days + 1,
+    );
     const rows = await this.prisma.transaction.findMany({
       where: { userId, deletedAt: null, occurredAt: { gte: from, lte: now } },
       select: { occurredAt: true },
     });
-    const distinctDates = new Set(rows.map((r) => r.occurredAt.toISOString().slice(0, 10)));
+    const distinctDates = new Set(
+      rows.map((r) => r.occurredAt.toISOString().slice(0, 10)),
+    );
     for (let i = 0; i < days; i++) {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
       if (!distinctDates.has(d.toISOString().slice(0, 10))) return false;
@@ -208,7 +247,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
     return {
       category: { select: { id: true, name: true, icon: true } },
       account: { select: { id: true, name: true, type: true, currency: true } },
-      toAccount: { select: { id: true, name: true, type: true, currency: true } },
+      toAccount: {
+        select: { id: true, name: true, type: true, currency: true },
+      },
     };
   }
 }

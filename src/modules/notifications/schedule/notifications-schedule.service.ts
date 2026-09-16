@@ -4,12 +4,16 @@ import { TransactionType } from '@prisma/client';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
 import { SendNotificationUseCase } from '../application/use-cases/send-notification.use-case';
 import {
+  financialDateKey,
+  financialDayBounds,
+} from '../../../shared/finance/financial-period';
+import {
   INotificationUserPort,
   NOTIFICATION_USER_PORT,
 } from '../domain/ports/notification-user.port';
 
 // Default time-of-day when a user has not set `dailyReminderAt`.
-// Stored and compared as HH:mm in the server's local timezone.
+// Stored and compared as HH:mm in Lima timezone (UTC-05:00).
 const DEFAULT_DAILY_REMINDER_AT = '21:30';
 
 // Reads either `durationDays` or `periodDays` from a Challenge.criteriaJson
@@ -42,15 +46,16 @@ export class NotificationsScheduleService {
 
   // ── DAILY_REMINDER ─────────────────────────────────────────────────────────
   // Runs every minute. Each invocation finds users whose `dailyReminderAt`
-  // matches the current HH:mm (or default 21:30 when unset) AND have not
-  // recorded a transaction today, then sends one reminder.
+  // matches the current HH:mm in Lima timezone (or default 21:30 when unset)
+  // AND have not recorded a transaction today in Lima, then sends one reminder.
   @Cron(CronExpression.EVERY_MINUTE)
   async runDailyReminder(): Promise<void> {
     const now = new Date();
+    const limaDate = new Date(now.getTime() - 5 * 60 * 60 * 1000);
     const currentTimeStr =
-      String(now.getHours()).padStart(2, '0') +
+      String(limaDate.getUTCHours()).padStart(2, '0') +
       ':' +
-      String(now.getMinutes()).padStart(2, '0');
+      String(limaDate.getUTCMinutes()).padStart(2, '0');
 
     const eligible = await this.userPort.listEligibleUsers({ type: 'DAILY_REMINDER' });
 
@@ -60,7 +65,7 @@ export class NotificationsScheduleService {
 
     if (targetUsers.length === 0) return;
 
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const { from: dayStart } = financialDayBounds(financialDateKey(now));
     const sinceWindow = new Date(now.getTime() - 23 * 60 * 60 * 1000);
 
     let sent = 0;

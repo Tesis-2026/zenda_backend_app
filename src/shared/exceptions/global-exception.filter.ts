@@ -36,8 +36,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     if (normalized.statusCode === HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
-        `Unhandled exception on ${request.method} ${request.url}`,
-        exception instanceof Error ? exception.stack : String(exception),
+        `Unhandled exception on ${request.method} ${request.route?.path ?? request.path}`,
+        exception instanceof Error ? exception.name : 'UnknownError',
       );
     }
 
@@ -47,7 +47,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: normalized.statusCode,
       message: normalized.message,
       error: normalized.error,
-      path: request.url,
+      path: request.path,
       timestamp: new Date().toISOString(),
     });
   }
@@ -58,9 +58,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const body = exception.getResponse();
       if (typeof body === 'string') {
-        return { statusCode: status, message: body, error: this.errorNameForStatus(status) };
+        return {
+          statusCode: status,
+          message: body,
+          error: this.errorNameForStatus(status),
+        };
       }
-      const { message: bodyMessage, error: bodyError, ...rest } = body as {
+      const {
+        message: bodyMessage,
+        error: bodyError,
+        ...rest
+      } = body as {
         message?: string | string[];
         error?: string;
         [key: string]: unknown;
@@ -141,7 +149,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (status === HttpStatus.FORBIDDEN) return 'Forbidden';
     if (status === HttpStatus.NOT_FOUND) return 'NotFound';
     if (status === HttpStatus.CONFLICT) return 'Conflict';
-    if (status === HttpStatus.UNPROCESSABLE_ENTITY) return 'UnprocessableEntity';
+    if (status === HttpStatus.UNPROCESSABLE_ENTITY)
+      return 'UnprocessableEntity';
     if (status === HttpStatus.TOO_MANY_REQUESTS) return 'TooManyRequests';
     if (status >= 500) return 'InternalServerError';
     return 'Error';
