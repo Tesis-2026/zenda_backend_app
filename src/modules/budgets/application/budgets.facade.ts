@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { financialMonth } from '../../../shared/finance/financial-period';
 import { IBudgetRepository } from '../domain/ports/budget.repository';
 
 export interface BudgetSnapshot {
@@ -16,6 +17,11 @@ export interface BudgetSnapshot {
  * facade pattern (BadgesFacade / ChallengesFacade / CategoriesFacade).
  */
 export abstract class BudgetsFacade {
+  abstract assertAccessibleForDate(
+    userId: string,
+    budgetId: string,
+    occurredAt: Date,
+  ): Promise<void>;
   abstract getSnapshotForCategory(
     userId: string,
     categoryId: string,
@@ -44,9 +50,13 @@ export class BudgetsFacadeImpl extends BudgetsFacade {
     categoryId: string,
     occurredAt: Date,
   ): Promise<BudgetSnapshot | null> {
-    const month = occurredAt.getMonth() + 1;
-    const year = occurredAt.getFullYear();
-    const budget = await this.repo.findForCategoryAndPeriod(userId, categoryId, month, year);
+    const { month, year } = financialMonth(occurredAt);
+    const budget = await this.repo.findForCategoryAndPeriod(
+      userId,
+      categoryId,
+      month,
+      year,
+    );
     if (!budget) return null;
     return {
       budgetId: budget.id,
@@ -70,5 +80,19 @@ export class BudgetsFacadeImpl extends BudgetsFacade {
       currentSpent: b.currentSpent,
       percentageUsed: b.percentageUsed,
     }));
+  }
+
+  async assertAccessibleForDate(
+    userId: string,
+    budgetId: string,
+    occurredAt: Date,
+  ): Promise<void> {
+    const budget = await this.repo.findById(budgetId, userId);
+    const { month, year } = financialMonth(occurredAt);
+    if (!budget || budget.month !== month || budget.year !== year) {
+      throw new BadRequestException(
+        'Budget not available for this user and period',
+      );
+    }
   }
 }

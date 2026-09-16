@@ -8,6 +8,11 @@ export interface GoalContributionRecord {
 }
 
 export abstract class ISavingsGoalRepository {
+  abstract contributeAtomically(
+    userId: string,
+    goalId: string,
+    amount: number,
+  ): Promise<SavingsGoalEntity>;
   abstract create(params: {
     userId: string;
     name: string;
@@ -16,9 +21,15 @@ export abstract class ISavingsGoalRepository {
   }): Promise<SavingsGoalEntity>;
 
   abstract findAll(userId: string): Promise<SavingsGoalEntity[]>;
-  abstract findById(id: string, userId: string): Promise<SavingsGoalEntity | null>;
+  abstract findById(
+    id: string,
+    userId: string,
+  ): Promise<SavingsGoalEntity | null>;
 
-  abstract updateCurrentAmount(id: string, newAmount: number): Promise<SavingsGoalEntity>;
+  abstract updateCurrentAmount(
+    id: string,
+    newAmount: number,
+  ): Promise<SavingsGoalEntity>;
 
   abstract update(
     id: string,
@@ -27,7 +38,10 @@ export abstract class ISavingsGoalRepository {
 
   abstract softDelete(id: string): Promise<void>;
 
-  abstract addContribution(goalId: string, amount: number): Promise<GoalContributionRecord>;
+  abstract addContribution(
+    goalId: string,
+    amount: number,
+  ): Promise<GoalContributionRecord>;
   abstract findContributions(goalId: string): Promise<GoalContributionRecord[]>;
 
   abstract complete(id: string): Promise<SavingsGoalEntity>;

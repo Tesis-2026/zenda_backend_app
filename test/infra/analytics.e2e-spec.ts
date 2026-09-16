@@ -24,6 +24,10 @@ describe('Analytics (contract - mocked, no DB)', () => {
 
   it('POST /api/analytics/events records a mobile event', async () => {
     ({ app, prisma } = await createTestApp({ user: fixtureUser }));
+    prisma.user.findUnique.mockResolvedValue({
+      consentGiven: true,
+      deletedAt: null,
+    });
 
     const res = await request(app.getHttpServer())
       .post('/api/analytics/events')

@@ -43,10 +43,32 @@ export class IdempotencyService {
       );
     }
 
+    if (record.statusCode === 0) {
+      throw new ConflictException(
+        'Request is pending confirmation; do not submit it with a new key',
+      );
+    }
+
     return {
       statusCode: record.statusCode,
       body: record.responseBody as unknown,
     };
+  }
+
+  async claim(params: {
+    key: string;
+    userId: string;
+    requestHash: string;
+  }): Promise<CachedResponse | null> {
+    try {
+      await this.prisma.idempotencyKey.create({
+        data: { ...params, statusCode: 0, responseBody: {} },
+      });
+      return null;
+    } catch (error) {
+      if ((error as { code?: string }).code !== 'P2002') throw error;
+      return this.lookup(params);
+    }
   }
 
   async store(params: {
@@ -58,17 +80,11 @@ export class IdempotencyService {
   }): Promise<void> {
     // Use upsert defensively — a concurrent first request from the same
     // client could race; we still want a single row.
-    await this.prisma.idempotencyKey.upsert({
+    await this.prisma.idempotencyKey.update({
       where: { key_userId: { key: params.key, userId: params.userId } },
-      create: {
-        key: params.key,
-        userId: params.userId,
-        requestHash: params.requestHash,
+      data: {
         statusCode: params.statusCode,
         responseBody: (params.body ?? null) as object,
-      },
-      update: {
-        // First writer wins; if a duplicate slipped in, leave it alone.
       },
     });
   }

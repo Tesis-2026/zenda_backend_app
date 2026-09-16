@@ -5,6 +5,8 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/infra/prisma/prisma.service';
+import { EmailService } from '../../src/infra/email/email.service';
+import { FcmService } from '../../src/infra/fcm/fcm.service';
 import { JwtAuthGuard } from '../../src/modules/auth/infrastructure/jwt-auth.guard';
 import { createPrismaMock, PrismaMock } from './prisma.mock';
 
@@ -19,7 +21,12 @@ export interface CreateTestAppOptions {
    * through and injects this object as `req.user` (so `@UserId()` resolves it).
    * Omit to exercise the real guard (e.g. in the auth suite).
    */
-  user?: { sub: string; email?: string; tokenVersion?: number; consentGiven?: boolean };
+  user?: {
+    sub: string;
+    email?: string;
+    tokenVersion?: number;
+    consentGiven?: boolean;
+  };
   /**
    * Replace domain providers (e.g. repository ports) with fakes so a use case
    * receives controlled domain objects without touching Prisma.
@@ -42,6 +49,18 @@ export async function createTestApp(
   const builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(PrismaService)
     .useValue(prisma)
+    .overrideProvider(EmailService)
+    .useValue({
+      sendPasswordResetEmail: jest.fn(),
+      sendOtpEmail: jest.fn(),
+      sendAccountVerificationEmail: jest.fn(),
+    })
+    .overrideProvider(FcmService)
+    .useValue({
+      sendToUser: jest.fn(),
+      sendToToken: jest.fn(),
+      send: jest.fn(),
+    })
     // Rate limiting is a production concern; disable it in contract tests so the
     // suites can fire requests freely without tripping the global ThrottlerGuard.
     .overrideGuard(ThrottlerGuard)
@@ -62,6 +81,7 @@ export async function createTestApp(
 
   const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication();
+  app.useLogger(false);
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
