@@ -35,12 +35,19 @@ import { UserId } from '../../auth/interface/decorators/user-id.decorator';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
 import { AnalyticsService } from '../../../infra/analytics/analytics.service';
 import { AuditLogService } from '../../../shared/audit/audit-log.service';
-import { SubmitSurveyDto } from './dto/submit-survey.dto';
 import {
   parseSurveyQuestions,
   SurveyQuestionJson,
 } from '../domain/survey-question.types';
 import { defaultQuestionsForSurveyType } from '../domain/default-surveys';
+import { FinancialLiteracyAssessmentService } from '../application/financial-literacy-assessment.service';
+import { FINANCIAL_LITERACY_QUESTIONNAIRE_VERSION } from '../domain/financial-literacy-questions';
+import { StartFinancialLiteracyDto } from './dto/start-financial-literacy.dto';
+import { SaveFinancialLiteracyProgressDto } from './dto/save-financial-literacy-progress.dto';
+import { SubmitFinancialLiteracyDto } from './dto/submit-financial-literacy.dto';
+import { SubmitSurveyDto } from './dto/submit-survey.dto';
+import { AssessmentStatus, AssessmentType } from '@prisma/client';
+import { Put } from '@nestjs/common';
 
 @ApiTags('Surveys')
 @ApiBearerAuth()
@@ -51,81 +58,139 @@ export class SurveysController {
     private readonly prisma: PrismaService,
     private readonly analytics: AnalyticsService,
     private readonly auditLog: AuditLogService,
+    private readonly finLitService: FinancialLiteracyAssessmentService,
   ) {}
 
   @Get('pre')
-  @ApiOperation({ summary: 'Get pre-usage survey questions (US-1201)' })
+  @ApiOperation({ summary: 'Get pre-usage survey questions (US-1201 / FINLIT_PRE_V1)' })
   @ApiResponse({
     status: 200,
-    description: 'Pre-survey definition with embedded questions',
+    description: 'Pre-survey definition with embedded questions (without correctAnswer)',
   })
-  @ApiNotFoundError('Pre-survey is not seeded')
   @ApiAuthErrors()
   async getPreSurvey(): Promise<object> {
-    return this.getSurveyByType(SurveyType.PRE);
+    const qData = this.finLitService.getQuestions(AssessmentType.PRE);
+    return {
+      id: 'finlit-pre-v1',
+      type: 'PRE',
+      assessmentType: 'PRE',
+      questionnaireVersion: qData.questionnaireVersion,
+      totalQuestions: qData.totalQuestions,
+      consentText: qData.consentText,
+      consentVersion: qData.consentVersion,
+      questions: qData.questions.map((q) => ({
+        id: q.questionId,
+        questionId: q.questionId,
+        order: q.order,
+        domain: q.domain,
+        text: q.questionText,
+        questionText: q.questionText,
+        options: q.options,
+      })),
+    };
   }
 
-  @Get('post')
-  @ApiOperation({ summary: 'Get post-usage survey questions (US-1202)' })
+  @Get('pre/status')
+  @ApiOperation({ summary: 'Get pre-test status and saved progress (US-1201)' })
   @ApiResponse({
     status: 200,
-    description: 'Post-survey definition with embedded questions',
+    description: 'Current assessment state (NOT_STARTED, IN_PROGRESS, COMPLETED) and saved answers',
   })
-  @ApiNotFoundError('Post-survey is not seeded')
   @ApiAuthErrors()
-  async getPostSurvey(): Promise<object> {
-    return this.getSurveyByType(SurveyType.POST);
+  async getPreStatus(@UserId() userId: string): Promise<object> {
+    return this.finLitService.getStatus(userId, AssessmentType.PRE);
+  }
+
+  @Post('pre/start')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Start or resume pre-test with academic informed consent' })
+  @ApiResponse({
+    status: 200,
+    description: 'Assessment initiated in IN_PROGRESS state',
+  })
+  @ApiAuthErrors()
+  async startPre(
+    @UserId() userId: string,
+    @Body() dto: StartFinancialLiteracyDto,
+  ): Promise<object> {
+    return this.finLitService.startAssessment(userId, dto, AssessmentType.PRE);
+  }
+
+  @Put('pre/save-progress')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Save partial progress for pre-test in progress' })
+  @ApiResponse({
+    status: 200,
+    description: 'Answers saved to allow resume',
+  })
+  @ApiAuthErrors()
+  async savePreProgress(
+    @UserId() userId: string,
+    @Body() dto: SaveFinancialLiteracyProgressDto,
+  ): Promise<object> {
+    return this.finLitService.saveProgress(userId, dto, AssessmentType.PRE);
   }
 
   @Post('pre/response')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Submit pre-usage survey response (US-1201)' })
+  @ApiOperation({ summary: 'Submit pre-usage survey response (US-1201 / FINLIT_PRE_V1)' })
   @ApiResponse({
     status: 201,
-    description: 'Response recorded; user financialLiteracyLevel updated',
+    description: 'Response recorded atomically; user financialLiteracyLevel updated',
   })
   @ApiValidationError()
   @ApiConflictError('Pre-survey already submitted by this user')
   @ApiAuthErrors()
   async submitPre(
     @UserId() userId: string,
-    @Body() dto: SubmitSurveyDto,
-  ): Promise<{ score: number; level: string }> {
-    const result = await this.submitResponse(
+    @Body() dto: SubmitFinancialLiteracyDto,
+  ): Promise<object> {
+    const submission = await this.finLitService.submitAssessment(
       userId,
-      SurveyType.PRE,
-      dto.answers,
+      dto,
+      AssessmentType.PRE,
     );
-    const previousProfile = await this.prisma.user.findUniqueOrThrow({
+    const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { financialLiteracyLevel: true, profileCompleted: true },
+      select: { financialLiteracyLevel: true },
     });
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        financialLiteracyLevel: result.level as FinancialLiteracyLevel,
-        profileCompleted: true,
-      },
-    });
-    // Record the literacy-level change explicitly. `financialLiteracyLevel`
-    // is personal data under Law 29733, and the educational-improvement
-    // KPI (>=20% pre/post delta) is computed from these values — the
-    // audit trail backs both the compliance story and the thesis result.
-    this.auditLog.record({
-      action: 'SUBMIT_SURVEY_PRE',
-      resource: 'SurveyResponse',
-      resourceId: userId,
-      beforeJson: {
-        financialLiteracyLevel: previousProfile.financialLiteracyLevel,
-        profileCompleted: previousProfile.profileCompleted,
-      },
-      afterJson: {
-        score: result.score,
-        financialLiteracyLevel: result.level,
-        profileCompleted: true,
-      },
-    });
-    return result;
+    return {
+      completed: true,
+      message: submission.message,
+      assessmentType: submission.assessmentType,
+      questionnaireVersion: submission.questionnaireVersion,
+      completedAt: submission.completedAt,
+      level: user.financialLiteracyLevel ?? 'LOW',
+    };
+  }
+
+  @Get('post')
+  @ApiOperation({ summary: 'Get post-usage survey questions (US-1202 / FINLIT_PRE_V1)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Post-survey definition with embedded questions (without correctAnswer)',
+  })
+  @ApiAuthErrors()
+  async getPostSurvey(): Promise<object> {
+    const qData = this.finLitService.getQuestions(AssessmentType.POST);
+    return {
+      id: 'finlit-post-v1',
+      type: 'POST',
+      assessmentType: 'POST',
+      questionnaireVersion: qData.questionnaireVersion,
+      totalQuestions: qData.totalQuestions,
+      consentText: qData.consentText,
+      consentVersion: qData.consentVersion,
+      questions: qData.questions.map((q) => ({
+        id: q.questionId,
+        questionId: q.questionId,
+        order: q.order,
+        domain: q.domain,
+        text: q.questionText,
+        questionText: q.questionText,
+        options: q.options,
+      })),
+    };
   }
 
   @Post('post/response')
@@ -140,39 +205,44 @@ export class SurveysController {
   @ApiAuthErrors()
   async submitPost(
     @UserId() userId: string,
-    @Body() dto: SubmitSurveyDto,
-  ): Promise<{ score: number; improvement: number | null }> {
-    const postResult = await this.submitResponse(
+    @Body() dto: SubmitFinancialLiteracyDto,
+  ): Promise<{ completed: boolean; message: string; improvement: number | null }> {
+    const submission = await this.finLitService.submitAssessment(
       userId,
-      SurveyType.POST,
-      dto.answers,
+      dto,
+      AssessmentType.POST,
     );
+    const participant = await this.finLitService.getOrCreateParticipant(userId);
+    const [preAssessment, postAssessment] = await Promise.all([
+      this.prisma.financialLiteracyAssessment.findUnique({
+        where: {
+          researchParticipantId_assessmentType_questionnaireVersion: {
+            researchParticipantId: participant.researchParticipantId,
+            assessmentType: AssessmentType.PRE,
+            questionnaireVersion: FINANCIAL_LITERACY_QUESTIONNAIRE_VERSION,
+          },
+        },
+      }),
+      this.prisma.financialLiteracyAssessment.findUnique({
+        where: {
+          researchParticipantId_assessmentType_questionnaireVersion: {
+            researchParticipantId: participant.researchParticipantId,
+            assessmentType: AssessmentType.POST,
+            questionnaireVersion: FINANCIAL_LITERACY_QUESTIONNAIRE_VERSION,
+          },
+        },
+      }),
+    ]);
+    const improvement =
+      preAssessment?.totalScore != null && postAssessment?.totalScore != null
+        ? postAssessment.totalScore - preAssessment.totalScore
+        : null;
 
-    const preSurvey = await this.prisma.survey.findFirst({
-      where: { type: SurveyType.PRE },
-    });
-    const preResponse = preSurvey
-      ? await this.prisma.surveyResponse.findUnique({
-          where: { userId_surveyId: { userId, surveyId: preSurvey.id } },
-        })
-      : null;
-
-    const improvement = preResponse?.score
-      ? Number((postResult.score - preResponse.score.toNumber()).toFixed(2))
-      : null;
-
-    this.auditLog.record({
-      action: 'SUBMIT_SURVEY_POST',
-      resource: 'SurveyResponse',
-      resourceId: userId,
-      afterJson: {
-        score: postResult.score,
-        level: postResult.level,
-        improvementVsPre: improvement,
-      },
-    });
-
-    return { ...postResult, improvement };
+    return {
+      completed: true,
+      message: submission.message,
+      improvement,
+    };
   }
 
   @Get('sus')
@@ -475,6 +545,52 @@ export class SurveysController {
   @Get('comparison')
   @ApiOperation({ summary: 'Get pre/post comparison for a user (US-1203)' })
   async comparison(@UserId() userId: string): Promise<object> {
+    const participant = await this.prisma.researchParticipant.findUnique({
+      where: { userId },
+    });
+
+    if (participant) {
+      const [preAssess, postAssess] = await Promise.all([
+        this.prisma.financialLiteracyAssessment.findUnique({
+          where: {
+            researchParticipantId_assessmentType_questionnaireVersion: {
+              researchParticipantId: participant.researchParticipantId,
+              assessmentType: AssessmentType.PRE,
+              questionnaireVersion: FINANCIAL_LITERACY_QUESTIONNAIRE_VERSION,
+            },
+          },
+        }),
+        this.prisma.financialLiteracyAssessment.findUnique({
+          where: {
+            researchParticipantId_assessmentType_questionnaireVersion: {
+              researchParticipantId: participant.researchParticipantId,
+              assessmentType: AssessmentType.POST,
+              questionnaireVersion: FINANCIAL_LITERACY_QUESTIONNAIRE_VERSION,
+            },
+          },
+        }),
+      ]);
+
+      const preDone = preAssess?.status === AssessmentStatus.COMPLETED;
+      const postDone = postAssess?.status === AssessmentStatus.COMPLETED;
+      const preScore = preDone ? preAssess.totalScore : null;
+      const postScore = postDone ? postAssess.totalScore : null;
+      const improvementPercentage =
+        preScore !== null && postScore !== null && preScore > 0
+          ? Math.round(((postScore - preScore) / preScore) * 100)
+          : null;
+
+      if (preDone || postDone) {
+        return {
+          preScore,
+          postScore,
+          improvementPercentage,
+          preCompleted: preDone,
+          postCompleted: postDone,
+        };
+      }
+    }
+
     const [preSurvey, postSurvey] = await Promise.all([
       this.prisma.survey.findFirst({ where: { type: SurveyType.PRE } }),
       this.prisma.survey.findFirst({ where: { type: SurveyType.POST } }),
@@ -500,7 +616,13 @@ export class SurveysController {
         ? Math.round(((postScore - preScore) / preScore) * 100)
         : null;
 
-    return { preScore, postScore, improvementPercentage };
+    return {
+      preScore,
+      postScore,
+      improvementPercentage,
+      preCompleted: preScore !== null,
+      postCompleted: postScore !== null,
+    };
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────

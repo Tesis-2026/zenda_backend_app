@@ -29,59 +29,78 @@ describe('Surveys (contract — mocked, no DB)', () => {
     ).toBe(401);
   });
 
-  it('GET /api/surveys/pre → 404 when the pre-survey is not seeded', async () => {
-    await bootAuthed();
-    // prisma.survey.findFirst defaults to null → NotFoundException
-    const res = await request(app.getHttpServer())
-      .get('/api/surveys/pre')
-      .set('Authorization', 'Bearer test');
-    expect(res.status).toBe(404);
-  });
+  const valid12Answers = {
+    Q1: 'B',
+    Q2: 'B',
+    Q3: 'A',
+    Q4: 'C',
+    Q5: 'C',
+    Q6: 'B',
+    Q7: 'C',
+    Q8: 'B',
+    Q9: 'B',
+    Q10: 'B',
+    Q11: 'C',
+    Q12: 'B',
+  };
 
-  it('GET /api/surveys/pre → 200 with {id, type, questions[]}', async () => {
+  it('GET /api/surveys/pre → 200 with {id, type, questions[]} containing 12 items without correctAnswer', async () => {
     await bootAuthed();
-    prisma.survey.findFirst.mockResolvedValue(makeSurvey('PRE'));
     const res = await request(app.getHttpServer())
       .get('/api/surveys/pre')
       .set('Authorization', 'Bearer test');
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ type: 'PRE' });
-    expect(res.body.questions).toHaveLength(2);
+    expect(res.body).toMatchObject({
+      type: 'PRE',
+      assessmentType: 'PRE',
+      questionnaireVersion: 'FINLIT_PRE_V1',
+    });
+    expect(res.body.questions).toHaveLength(12);
     expect(res.body.questions[0]).toMatchObject({
-      id: 'sq1',
+      id: 'Q1',
+      questionId: 'Q1',
       order: 1,
-      text: expect.any(String),
+      domain: 'PLANIFICACION',
     });
     // The answer key is never leaked to the client.
     expect(res.body.questions[0]).not.toHaveProperty('correctAnswer');
+    expect(res.body.questions[0]).not.toHaveProperty('scoreValue');
   });
 
-  it('POST /api/surveys/pre/response → 201 with {score, level}; updates literacy level', async () => {
+  it('POST /api/surveys/pre/response → 201 with completion message; updates literacy level', async () => {
     await bootAuthed();
-    prisma.survey.findFirst.mockResolvedValue(makeSurvey('PRE'));
-    prisma.surveyResponse.findUnique.mockResolvedValue(null);
     prisma.user.findUniqueOrThrow.mockResolvedValue({
+      id: fixtureUser.id,
       financialLiteracyLevel: 'LOW',
       profileCompleted: false,
     });
     const res = await request(app.getHttpServer())
       .post('/api/surveys/pre/response')
       .set('Authorization', 'Bearer test')
-      .send({ answers: { sq1: 'Sí', sq2: 'Sí' } });
+      .send({ answers: valid12Answers });
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ score: 100, level: 'HIGH' });
-    expect(prisma.surveyResponse.create).toHaveBeenCalled();
-    expect(prisma.user.update).toHaveBeenCalled();
+    expect(res.body).toMatchObject({
+      completed: true,
+      assessmentType: 'PRE',
+      questionnaireVersion: 'FINLIT_PRE_V1',
+    });
+    expect(prisma.financialLiteracyAssessment.create).toHaveBeenCalled();
   });
 
   it('POST /api/surveys/pre/response → 409 when already submitted', async () => {
     await bootAuthed();
-    prisma.survey.findFirst.mockResolvedValue(makeSurvey('PRE'));
-    prisma.surveyResponse.findUnique.mockResolvedValue({ id: 'resp-1' });
+    prisma.financialLiteracyAssessment.findUnique.mockResolvedValue({
+      id: 'assess-completed-1',
+      researchParticipantId: 'rp-1',
+      assessmentType: 'PRE',
+      questionnaireVersion: 'FINLIT_PRE_V1',
+      status: 'COMPLETED',
+      totalScore: 12,
+    });
     const res = await request(app.getHttpServer())
       .post('/api/surveys/pre/response')
       .set('Authorization', 'Bearer test')
-      .send({ answers: { sq1: 'Sí', sq2: 'Sí' } });
+      .send({ answers: valid12Answers });
     expect(res.status).toBe(409);
   });
 

@@ -18,8 +18,12 @@ import { SurveysController } from './interface/surveys.controller';
  * is a separate follow-up — out of scope for the module-extraction
  * batch (B7) which only relocates code, not its layering.
  */
+import { FinancialLiteracyAssessmentService } from './application/financial-literacy-assessment.service';
+
 @Module({
   imports: [PrismaModule],
   controllers: [SurveysController],
+  providers: [FinancialLiteracyAssessmentService],
+  exports: [FinancialLiteracyAssessmentService],
 })
 export class SurveysModule {}

@@ -183,6 +183,7 @@ model User {
   financialProgress UserFinancialProgress[]
   idempotencyKeys   IdempotencyKey[]
   notifications     Notification[]
+  researchParticipant ResearchParticipant?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -605,6 +606,73 @@ model SurveyResponse {
 
   @@unique([userId, surveyId])
   @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// RESEARCH IDENTITY MAP & FINANCIAL LITERACY ASSESSMENTS
+// ─────────────────────────────────────────────────────────────────
+
+enum AssessmentType {
+  PRE
+  POST
+}
+
+enum AssessmentStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model ResearchParticipant {
+  id                    String                        @id @default(uuid()) @db.Uuid
+  userId                String                        @unique @db.Uuid
+  researchParticipantId String                        @unique @default(uuid()) @db.Uuid
+  createdAt             DateTime                      @default(now())
+
+  user                  User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessments           FinancialLiteracyAssessment[]
+
+  @@index([researchParticipantId])
+}
+
+model FinancialLiteracyAssessment {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  researchParticipantId String                    @db.Uuid
+  assessmentType        AssessmentType            @default(PRE)
+  questionnaireVersion  String                    @default("FINLIT_PRE_V1")
+  status                AssessmentStatus          @default(IN_PROGRESS)
+  totalScore            Int?
+  maxScore              Int                       @default(12)
+  consentGiven          Boolean                   @default(false)
+  consentVersion        String?
+  consentAt             DateTime?
+  startedAt             DateTime                  @default(now())
+  completedAt           DateTime?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  participant           ResearchParticipant       @relation(fields: [researchParticipantId], references: [researchParticipantId], onDelete: Cascade)
+  answers               FinancialLiteracyAnswer[]
+
+  @@unique([researchParticipantId, assessmentType, questionnaireVersion])
+  @@index([researchParticipantId])
+  @@index([status])
+}
+
+model FinancialLiteracyAnswer {
+  id             String                      @id @default(uuid()) @db.Uuid
+  assessmentId   String                      @db.Uuid
+  questionId     String
+  domain         String
+  selectedOption String
+  isCorrect      Boolean
+  score          Int
+  answeredAt     DateTime                    @default(now())
+
+  assessment     FinancialLiteracyAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, questionId])
+  @@index([assessmentId])
+  @@index([questionId])
 }
 
 // ─────────────────────────────────────────────────────────────────

@@ -14,6 +14,10 @@ import { ResearchDashboardService } from '../application/research-dashboard.serv
 import { ResearchDashboardData } from '../application/research-dashboard.types';
 import { ResearchDashboardQueryDto } from './dto/research-dashboard-query.dto';
 import { renderResearchDashboard } from './research-dashboard.view';
+import {
+  FinancialLiteracyAssessmentService,
+  ResearchExportRow,
+} from '../../surveys/application/financial-literacy-assessment.service';
 
 @ApiTags('Research Dashboard')
 @Controller('research-dashboard')
@@ -21,6 +25,7 @@ export class ResearchDashboardController {
   constructor(
     private readonly dashboard: ResearchDashboardService,
     private readonly config: ConfigService,
+    private readonly finLitService: FinancialLiteracyAssessmentService,
   ) {}
 
   @Get()
@@ -79,6 +84,77 @@ export class ResearchDashboardController {
     this.assertAccess(query.token, headerToken);
     const data = await this.dashboard.build(query);
     return this.toCsv(data);
+  }
+
+  @Get('export/financial-literacy.json')
+  @Header(
+    'Content-Disposition',
+    'attachment; filename="zenda-financial-literacy-research.json"',
+  )
+  @ApiOperation({
+    summary:
+      'Export pseudonymous financial literacy assessment research dataset (JSON)',
+  })
+  async exportFinancialLiteracyJson(
+    @Query() query: ResearchDashboardQueryDto,
+    @Headers('x-research-token') headerToken?: string,
+  ): Promise<ResearchExportRow[]> {
+    this.assertAccess(query.token, headerToken);
+    return this.finLitService.exportPseudonymizedResearchDataset();
+  }
+
+  @Get('export/financial-literacy.csv')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header(
+    'Content-Disposition',
+    'attachment; filename="zenda-financial-literacy-research.csv"',
+  )
+  @ApiOperation({
+    summary:
+      'Export pseudonymous financial literacy assessment research dataset (CSV)',
+  })
+  async exportFinancialLiteracyCsv(
+    @Query() query: ResearchDashboardQueryDto,
+    @Headers('x-research-token') headerToken?: string,
+  ): Promise<string> {
+    this.assertAccess(query.token, headerToken);
+    const rows = await this.finLitService.exportPseudonymizedResearchDataset();
+    return this.financialLiteracyToCsv(rows);
+  }
+
+  private financialLiteracyToCsv(rows: ResearchExportRow[]): string {
+    const headers = [
+      'researchParticipantId',
+      'assessmentType',
+      'questionnaireVersion',
+      'questionId',
+      'domain',
+      'selectedOption',
+      'isCorrect',
+      'score',
+      'totalScore',
+      'startedAt',
+      'completedAt',
+    ];
+    const lines = [headers.join(',')];
+    for (const r of rows) {
+      lines.push(
+        [
+          r.researchParticipantId,
+          r.assessmentType,
+          r.questionnaireVersion,
+          r.questionId,
+          r.domain,
+          r.selectedOption,
+          r.isCorrect ? 'true' : 'false',
+          r.score,
+          r.totalScore ?? '',
+          r.startedAt,
+          r.completedAt ?? '',
+        ].join(','),
+      );
+    }
+    return lines.join('\n');
   }
 
   private assertAccess(queryToken?: string, headerToken?: string): void {
