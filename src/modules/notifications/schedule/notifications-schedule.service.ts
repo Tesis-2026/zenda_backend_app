@@ -12,9 +12,8 @@ import {
   NOTIFICATION_USER_PORT,
 } from '../domain/ports/notification-user.port';
 
-// Default time-of-day when a user has not set `dailyReminderAt`.
-// Stored and compared as HH:mm in Lima timezone (UTC-05:00).
-const DEFAULT_DAILY_REMINDER_AT = '21:30';
+const HOURLY_REMINDER_START_HOUR = 8;
+const HOURLY_REMINDER_END_HOUR = 21;
 
 // Reads either `durationDays` or `periodDays` from a Challenge.criteriaJson
 // payload (B36 derivation rule). Returns null when neither is a positive number.
@@ -45,28 +44,23 @@ export class NotificationsScheduleService {
   ) {}
 
   // ── DAILY_REMINDER ─────────────────────────────────────────────────────────
-  // Runs every minute. Each invocation finds users whose `dailyReminderAt`
-  // matches the current HH:mm in Lima timezone (or default 21:30 when unset)
-  // AND have not recorded a transaction today in Lima, then sends one reminder.
-  @Cron(CronExpression.EVERY_MINUTE)
-  async runDailyReminder(): Promise<void> {
-    const now = new Date();
+  // Runs hourly during waking hours in Lima. Users receive at most one reminder
+  // per hour, and reminders stop as soon as they record a transaction that day.
+  @Cron(CronExpression.EVERY_HOUR)
+  async runDailyReminder(now = new Date()): Promise<void> {
     const limaDate = new Date(now.getTime() - 5 * 60 * 60 * 1000);
-    const currentTimeStr =
-      String(limaDate.getUTCHours()).padStart(2, '0') +
-      ':' +
-      String(limaDate.getUTCMinutes()).padStart(2, '0');
+    const limaHour = limaDate.getUTCHours();
+    if (limaHour < HOURLY_REMINDER_START_HOUR || limaHour > HOURLY_REMINDER_END_HOUR) {
+      return;
+    }
 
-    const eligible = await this.userPort.listEligibleUsers({ type: 'DAILY_REMINDER' });
-
-    const targetUsers = eligible.filter((u) => {
-      return (u.dailyReminderAt ?? DEFAULT_DAILY_REMINDER_AT) === currentTimeStr;
+    const targetUsers = await this.userPort.listEligibleUsers({
+      type: 'DAILY_REMINDER',
     });
-
     if (targetUsers.length === 0) return;
 
     const { from: dayStart } = financialDayBounds(financialDateKey(now));
-    const sinceWindow = new Date(now.getTime() - 23 * 60 * 60 * 1000);
+    const sinceWindow = new Date(now.getTime() - 59 * 60 * 1000);
 
     let sent = 0;
     for (const user of targetUsers) {
@@ -82,8 +76,9 @@ export class NotificationsScheduleService {
       const result = await this.send.execute({
         userId: user.id,
         type: 'DAILY_REMINDER',
-        title: 'Recuerda registrar tus gastos',
-        body: 'Anota lo que gastaste hoy para mantener tu racha y tu control financiero.',
+        title: '🔥 Tu racha te espera',
+        body: 'Registra un movimiento de hoy y mantén viva tu racha financiera.',
+        data: { route: '/add-transaction', reminderFrequency: 'hourly' },
         idempotencySince: sinceWindow,
       });
       if (result.notification) sent++;
