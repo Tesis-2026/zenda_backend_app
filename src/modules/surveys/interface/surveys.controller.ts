@@ -193,6 +193,47 @@ export class SurveysController {
     };
   }
 
+  @Get('post/status')
+  @ApiOperation({ summary: 'Get post-test status and saved progress (US-1202)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Current assessment state (NOT_STARTED, IN_PROGRESS, COMPLETED) and saved answers',
+  })
+  @ApiAuthErrors()
+  async getPostStatus(@UserId() userId: string): Promise<object> {
+    return this.finLitService.getStatus(userId, AssessmentType.POST);
+  }
+
+  @Post('post/start')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Start or resume post-test with academic informed consent' })
+  @ApiResponse({
+    status: 200,
+    description: 'Assessment initiated in IN_PROGRESS state',
+  })
+  @ApiAuthErrors()
+  async startPost(
+    @UserId() userId: string,
+    @Body() dto: StartFinancialLiteracyDto,
+  ): Promise<object> {
+    return this.finLitService.startAssessment(userId, dto, AssessmentType.POST);
+  }
+
+  @Put('post/save-progress')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Save partial progress for post-test in progress' })
+  @ApiResponse({
+    status: 200,
+    description: 'Answers saved to allow resume',
+  })
+  @ApiAuthErrors()
+  async savePostProgress(
+    @UserId() userId: string,
+    @Body() dto: SaveFinancialLiteracyProgressDto,
+  ): Promise<object> {
+    return this.finLitService.saveProgress(userId, dto, AssessmentType.POST);
+  }
+
   @Post('post/response')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit post-usage survey response (US-1202)' })
@@ -206,7 +247,15 @@ export class SurveysController {
   async submitPost(
     @UserId() userId: string,
     @Body() dto: SubmitFinancialLiteracyDto,
-  ): Promise<{ completed: boolean; message: string; improvement: number | null }> {
+  ): Promise<{
+    completed: boolean;
+    message: string;
+    assessmentType: string;
+    questionnaireVersion: string;
+    completedAt: string;
+    improvement: number | null;
+    score: number | null;
+  }> {
     const submission = await this.finLitService.submitAssessment(
       userId,
       dto,
@@ -241,7 +290,11 @@ export class SurveysController {
     return {
       completed: true,
       message: submission.message,
+      assessmentType: submission.assessmentType,
+      questionnaireVersion: submission.questionnaireVersion,
+      completedAt: submission.completedAt,
       improvement,
+      score: postAssessment?.totalScore ?? null,
     };
   }
 

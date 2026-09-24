@@ -255,4 +255,104 @@ describe('Surveys (contract — mocked, no DB)', () => {
       improvementPercentage: null,
     });
   });
+
+  it('GET /api/surveys/post → 200 with 12 items without correctAnswer (US-1202)', async () => {
+    await bootAuthed();
+    const res = await request(app.getHttpServer())
+      .get('/api/surveys/post')
+      .set('Authorization', 'Bearer test');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      type: 'POST',
+      assessmentType: 'POST',
+      questionnaireVersion: 'FINLIT_PRE_V1',
+    });
+    expect(res.body.questions).toHaveLength(12);
+    expect(res.body.questions[0]).not.toHaveProperty('correctAnswer');
+  });
+
+  it('GET /api/surveys/post/status → 200 with assessment state', async () => {
+    await bootAuthed();
+    const res = await request(app.getHttpServer())
+      .get('/api/surveys/post/status')
+      .set('Authorization', 'Bearer test');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      assessmentType: 'POST',
+      questionnaireVersion: 'FINLIT_PRE_V1',
+      status: 'NOT_STARTED',
+      totalQuestions: 12,
+    });
+  });
+
+  it('POST /api/surveys/post/start and PUT /api/surveys/post/save-progress execute properly', async () => {
+    await bootAuthed();
+    prisma.financialLiteracyAssessment.create.mockResolvedValue({
+      id: 'assess-post-1',
+      questionnaireVersion: 'FINLIT_PRE_V1',
+      status: 'IN_PROGRESS',
+      consentGiven: true,
+      consentVersion: 'FINLIT_CONSENT_V1',
+      startedAt: new Date(),
+    });
+    prisma.financialLiteracyAssessment.findUnique.mockResolvedValue({
+      id: 'assess-post-1',
+      questionnaireVersion: 'FINLIT_PRE_V1',
+      status: 'IN_PROGRESS',
+      consentGiven: true,
+      consentVersion: 'FINLIT_CONSENT_V1',
+      startedAt: new Date(),
+      answers: [],
+    });
+
+    const startRes = await request(app.getHttpServer())
+      .post('/api/surveys/post/start')
+      .set('Authorization', 'Bearer test')
+      .send({ consentGiven: true, consentVersion: 'FINLIT_CONSENT_V1' });
+    expect(startRes.status).toBe(200);
+    expect(startRes.body).toMatchObject({
+      assessmentType: 'POST',
+      status: 'IN_PROGRESS',
+    });
+
+    const saveRes = await request(app.getHttpServer())
+      .put('/api/surveys/post/save-progress')
+      .set('Authorization', 'Bearer test')
+      .send({ answers: { Q1: 'B', Q2: 'B' } });
+    expect(saveRes.status).toBe(200);
+    expect(saveRes.body).toMatchObject({
+      savedCount: 2,
+    });
+  });
+
+  it('POST /api/surveys/post/response → 201 with score and improvement', async () => {
+    await bootAuthed();
+    prisma.financialLiteracyAssessment.findUnique
+      .mockResolvedValueOnce(null) // in submitAssessment check
+      .mockResolvedValueOnce({
+        id: 'assess-pre',
+        researchParticipantId: 'rp-1',
+        assessmentType: 'PRE',
+        totalScore: 8,
+      }) // preAssessment in controller
+      .mockResolvedValueOnce({
+        id: 'assess-post',
+        researchParticipantId: 'rp-1',
+        assessmentType: 'POST',
+        totalScore: 12,
+      }); // postAssessment in controller
+
+    const res = await request(app.getHttpServer())
+      .post('/api/surveys/post/response')
+      .set('Authorization', 'Bearer test')
+      .send({ answers: valid12Answers });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({
+      completed: true,
+      assessmentType: 'POST',
+      questionnaireVersion: 'FINLIT_PRE_V1',
+      improvement: 4,
+      score: 12,
+    });
+  });
 });

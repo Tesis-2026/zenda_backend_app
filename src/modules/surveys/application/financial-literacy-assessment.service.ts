@@ -273,7 +273,7 @@ export class FinancialLiteracyAssessmentService {
     });
 
     this.auditLog.record({
-      action: 'START_FINANCIAL_LITERACY_ASSESSMENT',
+      action: `START_FINANCIAL_LITERACY_${assessmentType}`,
       resource: 'FinancialLiteracyAssessment',
       resourceId: created.id,
       afterJson: {
@@ -284,13 +284,24 @@ export class FinancialLiteracyAssessmentService {
       },
     });
 
+    this.analytics.track(
+      userId,
+      assessmentType === AssessmentType.PRE
+        ? 'financial_literacy_pre_started'
+        : 'financial_literacy_post_started',
+      {
+        assessmentType,
+        questionnaireVersion: created.questionnaireVersion,
+      },
+    );
+
     return {
       assessmentType,
       questionnaireVersion: created.questionnaireVersion,
       status: created.status,
       consentGiven: created.consentGiven,
       consentVersion: created.consentVersion,
-      startedAt: created.startedAt.toISOString(),
+      startedAt: (created.startedAt ?? now).toISOString(),
       completedAt: null,
       answeredQuestions: {},
       totalAnswered: 0,
@@ -567,14 +578,23 @@ export class FinancialLiteracyAssessmentService {
       },
     });
 
-    this.analytics.track(userId, 'financial_literacy_pre_submitted', {
-      assessmentType,
-      questionnaireVersion: FINANCIAL_LITERACY_QUESTIONNAIRE_VERSION,
-    });
+    this.analytics.track(
+      userId,
+      assessmentType === AssessmentType.PRE
+        ? 'financial_literacy_pre_submitted'
+        : 'financial_literacy_post_submitted',
+      {
+        assessmentType,
+        questionnaireVersion: FINANCIAL_LITERACY_QUESTIONNAIRE_VERSION,
+      },
+    );
 
     return {
       completed: true,
-      message: 'Evaluación inicial completada. Gracias por participar.',
+      message:
+        assessmentType === AssessmentType.PRE
+          ? 'Evaluación inicial completada. Gracias por participar.'
+          : 'Evaluación final completada. Gracias por participar.',
       assessmentType,
       questionnaireVersion: FINANCIAL_LITERACY_QUESTIONNAIRE_VERSION,
       completedAt: now.toISOString(),
