@@ -58,6 +58,15 @@ Open the dashboard:
 https://<backend-host>/api/research-dashboard?token=<strong-random-token>
 ```
 
+The stakeholder view is organized as an executive evidence brief: sample and
+coverage, comparable PRE/POST impact, adoption, financial behavior, experience,
+and anonymized qualitative feedback. It is responsive, printable, and includes
+period filters plus direct exports. Evidence maturity is labeled explicitly so
+an early cohort is not presented as a conclusive result.
+
+Share the dashboard URL only through a private channel. Keep the production
+token outside documents and presentations; rotate it if the URL is exposed.
+
 Useful exports:
 
 ```text
