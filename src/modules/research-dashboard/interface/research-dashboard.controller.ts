@@ -57,10 +57,7 @@ export class ResearchDashboardController {
   }
 
   @Get('export.json')
-  @Header(
-    'Content-Disposition',
-    'attachment; filename="zenda-research-dashboard.json"',
-  )
+  @Header('Content-Disposition', 'attachment; filename="zenda-research-dashboard.json"')
   @ApiOperation({ summary: 'Export aggregated research metrics as JSON' })
   async exportJson(
     @Query() query: ResearchDashboardQueryDto,
@@ -72,10 +69,7 @@ export class ResearchDashboardController {
 
   @Get('export.csv')
   @Header('Content-Type', 'text/csv; charset=utf-8')
-  @Header(
-    'Content-Disposition',
-    'attachment; filename="zenda-research-dashboard.csv"',
-  )
+  @Header('Content-Disposition', 'attachment; filename="zenda-research-dashboard.csv"')
   @ApiOperation({ summary: 'Export thesis pilot metrics as CSV' })
   async exportCsv(
     @Query() query: ResearchDashboardQueryDto,
@@ -87,13 +81,9 @@ export class ResearchDashboardController {
   }
 
   @Get('export/financial-literacy.json')
-  @Header(
-    'Content-Disposition',
-    'attachment; filename="zenda-financial-literacy-research.json"',
-  )
+  @Header('Content-Disposition', 'attachment; filename="zenda-financial-literacy-research.json"')
   @ApiOperation({
-    summary:
-      'Export pseudonymous financial literacy assessment research dataset (JSON)',
+    summary: 'Export pseudonymous financial literacy assessment research dataset (JSON)',
   })
   async exportFinancialLiteracyJson(
     @Query() query: ResearchDashboardQueryDto,
@@ -105,13 +95,9 @@ export class ResearchDashboardController {
 
   @Get('export/financial-literacy.csv')
   @Header('Content-Type', 'text/csv; charset=utf-8')
-  @Header(
-    'Content-Disposition',
-    'attachment; filename="zenda-financial-literacy-research.csv"',
-  )
+  @Header('Content-Disposition', 'attachment; filename="zenda-financial-literacy-research.csv"')
   @ApiOperation({
-    summary:
-      'Export pseudonymous financial literacy assessment research dataset (CSV)',
+    summary: 'Export pseudonymous financial literacy assessment research dataset (CSV)',
   })
   async exportFinancialLiteracyCsv(
     @Query() query: ResearchDashboardQueryDto,
@@ -158,8 +144,7 @@ export class ResearchDashboardController {
   }
 
   private assertAccess(queryToken?: string, headerToken?: string): void {
-    const configuredToken =
-      this.config.get<string>('researchDashboard.token')?.trim() ?? '';
+    const configuredToken = this.config.get<string>('researchDashboard.token')?.trim() ?? '';
 
     if (!configuredToken) {
       throw new ServiceUnavailableException(
@@ -168,8 +153,7 @@ export class ResearchDashboardController {
     }
 
     const providedToken = (headerToken ?? queryToken ?? '').trim();
-    const digest = (value: string) =>
-      createHash('sha256').update(value).digest();
+    const digest = (value: string) => createHash('sha256').update(value).digest();
     if (!timingSafeEqual(digest(providedToken), digest(configuredToken))) {
       throw new UnauthorizedException('Invalid research dashboard token');
     }
@@ -177,44 +161,27 @@ export class ResearchDashboardController {
 
   private toCsv(data: ResearchDashboardData): string {
     const rows: string[][] = [['section', 'metric', 'value']];
-    const add = (
-      section: string,
-      metric: string,
-      value: string | number | null,
-    ) => {
+    const add = (section: string, metric: string, value: string | number | null) => {
       rows.push([section, metric, value === null ? '' : String(value)]);
     };
 
     add('period', 'from', data.period.from);
     add('period', 'to', data.period.to);
     add('period', 'label', data.period.label);
+    add('cohort', 'code', data.cohort?.code ?? null);
+    add('cohort', 'label', data.cohort?.label ?? null);
+    add('cohort', 'synthetic', data.cohort?.synthetic ? 'true' : 'false');
     add('participants', 'total_users', data.participants.totalUsers);
     add('participants', 'active_users', data.participants.activeUsers);
-    add(
-      'participants',
-      'profile_completed',
-      data.participants.profileCompleted,
-    );
+    add('participants', 'profile_completed', data.participants.profileCompleted);
     add('participants', 'consent_given', data.participants.consentGiven);
     add('participants', 'average_age', data.participants.averageAge);
-    add(
-      'participants',
-      'average_monthly_income',
-      data.participants.averageMonthlyIncome,
-    );
+    add('participants', 'average_monthly_income', data.participants.averageMonthlyIncome);
     add('usage', 'total_events', data.usage.totalEvents);
     add('usage', 'sessions', data.usage.sessions);
-    add(
-      'usage',
-      'daily_active_users_average',
-      data.usage.dailyActiveUsersAverage,
-    );
+    add('usage', 'daily_active_users_average', data.usage.dailyActiveUsersAverage);
     add('finance', 'transactions', data.finance.transactions);
-    add(
-      'finance',
-      'users_with_transactions',
-      data.finance.usersWithTransactions,
-    );
+    add('finance', 'users_with_transactions', data.finance.usersWithTransactions);
     add('finance', 'income_count', data.finance.incomeCount);
     add('finance', 'expense_count', data.finance.expenseCount);
     add('finance', 'transfer_count', data.finance.transferCount);
@@ -222,11 +189,13 @@ export class ResearchDashboardController {
     add('finance', 'total_expense', data.finance.totalExpense);
     add('finance', 'budgets', data.finance.budgets);
     add('finance', 'goals', data.finance.goals);
-    add(
-      'finance',
-      'ai_categorized_transactions',
-      data.finance.aiCategorizedTransactions,
-    );
+    add('finance', 'users_with_budgets', data.finance.usersWithBudgets);
+    add('finance', 'users_with_goals', data.finance.usersWithGoals);
+    add('behavior', 'habitual_expense_tracking_pre', data.finance.habitualExpenseTracking.pre);
+    add('behavior', 'habitual_expense_tracking_post', data.finance.habitualExpenseTracking.post);
+    add('behavior', 'expense_planning_pre', data.finance.expensePlanning.pre);
+    add('behavior', 'expense_planning_post', data.finance.expensePlanning.post);
+    add('finance', 'ai_categorized_transactions', data.finance.aiCategorizedTransactions);
     add('finance', 'ai_category_share', data.finance.aiCategoryShare);
     add('ai', 'conversations', data.ai.conversations);
     add('ai', 'users_with_conversations', data.ai.usersWithConversations);
@@ -238,39 +207,27 @@ export class ResearchDashboardController {
     add('ai', 'helpful_rate', data.ai.helpfulRate);
     add('ai', 'clear_rate', data.ai.clearRate);
     add('ai', 'personalized_rate', data.ai.personalizedRate);
+    add('ai', 'classification_correct', data.ai.classificationAccuracy.correct);
+    add('ai', 'classification_total', data.ai.classificationAccuracy.total);
+    add('ai', 'classification_accuracy', data.ai.classificationAccuracy.percentage);
     add('surveys', 'pre_completed', data.surveys.pre.completed);
     add('surveys', 'pre_average_score', data.surveys.pre.averageScore);
     add('surveys', 'post_completed', data.surveys.post.completed);
     add('surveys', 'post_average_score', data.surveys.post.averageScore);
     add('surveys', 'paired_pre_post_users', data.surveys.pairedPrePostUsers);
     add('surveys', 'average_pre_post_delta', data.surveys.averagePrePostDelta);
-    add(
-      'surveys',
-      'average_pre_post_delta_percentage',
-      data.surveys.averagePrePostDeltaPercentage,
-    );
+    add('surveys', 'average_pre_post_delta_percentage', data.surveys.averagePrePostDeltaPercentage);
     add('surveys', 'sus_completed', data.surveys.sus.completed);
     add('surveys', 'sus_average_score', data.surveys.sus.averageScore);
-    add(
-      'surveys',
-      'satisfaction_completed',
-      data.surveys.satisfaction.completed,
-    );
-    add(
-      'surveys',
-      'satisfaction_average_score',
-      data.surveys.satisfaction.averageScore,
-    );
+    add('surveys', 'utility_favorable_count', data.surveys.utilityFavorable.favorable);
+    add('surveys', 'utility_favorable_percentage', data.surveys.utilityFavorable.percentage);
+    add('surveys', 'continuation_intent_count', data.surveys.continuationIntent.favorable);
+    add('surveys', 'continuation_intent_percentage', data.surveys.continuationIntent.percentage);
+    add('surveys', 'satisfaction_completed', data.surveys.satisfaction.completed);
+    add('surveys', 'satisfaction_average_score', data.surveys.satisfaction.averageScore);
 
     rows.push([]);
-    rows.push([
-      'daily',
-      'date',
-      'active_users',
-      'events',
-      'transactions',
-      'chat_messages',
-    ]);
+    rows.push(['daily', 'date', 'active_users', 'events', 'transactions', 'chat_messages']);
     for (const day of data.usage.daily) {
       rows.push([
         'daily',
@@ -285,22 +242,11 @@ export class ResearchDashboardController {
     rows.push([]);
     rows.push(['event_type', 'label', 'count', 'percentage']);
     for (const item of data.usage.eventsByType) {
-      rows.push([
-        'event_type',
-        item.label,
-        String(item.count),
-        String(item.percentage),
-      ]);
+      rows.push(['event_type', item.label, String(item.count), String(item.percentage)]);
     }
 
     rows.push([]);
-    rows.push([
-      'satisfaction_likert',
-      'order',
-      'question',
-      'average',
-      'responses',
-    ]);
+    rows.push(['satisfaction_likert', 'order', 'question', 'average', 'responses']);
     for (const item of data.surveys.satisfactionLikert) {
       rows.push([
         'satisfaction_likert',
@@ -317,9 +263,7 @@ export class ResearchDashboardController {
       rows.push(['open_answer', item.question, item.answer]);
     }
 
-    return rows
-      .map((row) => row.map((cell) => this.csvCell(cell)).join(','))
-      .join('\n');
+    return rows.map((row) => row.map((cell) => this.csvCell(cell)).join(',')).join('\n');
   }
 
   private csvCell(value: string): string {

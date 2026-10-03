@@ -1,6 +1,13 @@
 export interface ResearchDashboardQuery {
   from?: string;
   to?: string;
+  cohort?: string;
+}
+
+export interface ResearchCohortSummary {
+  code: string;
+  label: string;
+  synthetic: boolean;
 }
 
 export interface ResearchPeriod {
@@ -18,6 +25,27 @@ export interface CountShare {
 export interface ScoreSummary {
   completed: number;
   averageScore: number | null;
+}
+
+export interface FavorableSummary {
+  favorable: number;
+  total: number;
+  percentage: number | null;
+}
+
+export interface BehaviorChangeSummary {
+  pre: number;
+  post: number;
+  total: number;
+  prePercentage: number | null;
+  postPercentage: number | null;
+  deltaPercentagePoints: number | null;
+}
+
+export interface ClassificationAccuracySummary {
+  correct: number;
+  total: number;
+  percentage: number | null;
 }
 
 export interface SatisfactionQuestionSummary {
@@ -42,6 +70,7 @@ export interface DailyResearchPoint {
 
 export interface ResearchDashboardData {
   generatedAt: string;
+  cohort: ResearchCohortSummary | null;
   period: ResearchPeriod;
   participants: {
     totalUsers: number;
@@ -81,6 +110,8 @@ export interface ResearchDashboardData {
     aiCategoryShare: number;
     budgetLinkedTransactions: number;
     budgetLinkedShare: number;
+    habitualExpenseTracking: BehaviorChangeSummary;
+    expensePlanning: BehaviorChangeSummary;
   };
   ai: {
     conversations: number;
@@ -93,6 +124,7 @@ export interface ResearchDashboardData {
     helpfulRate: number | null;
     clearRate: number | null;
     personalizedRate: number | null;
+    classificationAccuracy: ClassificationAccuracySummary;
     comments: string[];
   };
   surveys: {
@@ -103,6 +135,8 @@ export interface ResearchDashboardData {
     pairedPrePostUsers: number;
     averagePrePostDelta: number | null;
     averagePrePostDeltaPercentage: number | null;
+    utilityFavorable: FavorableSummary;
+    continuationIntent: FavorableSummary;
     satisfactionLikert: SatisfactionQuestionSummary[];
     openAnswers: OpenAnswerSample[];
   };

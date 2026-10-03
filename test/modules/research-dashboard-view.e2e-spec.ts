@@ -3,6 +3,7 @@ import { renderResearchDashboard } from '../../src/modules/research-dashboard/in
 
 const dashboardData: ResearchDashboardData = {
   generatedAt: '2026-09-26T15:30:00.000Z',
+  cohort: null,
   period: { from: '2026-09-01', to: '2026-09-26', label: 'Septiembre 2026' },
   participants: {
     totalUsers: 20,
@@ -45,6 +46,22 @@ const dashboardData: ResearchDashboardData = {
     aiCategoryShare: 54.8,
     budgetLinkedTransactions: 60,
     budgetLinkedShare: 48.4,
+    habitualExpenseTracking: {
+      pre: 10,
+      post: 19,
+      total: 30,
+      prePercentage: 33.3,
+      postPercentage: 63.3,
+      deltaPercentagePoints: 30,
+    },
+    expensePlanning: {
+      pre: 12,
+      post: 20,
+      total: 30,
+      prePercentage: 40,
+      postPercentage: 66.7,
+      deltaPercentagePoints: 26.7,
+    },
   },
   ai: {
     conversations: 32,
@@ -57,6 +74,7 @@ const dashboardData: ResearchDashboardData = {
     helpfulRate: 83.3,
     clearRate: 88.9,
     personalizedRate: 77.8,
+    classificationAccuracy: { correct: 84, total: 100, percentage: 84 },
     comments: ['Consejo claro y útil'],
   },
   surveys: {
@@ -67,6 +85,8 @@ const dashboardData: ResearchDashboardData = {
     pairedPrePostUsers: 8,
     averagePrePostDelta: 14,
     averagePrePostDeltaPercentage: 24.1,
+    utilityFavorable: { favorable: 24, total: 30, percentage: 80 },
+    continuationIntent: { favorable: 23, total: 30, percentage: 76.7 },
     satisfactionLikert: [
       { order: 1, text: 'Zenda me ayudó a organizarme', average: 4.4, responses: 9 },
     ],
@@ -86,10 +106,30 @@ describe('Research dashboard stakeholder view', () => {
     expect(html).toContain('Resumen ejecutivo');
     expect(html).toContain('Evidencia comparable');
     expect(html).toContain('Actividad diaria');
+    expect(html).toContain('Indicadores de resultado');
+    expect(html).toContain('84 de 100 · 84%');
     expect(html).toContain('role="img"');
     expect(html).toContain('aria-label="Secciones del dashboard"');
     expect(html).toContain('/api/research-dashboard/export.csv?token=safe+token');
     expect(html).toContain('Datos agregados y seudonimizados');
+  });
+
+  it('labels illustrative cohorts and keeps the cohort in export links', () => {
+    const html = renderResearchDashboard({
+      data: {
+        ...dashboardData,
+        cohort: {
+          code: 'ILLUSTRATIVE_30',
+          label: 'Escenario ilustrativo de 30 participantes',
+          synthetic: true,
+        },
+      },
+      token: 'safe token',
+    });
+
+    expect(html).toContain('Escenario ilustrativo');
+    expect(html).toContain('no constituyen resultados observados');
+    expect(html).toContain('cohort=ILLUSTRATIVE_30');
   });
 
   it('escapes qualitative content and token attributes', () => {

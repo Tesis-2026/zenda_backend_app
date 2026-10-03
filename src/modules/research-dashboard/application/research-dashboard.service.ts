@@ -1,17 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import {
-  AiMessageRole,
-  CategorySource,
-  SurveyType,
-  TransactionType,
-} from '@prisma/client';
+import { AiMessageRole, CategorySource, SurveyType, TransactionType } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../infra/prisma/prisma.service';
 import { parseSurveyQuestions } from '../../surveys/domain/survey-question.types';
 import {
+  BehaviorChangeSummary,
+  ClassificationAccuracySummary,
   CountShare,
   DailyResearchPoint,
+  FavorableSummary,
   OpenAnswerSample,
+  ResearchCohortSummary,
   ResearchDashboardData,
   ResearchDashboardQuery,
   ResearchPeriod,
@@ -33,6 +32,20 @@ interface DailyAccumulator {
   chatMessages: number;
 }
 
+interface CohortScope {
+  cohort: ResearchCohortSummary | null;
+  userIdFilter?: Prisma.StringFilter;
+}
+
+const COHORT_ENROLLMENT_EVENT = 'research_cohort_enrolled';
+const BEHAVIOR_OBSERVATION_EVENT = 'research_behavior_observation';
+const AI_CLASSIFICATION_EVALUATION_EVENT = 'research_ai_classification_evaluated';
+const RESEARCH_ADMIN_EVENT_TYPES = [
+  COHORT_ENROLLMENT_EVENT,
+  BEHAVIOR_OBSERVATION_EVENT,
+  AI_CLASSIFICATION_EVALUATION_EVENT,
+];
+
 @Injectable()
 export class ResearchDashboardService {
   constructor(private readonly prisma: PrismaService) {}
@@ -40,6 +53,8 @@ export class ResearchDashboardService {
   async build(query: ResearchDashboardQuery): Promise<ResearchDashboardData> {
     const period = this.parsePeriod(query);
     const createdAt = this.dateFilter(period);
+    const scope = await this.resolveCohortScope(query.cohort);
+    const userIdWhere = scope.userIdFilter ? { userId: scope.userIdFilter } : {};
 
     const [
       users,
@@ -54,9 +69,14 @@ export class ResearchDashboardService {
       surveyDefs,
       surveyResponses,
       qualitativeFeedback,
+      behaviorObservations,
+      classificationEvaluations,
     ] = await Promise.all([
       this.prisma.user.findMany({
-        where: { deletedAt: null },
+        where: {
+          deletedAt: null,
+          ...(scope.userIdFilter ? { id: scope.userIdFilter } : {}),
+        },
         select: {
           id: true,
           age: true,
@@ -69,7 +89,11 @@ export class ResearchDashboardService {
         },
       }),
       this.prisma.analyticsEvent.findMany({
-        where: { ...(createdAt ? { createdAt } : {}) },
+        where: {
+          ...userIdWhere,
+          eventType: { notIn: RESEARCH_ADMIN_EVENT_TYPES },
+          ...(createdAt ? { createdAt } : {}),
+        },
         select: {
           userId: true,
           eventType: true,
@@ -79,6 +103,7 @@ export class ResearchDashboardService {
       }),
       this.prisma.transaction.findMany({
         where: {
+          ...userIdWhere,
           deletedAt: null,
           ...(createdAt ? { occurredAt: createdAt } : {}),
         },
@@ -93,6 +118,7 @@ export class ResearchDashboardService {
       }),
       this.prisma.budget.findMany({
         where: {
+          ...userIdWhere,
           deletedAt: null,
           ...(createdAt ? { createdAt } : {}),
         },
@@ -100,21 +126,31 @@ export class ResearchDashboardService {
       }),
       this.prisma.savingsGoal.findMany({
         where: {
+          ...userIdWhere,
           deletedAt: null,
           ...(createdAt ? { createdAt } : {}),
         },
         select: { userId: true },
       }),
       this.prisma.account.findMany({
-        where: { deletedAt: null },
+        where: { ...userIdWhere, deletedAt: null },
         select: { userId: true, type: true },
       }),
       this.prisma.aiConversation.findMany({
-        where: { ...(createdAt ? { createdAt } : {}) },
+        where: { ...userIdWhere, ...(createdAt ? { createdAt } : {}) },
         select: { userId: true, createdAt: true },
       }),
       this.prisma.aiMessage.findMany({
-        where: { ...(createdAt ? { createdAt } : {}) },
+        where: {
+          ...(scope.userIdFilter
+            ? {
+                conversation: {
+                  is: { userId: scope.userIdFilter },
+                },
+              }
+            : {}),
+          ...(createdAt ? { createdAt } : {}),
+        },
         select: {
           role: true,
           content: true,
@@ -125,6 +161,13 @@ export class ResearchDashboardService {
       this.prisma.aiMessage.findMany({
         where: {
           role: AiMessageRole.ASSISTANT,
+          ...(scope.userIdFilter
+            ? {
+                conversation: {
+                  is: { userId: scope.userIdFilter },
+                },
+              }
+            : {}),
           feedbackAt: this.nullableDateFilter(createdAt),
         },
         select: {
@@ -141,7 +184,10 @@ export class ResearchDashboardService {
         select: { type: true, questionsJson: true },
       }),
       this.prisma.surveyResponse.findMany({
-        where: { ...(createdAt ? { completedAt: createdAt } : {}) },
+        where: {
+          ...userIdWhere,
+          ...(createdAt ? { completedAt: createdAt } : {}),
+        },
         select: {
           userId: true,
           answersJson: true,
@@ -151,8 +197,29 @@ export class ResearchDashboardService {
         },
       }),
       this.prisma.feedback.findMany({
-        where: { ...(createdAt ? { createdAt } : {}) },
+        where: {
+          ...userIdWhere,
+          ...(createdAt ? { createdAt } : {}),
+        },
         select: { userId: true, rating: true, message: true },
+      }),
+      this.prisma.analyticsEvent.findMany({
+        where: {
+          ...userIdWhere,
+          eventType: BEHAVIOR_OBSERVATION_EVENT,
+          ...(createdAt ? { createdAt } : {}),
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { userId: true, metadata: true },
+      }),
+      this.prisma.analyticsEvent.findMany({
+        where: {
+          ...userIdWhere,
+          eventType: AI_CLASSIFICATION_EVALUATION_EVENT,
+          ...(createdAt ? { createdAt } : {}),
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { metadata: true },
       }),
     ]);
 
@@ -225,9 +292,12 @@ export class ResearchDashboardService {
     const budgetLinkedTransactions = transactions.filter(
       (transaction) => transaction.budgetId !== null,
     ).length;
+    const behavior = this.buildBehaviorData(behaviorObservations);
+    const classificationAccuracy = this.buildClassificationAccuracy(classificationEvaluations);
 
     return {
       generatedAt: new Date().toISOString(),
+      cohort: scope.cohort,
       period: {
         from: period.from,
         to: period.to,
@@ -239,9 +309,7 @@ export class ResearchDashboardService {
         profileCompleted: users.filter((user) => user.profileCompleted).length,
         consentGiven: users.filter((user) => user.consentGiven).length,
         averageAge: this.average(
-          users
-            .map((user) => user.age)
-            .filter((age): age is number => typeof age === 'number'),
+          users.map((user) => user.age).filter((age): age is number => typeof age === 'number'),
         ),
         averageMonthlyIncome: this.average(
           users
@@ -264,11 +332,8 @@ export class ResearchDashboardService {
       },
       usage: {
         totalEvents: events.length,
-        sessions: events.filter((event) => event.eventType === 'app_session_started')
-          .length,
-        dailyActiveUsersAverage: this.average(
-          dailySeries.map((point) => point.activeUsers),
-        ) ?? 0,
+        sessions: events.filter((event) => event.eventType === 'app_session_started').length,
+        dailyActiveUsersAverage: this.average(dailySeries.map((point) => point.activeUsers)) ?? 0,
         eventsByType: this.countShares(
           events.map((event) => event.eventType),
           events.length,
@@ -283,17 +348,13 @@ export class ResearchDashboardService {
       },
       finance: {
         transactions: transactions.length,
-        usersWithTransactions: new Set(
-          transactions.map((transaction) => transaction.userId),
-        ).size,
+        usersWithTransactions: new Set(transactions.map((transaction) => transaction.userId)).size,
         incomeCount: incomeTransactions.length,
         expenseCount: expenseTransactions.length,
         transferCount: transferTransactions.length,
         totalIncome: this.sumMoney(incomeTransactions.map((item) => item.amount)),
         totalExpense: this.sumMoney(expenseTransactions.map((item) => item.amount)),
-        totalTransfer: this.sumMoney(
-          transferTransactions.map((item) => item.amount),
-        ),
+        totalTransfer: this.sumMoney(transferTransactions.map((item) => item.amount)),
         budgets: budgets.length,
         usersWithBudgets: new Set(budgets.map((budget) => budget.userId)).size,
         goals: goals.length,
@@ -304,23 +365,17 @@ export class ResearchDashboardService {
           accounts.length,
         ),
         aiCategorizedTransactions,
-        aiCategoryShare: this.percentage(
-          aiCategorizedTransactions,
-          transactions.length,
-        ),
+        aiCategoryShare: this.percentage(aiCategorizedTransactions, transactions.length),
         budgetLinkedTransactions,
-        budgetLinkedShare: this.percentage(
-          budgetLinkedTransactions,
-          transactions.length,
-        ),
+        budgetLinkedShare: this.percentage(budgetLinkedTransactions, transactions.length),
+        habitualExpenseTracking: behavior.habitualExpenseTracking,
+        expensePlanning: behavior.expensePlanning,
       },
       ai: {
         conversations: conversations.length,
-        usersWithConversations: new Set(
-          conversations.map((conversation) => conversation.userId),
-        ).size,
-        userMessages: aiMessages.filter((message) => message.role === AiMessageRole.USER)
-          .length,
+        usersWithConversations: new Set(conversations.map((conversation) => conversation.userId))
+          .size,
+        userMessages: aiMessages.filter((message) => message.role === AiMessageRole.USER).length,
         assistantMessages: assistantMessages.length,
         averageAssistantWords: this.average(assistantWordCounts),
         feedbackCount: feedbackMessages.length,
@@ -328,6 +383,7 @@ export class ResearchDashboardService {
         helpfulRate: this.booleanRate(helpfulValues),
         clearRate: this.booleanRate(clearValues),
         personalizedRate: this.booleanRate(personalizedValues),
+        classificationAccuracy,
         comments: feedbackMessages
           .map((message) => message.feedbackComment?.trim() ?? '')
           .filter((comment) => comment.length > 0)
@@ -387,13 +443,15 @@ export class ResearchDashboardService {
       }
     }
 
-    const satisfactionDef = surveys.find(
-      (survey) => survey.type === SurveyType.SATISFACTION,
-    );
+    const satisfactionDef = surveys.find((survey) => survey.type === SurveyType.SATISFACTION);
     const satisfactionQuestions = satisfactionDef
       ? parseSurveyQuestions(satisfactionDef.questionsJson)
       : [];
     const satisfactionResponses = byType.get(SurveyType.SATISFACTION) ?? [];
+    const utilityQuestionId =
+      satisfactionQuestions.find((question) => question.order === 3)?.id ?? 'satisfaction-003';
+    const continuationQuestionId =
+      satisfactionQuestions.find((question) => question.order === 6)?.id ?? 'satisfaction-006';
 
     return {
       pre: this.scoreSummary(pre),
@@ -403,6 +461,8 @@ export class ResearchDashboardService {
       pairedPrePostUsers: deltas.length,
       averagePrePostDelta: this.average(deltas),
       averagePrePostDeltaPercentage: this.average(deltaPercentages),
+      utilityFavorable: this.favorableSummary(satisfactionResponses, utilityQuestionId),
+      continuationIntent: this.favorableSummary(satisfactionResponses, continuationQuestionId),
       satisfactionLikert: satisfactionQuestions
         .filter((question) => question.options.length > 0)
         .map<SatisfactionQuestionSummary>((question) => {
@@ -429,6 +489,151 @@ export class ResearchDashboardService {
     };
   }
 
+  private async resolveCohortScope(requestedCode?: string): Promise<CohortScope> {
+    const enrollmentEvents = await this.prisma.analyticsEvent.findMany({
+      where: { eventType: COHORT_ENROLLMENT_EVENT },
+      orderBy: { createdAt: 'asc' },
+      select: { userId: true, metadata: true },
+    });
+    const enrollments = enrollmentEvents
+      .map((event) => {
+        const metadata = this.asRecord(event.metadata);
+        const code = typeof metadata.code === 'string' ? metadata.code : null;
+        if (!code) return null;
+        return {
+          userId: event.userId,
+          code,
+          label: typeof metadata.label === 'string' ? metadata.label : code,
+          synthetic: metadata.synthetic === true,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+
+    if (requestedCode) {
+      const selected = enrollments.filter((item) => item.code === requestedCode);
+      if (selected.length === 0) {
+        throw new BadRequestException(`Unknown research cohort: ${requestedCode}`);
+      }
+      const first = selected[0];
+      return {
+        cohort: {
+          code: first.code,
+          label: first.label,
+          synthetic: first.synthetic,
+        },
+        userIdFilter: { in: Array.from(new Set(selected.map((item) => item.userId))) },
+      };
+    }
+
+    const syntheticUserIds = Array.from(
+      new Set(enrollments.filter((item) => item.synthetic).map((item) => item.userId)),
+    );
+    return {
+      cohort: null,
+      userIdFilter: syntheticUserIds.length > 0 ? { notIn: syntheticUserIds } : undefined,
+    };
+  }
+
+  private buildBehaviorData(observations: Array<{ userId: string; metadata: Prisma.JsonValue }>): {
+    habitualExpenseTracking: BehaviorChangeSummary;
+    expensePlanning: BehaviorChangeSummary;
+  } {
+    const latest = new Map<
+      string,
+      {
+        userId: string;
+        phase: 'PRE' | 'POST';
+        habitualExpenseTracking: boolean;
+        expensePlanning: boolean;
+      }
+    >();
+    for (const observation of observations) {
+      const metadata = this.asRecord(observation.metadata);
+      const phase = metadata.phase;
+      if (phase !== 'PRE' && phase !== 'POST') continue;
+      latest.set(`${observation.userId}:${phase}`, {
+        userId: observation.userId,
+        phase,
+        habitualExpenseTracking: metadata.habitualExpenseTracking === true,
+        expensePlanning: metadata.expensePlanning === true,
+      });
+    }
+    const values = Array.from(latest.values());
+    return {
+      habitualExpenseTracking: this.behaviorChangeSummary(values, 'habitualExpenseTracking'),
+      expensePlanning: this.behaviorChangeSummary(values, 'expensePlanning'),
+    };
+  }
+
+  private behaviorChangeSummary(
+    observations: Array<{
+      phase: 'PRE' | 'POST';
+      habitualExpenseTracking: boolean;
+      expensePlanning: boolean;
+    }>,
+    field: 'habitualExpenseTracking' | 'expensePlanning',
+  ): BehaviorChangeSummary {
+    const preObservations = observations.filter((item) => item.phase === 'PRE');
+    const postObservations = observations.filter((item) => item.phase === 'POST');
+    const pre = preObservations.filter((item) => item[field]).length;
+    const post = postObservations.filter((item) => item[field]).length;
+    const total = Math.max(preObservations.length, postObservations.length);
+    const prePercentage =
+      preObservations.length > 0 ? this.percentage(pre, preObservations.length) : null;
+    const postPercentage =
+      postObservations.length > 0 ? this.percentage(post, postObservations.length) : null;
+    return {
+      pre,
+      post,
+      total,
+      prePercentage,
+      postPercentage,
+      deltaPercentagePoints:
+        prePercentage !== null && postPercentage !== null
+          ? this.round(postPercentage - prePercentage, 1)
+          : null,
+    };
+  }
+
+  private buildClassificationAccuracy(
+    evaluations: Array<{ metadata: Prisma.JsonValue }>,
+  ): ClassificationAccuracySummary {
+    const latest = new Map<string, boolean>();
+    for (const evaluation of evaluations) {
+      const metadata = this.asRecord(evaluation.metadata);
+      const caseId =
+        typeof metadata.caseId === 'string'
+          ? metadata.caseId
+          : typeof metadata.transactionId === 'string'
+            ? metadata.transactionId
+            : null;
+      if (!caseId || typeof metadata.isCorrect !== 'boolean') continue;
+      latest.set(caseId, metadata.isCorrect);
+    }
+    const values = Array.from(latest.values());
+    const correct = values.filter(Boolean).length;
+    return {
+      correct,
+      total: values.length,
+      percentage: values.length > 0 ? this.percentage(correct, values.length) : null,
+    };
+  }
+
+  private favorableSummary(
+    responses: Array<{ answersJson: Prisma.JsonValue }>,
+    questionId: string,
+  ): FavorableSummary {
+    const values = responses
+      .map((response) => Number(this.asStringRecord(response.answersJson)[questionId]))
+      .filter((value) => Number.isFinite(value));
+    const favorable = values.filter((value) => value >= 4).length;
+    return {
+      favorable,
+      total: values.length,
+      percentage: values.length > 0 ? this.percentage(favorable, values.length) : null,
+    };
+  }
+
   private openAnswerSamples(
     questions: Array<{ id: string; text: string }>,
     responses: Array<{ answersJson: Prisma.JsonValue }>,
@@ -449,9 +654,7 @@ export class ResearchDashboardService {
     return samples;
   }
 
-  private scoreSummary(
-    responses: Array<{ score: DecimalLike | null }>,
-  ): ScoreSummary {
+  private scoreSummary(responses: Array<{ score: DecimalLike | null }>): ScoreSummary {
     return {
       completed: responses.length,
       averageScore: this.average(
@@ -503,9 +706,7 @@ export class ResearchDashboardService {
     };
   }
 
-  private nullableDateFilter(
-    filter?: Prisma.DateTimeFilter,
-  ): Prisma.DateTimeNullableFilter {
+  private nullableDateFilter(filter?: Prisma.DateTimeFilter): Prisma.DateTimeNullableFilter {
     return { not: null, ...(filter ?? {}) };
   }
 
@@ -565,16 +766,8 @@ export class ResearchDashboardService {
 
   private betaBuildLabel(metadata: Prisma.JsonValue): string {
     const record = this.asRecord(metadata);
-    const appVersion = this.pickMetadata(record, [
-      'appVersion',
-      'app_version',
-      'version',
-    ]);
-    const buildNumber = this.pickMetadata(record, [
-      'buildNumber',
-      'build_number',
-      'build',
-    ]);
+    const appVersion = this.pickMetadata(record, ['appVersion', 'app_version', 'version']);
+    const buildNumber = this.pickMetadata(record, ['buildNumber', 'build_number', 'build']);
     const betaId = this.pickMetadata(record, [
       'betaDistributionId',
       'beta_distribution_id',
@@ -592,10 +785,7 @@ export class ResearchDashboardService {
       .join(' / ');
   }
 
-  private pickMetadata(
-    record: Record<string, Prisma.JsonValue>,
-    keys: string[],
-  ): string | null {
+  private pickMetadata(record: Record<string, Prisma.JsonValue>, keys: string[]): string | null {
     for (const key of keys) {
       const value = record[key];
       if (typeof value === 'string' && value.trim()) return value.trim();
@@ -634,18 +824,12 @@ export class ResearchDashboardService {
 
   private average(values: number[]): number | null {
     if (values.length === 0) return null;
-    return this.round(
-      values.reduce((sum, value) => sum + value, 0) / values.length,
-      2,
-    );
+    return this.round(values.reduce((sum, value) => sum + value, 0) / values.length, 2);
   }
 
   private booleanRate(values: boolean[]): number | null {
     if (values.length === 0) return null;
-    return this.percentage(
-      values.filter((value) => value).length,
-      values.length,
-    );
+    return this.percentage(values.filter((value) => value).length, values.length);
   }
 
   private percentage(part: number, total: number): number {
