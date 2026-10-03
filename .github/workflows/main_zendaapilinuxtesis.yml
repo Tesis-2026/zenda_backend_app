@@ -67,4 +67,47 @@ jobs:
           app-name: 'zendaapilinuxtesis'
           slot-name: 'Production'
           package: .
-          
+
+      - name: Seed isolated illustrative research cohort once
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          resource_group="$(az webapp list \
+            --query "[?name=='zendaapilinuxtesis'].resourceGroup | [0]" \
+            --output tsv)"
+
+          if [ -z "$resource_group" ]; then
+            echo "Azure Web App resource group was not found."
+            exit 1
+          fi
+
+          publish_user="$(az webapp deployment list-publishing-credentials \
+            --name zendaapilinuxtesis \
+            --resource-group "$resource_group" \
+            --query publishingUserName \
+            --output tsv)"
+          publish_password="$(az webapp deployment list-publishing-credentials \
+            --name zendaapilinuxtesis \
+            --resource-group "$resource_group" \
+            --query publishingPassword \
+            --output tsv)"
+
+          response_file="$(mktemp)"
+          http_status="$(curl \
+            --silent \
+            --show-error \
+            --output "$response_file" \
+            --write-out '%{http_code}' \
+            --user "$publish_user:$publish_password" \
+            --header 'Content-Type: application/json' \
+            --data '{"command":"ALLOW_ILLUSTRATIVE_RESEARCH_SEED=true npm run prisma:seed:research-scenario","dir":"/home/site/wwwroot"}' \
+            'https://zendaapilinuxtesis.scm.azurewebsites.net/api/command')"
+
+          if [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
+            echo "The one-time research cohort seed failed with HTTP $http_status."
+            cat "$response_file"
+            exit 1
+          fi
+
+          node -e "const fs=require('fs'); const result=JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(result.Output || 'Seed completed.');" "$response_file"
