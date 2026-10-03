@@ -92,6 +92,16 @@ jobs:
             --resource-group "$resource_group" \
             --query publishingPassword \
             --output tsv)"
+          scm_hostname="$(az webapp show \
+            --name zendaapilinuxtesis \
+            --resource-group "$resource_group" \
+            --query "enabledHostNames[?contains(@, '.scm.')] | [0]" \
+            --output tsv)"
+
+          if [ -z "$scm_hostname" ]; then
+            echo "Azure Web App SCM hostname was not found."
+            exit 1
+          fi
 
           response_file="$(mktemp)"
           http_status="$(curl \
@@ -102,7 +112,7 @@ jobs:
             --user "$publish_user:$publish_password" \
             --header 'Content-Type: application/json' \
             --data '{"command":"ALLOW_ILLUSTRATIVE_RESEARCH_SEED=true npm run prisma:seed:research-scenario","dir":"/home/site/wwwroot"}' \
-            'https://zendaapilinuxtesis.scm.azurewebsites.net/api/command')"
+            "https://$scm_hostname/api/command")"
 
           if [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
             echo "The one-time research cohort seed failed with HTTP $http_status."
