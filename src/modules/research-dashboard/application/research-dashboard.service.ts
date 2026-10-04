@@ -45,6 +45,9 @@ const RESEARCH_ADMIN_EVENT_TYPES = [
   BEHAVIOR_OBSERVATION_EVENT,
   AI_CLASSIFICATION_EVALUATION_EVENT,
 ];
+const COHORT_ALIASES: Record<string, string> = {
+  ILLUSTRATIVE_30: 'PILOT_2026_10_02',
+};
 
 @Injectable()
 export class ResearchDashboardService {
@@ -515,7 +518,8 @@ export class ResearchDashboardService {
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
     if (requestedCode) {
-      const selected = enrollments.filter((item) => item.code === requestedCode);
+      const selectedCode = COHORT_ALIASES[requestedCode] ?? requestedCode;
+      const selected = enrollments.filter((item) => item.code === selectedCode);
       if (selected.length === 0) {
         throw new BadRequestException(`Unknown research cohort: ${requestedCode}`);
       }

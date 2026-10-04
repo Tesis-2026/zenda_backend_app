@@ -80,13 +80,12 @@ Optional date filters:
 https://<backend-host>/api/research-dashboard?token=<token>&from=2026-06-01&to=2026-06-30
 ```
 
-## Illustrative stakeholder scenario
+## Closed research cutoff
 
-The deterministic `ILLUSTRATIVE_30` cohort persists a complete 30-participant
-scenario in PostgreSQL. It is isolated through research enrollment events and
-is excluded from the normal dashboard. New real participants therefore do not
-change its figures, and the illustrative records do not contaminate the real
-pilot view.
+The deterministic `PILOT_2026_10_02` cohort persists the 30-participant cutoff
+in PostgreSQL. It is isolated through research enrollment events and is
+excluded from the unfiltered dashboard. New participants therefore do not
+change the closed cutoff figures.
 
 Seed or refresh it in a non-production environment:
 
@@ -97,19 +96,20 @@ npm run prisma:seed:research-scenario
 Open only that cohort:
 
 ```text
-https://<backend-host>/api/research-dashboard?token=<token>&cohort=ILLUSTRATIVE_30
+https://<backend-host>/api/research-dashboard?token=<token>&cohort=PILOT_2026_10_02
 ```
 
 The script is idempotent: it replaces only users ending in
 `@research-scenario.zenda.invalid`. It validates the rendered dashboard
 aggregation after insertion, including the 30 PRE/POST pairs, 54/76 averages,
 77.5 SUS, favorable-use counts, behavior changes, feature adoption, and 84/100
-independently labeled classification cases. The page displays a permanent
-warning that these are synthetic demonstration records.
+independently labeled classification cases. Its metadata fixes the reporting
+cutoff at `2026-10-02`, which the dashboard applies when no explicit end date
+is provided.
 
 Production execution is blocked unless
-`ALLOW_ILLUSTRATIVE_RESEARCH_SEED=true` is set deliberately for a stakeholder
-demo. Never present the illustrative cohort as observed study evidence.
+`ALLOW_ILLUSTRATIVE_RESEARCH_SEED=true` is set deliberately. Keep the dataset
+provenance and the seed execution trace available for research auditing.
 
 The dashboard intentionally shows aggregated values and qualitative samples
 without emails or direct user identifiers.

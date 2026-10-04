@@ -3,8 +3,6 @@ import {
   Get,
   Header,
   Headers,
-  HttpCode,
-  Post,
   Query,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -20,7 +18,6 @@ import {
   FinancialLiteracyAssessmentService,
   ResearchExportRow,
 } from '../../surveys/application/financial-literacy-assessment.service';
-import { seedResearchCohort } from '../../../../prisma/seed.research-scenario';
 
 @ApiTags('Research Dashboard')
 @Controller('research-dashboard')
@@ -57,18 +54,6 @@ export class ResearchDashboardController {
   ): Promise<ResearchDashboardData> {
     this.assertAccess(query.token, headerToken);
     return this.dashboard.build(query);
-  }
-
-  @Post('admin/refresh-pilot-cutoff')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Refresh the isolated research cutoff records' })
-  async refreshPilotCutoff(
-    @Query() query: ResearchDashboardQueryDto,
-    @Headers('x-research-token') headerToken?: string,
-  ): Promise<ResearchDashboardData> {
-    this.assertAccess(query.token, headerToken);
-    await seedResearchCohort({ allowProduction: true });
-    return this.dashboard.build({ ...query, cohort: 'PILOT_2026_10_02' });
   }
 
   @Get('export.json')
