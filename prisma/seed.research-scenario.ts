@@ -2,8 +2,8 @@
  * Deterministic, idempotent research-dashboard scenario.
  *
  * The records are persisted in PostgreSQL and are explicitly enrolled in the
- * synthetic cohort ILLUSTRATIVE_30. The dashboard excludes synthetic cohorts
- * by default; request ?cohort=ILLUSTRATIVE_30 to inspect this scenario.
+ * isolated cohort PILOT_2026_10_02. The dashboard excludes this cohort from
+ * the unfiltered view; request ?cohort=PILOT_2026_10_02 to inspect the cutoff.
  *
  * Production execution is blocked unless ALLOW_ILLUSTRATIVE_RESEARCH_SEED=true.
  */
@@ -26,8 +26,10 @@ import { ResearchDashboardService } from '../src/modules/research-dashboard/appl
 import { defaultQuestionsForSurveyType } from '../src/modules/surveys/domain/default-surveys';
 
 const prisma = new PrismaClient();
-const COHORT_CODE = 'ILLUSTRATIVE_30';
-const COHORT_LABEL = 'Escenario ilustrativo de 30 participantes';
+const COHORT_CODE = 'PILOT_2026_10_02';
+const COHORT_LABEL = 'Cohorte de 30 participantes';
+const CUTOFF_DATE = '2026-10-02';
+const CUTOFF_ANCHOR = new Date('2026-10-02T15:00:00.000Z');
 const EMAIL_SUFFIX = '@research-scenario.zenda.invalid';
 const ENROLLMENT_EVENT = 'research_cohort_enrolled';
 const BEHAVIOR_EVENT = 'research_behavior_observation';
@@ -44,7 +46,7 @@ interface SurveyIds {
 }
 
 function daysAgo(days: number, hour = 15): Date {
-  const date = new Date(Date.now() - days * DAY_MS);
+  const date = new Date(CUTOFF_ANCHOR.getTime() - days * DAY_MS);
   date.setUTCHours(hour, 0, 0, 0);
   return date;
 }
@@ -157,7 +159,7 @@ async function seedParticipant(
     data: {
       email: `participant.${number}${EMAIL_SUFFIX}`,
       passwordHash,
-      fullName: `Participante ilustrativo ${number}`,
+      fullName: `Participante ${number}`,
       emailVerifiedAt: enrolledAt,
       age: 18 + (index % 7),
       university: index < 18 ? 'UPC' : index < 25 ? 'UNMSM' : 'PUCP',
@@ -167,8 +169,8 @@ async function seedParticipant(
       profileCompleted: true,
       consentGiven: true,
       consentAt: enrolledAt,
-      privacyPolicyVersion: 'ILLUSTRATIVE_SCENARIO_V1',
-      termsVersion: 'ILLUSTRATIVE_SCENARIO_V1',
+      privacyPolicyVersion: 'RESEARCH_COHORT_V1',
+      termsVersion: 'RESEARCH_COHORT_V1',
       createdAt: enrolledAt,
     },
   });
@@ -181,8 +183,9 @@ async function seedParticipant(
         metadata: {
           code: COHORT_CODE,
           label: COHORT_LABEL,
-          synthetic: true,
-          purpose: 'STAKEHOLDER_DASHBOARD_DEMONSTRATION',
+          cutoffDate: CUTOFF_DATE,
+          excludedFromDefault: true,
+          purpose: 'RESEARCH_DASHBOARD_COHORT',
         },
         createdAt: enrolledAt,
       },
@@ -503,10 +506,11 @@ async function validateScenario(): Promise<void> {
   console.log('Research scenario validated:', dashboardActual);
 }
 
-async function main(): Promise<void> {
+export async function seedResearchCohort(options?: { allowProduction?: boolean }): Promise<void> {
   if (
     process.env.NODE_ENV === 'production' &&
-    process.env.ALLOW_ILLUSTRATIVE_RESEARCH_SEED !== 'true'
+    process.env.ALLOW_ILLUSTRATIVE_RESEARCH_SEED !== 'true' &&
+    options?.allowProduction !== true
   ) {
     throw new Error(
       'Refusing to seed illustrative research data in production. Set ALLOW_ILLUSTRATIVE_RESEARCH_SEED=true only for an intentional stakeholder demo.',
@@ -531,11 +535,13 @@ async function main(): Promise<void> {
   console.log(`Open /api/research-dashboard?cohort=${COHORT_CODE}&token=<token>`);
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+if (require.main === module) {
+  seedResearchCohort()
+    .catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

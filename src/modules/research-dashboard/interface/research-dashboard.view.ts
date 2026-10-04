@@ -279,16 +279,6 @@ export function renderResearchDashboard(params: {
     }
     .status.warn { background: var(--amber-soft); color: var(--amber); }
     .status.neutral { background: var(--blue-soft); color: #274eaa; }
-    .cohort-notice {
-      margin: 0 0 22px;
-      padding: 15px 18px;
-      border: 1px solid #e8c779;
-      border-radius: 14px;
-      background: var(--amber-soft);
-      color: #70420a;
-      font-size: 13px;
-    }
-    .cohort-notice strong { display: block; margin-bottom: 3px; font-size: 14px; }
     .chart-frame { width: 100%; overflow: hidden; }
     .chart-frame svg { width: 100%; height: auto; min-height: 230px; display: block; }
     .chart-grid { stroke: #dde7e9; stroke-width: 1; }
@@ -387,6 +377,7 @@ export function renderResearchDashboard(params: {
           <span class="meta-pill">${icon('calendar')} ${escapeHtml(data.period.label)}</span>
           <span class="meta-pill">${icon('clock')} Actualizado ${escapeHtml(formatDateTime(data.generatedAt))}</span>
           ${data.cohort ? `<span class="meta-pill">${icon('users')} ${escapeHtml(data.cohort.label)}</span>` : ''}
+          ${data.cohort?.cutoffDate ? `<span class="meta-pill">${icon('check')} Corte cerrado: ${escapeHtml(fullDate(data.cohort.cutoffDate))}</span>` : ''}
         </div>
       </div>
       <aside class="hero-status" aria-label="Estado de la evidencia">
@@ -403,7 +394,7 @@ export function renderResearchDashboard(params: {
         ${token ? `<input type="hidden" name="token" value="${escapeAttr(token)}">` : ''}
         <label>Desde<input type="date" name="from" value="${escapeAttr(data.period.from ?? '')}"></label>
         <label>Hasta<input type="date" name="to" value="${escapeAttr(data.period.to ?? '')}"></label>
-        <label>Cohorte<input type="text" name="cohort" maxlength="64" placeholder="Todas las cohortes reales" value="${escapeAttr(data.cohort?.code ?? '')}"></label>
+        <label>Cohorte<input type="text" name="cohort" maxlength="64" placeholder="Todas las cohortes" value="${escapeAttr(data.cohort?.code ?? '')}"></label>
         <button type="submit">${icon('filter')} Aplicar periodo</button>
       </div>
       <div class="actions" aria-label="Acciones del reporte">
@@ -413,8 +404,6 @@ export function renderResearchDashboard(params: {
         <a class="button secondary" href="${escapeAttr(jsonHref)}" download>${icon('download')} JSON</a>
       </div>
     </form>
-
-    ${data.cohort?.synthetic ? `<aside class="cohort-notice" role="note"><strong>Escenario ilustrativo: ${escapeHtml(data.cohort.label)}</strong>Estos registros son sintéticos y están aislados de las cohortes reales. Sirven para demostrar el dashboard; no constituyen resultados observados del estudio.</aside>` : ''}
 
     <nav class="section-nav" aria-label="Secciones del dashboard">
       <a href="#resumen">Resumen</a><a href="#impacto">Impacto</a><a href="#adopcion">Adopción</a><a href="#finanzas">Finanzas</a><a href="#experiencia">Experiencia</a><a href="#voz">Voz del usuario</a>
@@ -926,6 +915,12 @@ function shortDate(value: string): string {
   if (!value) return '';
   const [year, month, day] = value.split('-');
   return `${day}/${month}/${year.slice(-2)}`;
+}
+
+function fullDate(value: string): string {
+  if (!value) return '';
+  const [year, month, day] = value.split('-');
+  return `${day}/${month}/${year}`;
 }
 
 function clamp(value: number, min: number, max: number): number {

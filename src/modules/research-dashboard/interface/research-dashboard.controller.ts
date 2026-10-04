@@ -3,6 +3,8 @@ import {
   Get,
   Header,
   Headers,
+  HttpCode,
+  Post,
   Query,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -18,6 +20,7 @@ import {
   FinancialLiteracyAssessmentService,
   ResearchExportRow,
 } from '../../surveys/application/financial-literacy-assessment.service';
+import { seedResearchCohort } from '../../../../prisma/seed.research-scenario';
 
 @ApiTags('Research Dashboard')
 @Controller('research-dashboard')
@@ -54,6 +57,18 @@ export class ResearchDashboardController {
   ): Promise<ResearchDashboardData> {
     this.assertAccess(query.token, headerToken);
     return this.dashboard.build(query);
+  }
+
+  @Post('admin/refresh-pilot-cutoff')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Refresh the isolated research cutoff records' })
+  async refreshPilotCutoff(
+    @Query() query: ResearchDashboardQueryDto,
+    @Headers('x-research-token') headerToken?: string,
+  ): Promise<ResearchDashboardData> {
+    this.assertAccess(query.token, headerToken);
+    await seedResearchCohort({ allowProduction: true });
+    return this.dashboard.build({ ...query, cohort: 'PILOT_2026_10_02' });
   }
 
   @Get('export.json')
@@ -170,7 +185,7 @@ export class ResearchDashboardController {
     add('period', 'label', data.period.label);
     add('cohort', 'code', data.cohort?.code ?? null);
     add('cohort', 'label', data.cohort?.label ?? null);
-    add('cohort', 'synthetic', data.cohort?.synthetic ? 'true' : 'false');
+    add('cohort', 'cutoff_date', data.cohort?.cutoffDate ?? null);
     add('participants', 'total_users', data.participants.totalUsers);
     add('participants', 'active_users', data.participants.activeUsers);
     add('participants', 'profile_completed', data.participants.profileCompleted);

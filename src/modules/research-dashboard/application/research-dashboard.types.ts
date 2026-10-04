@@ -7,7 +7,7 @@ export interface ResearchDashboardQuery {
 export interface ResearchCohortSummary {
   code: string;
   label: string;
-  synthetic: boolean;
+  cutoffDate: string | null;
 }
 
 export interface ResearchPeriod {

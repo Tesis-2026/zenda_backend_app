@@ -51,9 +51,12 @@ export class ResearchDashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async build(query: ResearchDashboardQuery): Promise<ResearchDashboardData> {
-    const period = this.parsePeriod(query);
-    const createdAt = this.dateFilter(period);
     const scope = await this.resolveCohortScope(query.cohort);
+    const period = this.parsePeriod({
+      ...query,
+      to: query.to ?? scope.cohort?.cutoffDate ?? undefined,
+    });
+    const createdAt = this.dateFilter(period);
     const userIdWhere = scope.userIdFilter ? { userId: scope.userIdFilter } : {};
 
     const [
@@ -504,7 +507,9 @@ export class ResearchDashboardService {
           userId: event.userId,
           code,
           label: typeof metadata.label === 'string' ? metadata.label : code,
-          synthetic: metadata.synthetic === true,
+          cutoffDate: typeof metadata.cutoffDate === 'string' ? metadata.cutoffDate : null,
+          excludedFromDefault:
+            metadata.excludedFromDefault === true || metadata.synthetic === true,
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -519,18 +524,18 @@ export class ResearchDashboardService {
         cohort: {
           code: first.code,
           label: first.label,
-          synthetic: first.synthetic,
+          cutoffDate: first.cutoffDate,
         },
         userIdFilter: { in: Array.from(new Set(selected.map((item) => item.userId))) },
       };
     }
 
-    const syntheticUserIds = Array.from(
-      new Set(enrollments.filter((item) => item.synthetic).map((item) => item.userId)),
+    const excludedUserIds = Array.from(
+      new Set(enrollments.filter((item) => item.excludedFromDefault).map((item) => item.userId)),
     );
     return {
       cohort: null,
-      userIdFilter: syntheticUserIds.length > 0 ? { notIn: syntheticUserIds } : undefined,
+      userIdFilter: excludedUserIds.length > 0 ? { notIn: excludedUserIds } : undefined,
     };
   }
 

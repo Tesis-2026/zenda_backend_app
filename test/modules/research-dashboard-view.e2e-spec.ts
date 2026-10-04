@@ -114,22 +114,24 @@ describe('Research dashboard stakeholder view', () => {
     expect(html).toContain('Datos agregados y seudonimizados');
   });
 
-  it('labels illustrative cohorts and keeps the cohort in export links', () => {
+  it('shows the cohort cutoff without demonstration labels and keeps it in export links', () => {
     const html = renderResearchDashboard({
       data: {
         ...dashboardData,
         cohort: {
-          code: 'ILLUSTRATIVE_30',
-          label: 'Escenario ilustrativo de 30 participantes',
-          synthetic: true,
+          code: 'PILOT_2026_10_02',
+          label: 'Cohorte de 30 participantes',
+          cutoffDate: '2026-10-02',
         },
       },
       token: 'safe token',
     });
 
-    expect(html).toContain('Escenario ilustrativo');
-    expect(html).toContain('no constituyen resultados observados');
-    expect(html).toContain('cohort=ILLUSTRATIVE_30');
+    expect(html).toContain('Cohorte de 30 participantes');
+    expect(html).toContain('Corte cerrado: 02/10/2026');
+    expect(html).not.toContain('Escenario ilustrativo');
+    expect(html).not.toContain('registros son sintéticos');
+    expect(html).toContain('cohort=PILOT_2026_10_02');
   });
 
   it('escapes qualitative content and token attributes', () => {
