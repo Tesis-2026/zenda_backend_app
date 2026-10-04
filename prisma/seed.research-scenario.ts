@@ -174,13 +174,6 @@ async function seedParticipant(
   });
 
   await prisma.$transaction([
-    prisma.researchParticipant.create({
-      data: {
-        userId: user.id,
-        researchParticipantId: randomUUID(),
-        createdAt: enrolledAt,
-      },
-    }),
     prisma.analyticsEvent.create({
       data: {
         userId: user.id,
