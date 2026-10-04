@@ -3,8 +3,6 @@ import {
   Get,
   Header,
   Headers,
-  HttpCode,
-  Post,
   Query,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -20,7 +18,6 @@ import {
   FinancialLiteracyAssessmentService,
   ResearchExportRow,
 } from '../../surveys/application/financial-literacy-assessment.service';
-import { seedResearchScenario } from '../../../../prisma/seed.research-scenario';
 
 @ApiTags('Research Dashboard')
 @Controller('research-dashboard')
@@ -57,18 +54,6 @@ export class ResearchDashboardController {
   ): Promise<ResearchDashboardData> {
     this.assertAccess(query.token, headerToken);
     return this.dashboard.build(query);
-  }
-
-  @Post('admin/seed-illustrative')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Seed the isolated illustrative stakeholder cohort' })
-  async seedIllustrativeScenario(
-    @Query() query: ResearchDashboardQueryDto,
-    @Headers('x-research-token') headerToken?: string,
-  ): Promise<ResearchDashboardData> {
-    this.assertAccess(query.token, headerToken);
-    await seedResearchScenario({ allowProduction: true });
-    return this.dashboard.build({ ...query, cohort: 'ILLUSTRATIVE_30' });
   }
 
   @Get('export.json')

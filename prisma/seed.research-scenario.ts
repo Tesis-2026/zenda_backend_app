@@ -503,13 +503,10 @@ async function validateScenario(): Promise<void> {
   console.log('Research scenario validated:', dashboardActual);
 }
 
-export async function seedResearchScenario(options?: {
-  allowProduction?: boolean;
-}): Promise<void> {
+async function main(): Promise<void> {
   if (
     process.env.NODE_ENV === 'production' &&
-    process.env.ALLOW_ILLUSTRATIVE_RESEARCH_SEED !== 'true' &&
-    options?.allowProduction !== true
+    process.env.ALLOW_ILLUSTRATIVE_RESEARCH_SEED !== 'true'
   ) {
     throw new Error(
       'Refusing to seed illustrative research data in production. Set ALLOW_ILLUSTRATIVE_RESEARCH_SEED=true only for an intentional stakeholder demo.',
@@ -534,13 +531,11 @@ export async function seedResearchScenario(options?: {
   console.log(`Open /api/research-dashboard?cohort=${COHORT_CODE}&token=<token>`);
 }
 
-if (require.main === module) {
-  seedResearchScenario()
-    .catch((error) => {
-      console.error(error);
-      process.exitCode = 1;
-    })
-    .finally(async () => {
-      await prisma.$disconnect();
-    });
-}
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
